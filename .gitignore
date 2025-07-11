@@ -1,0 +1,134 @@
+# Proompting directory (agent task definitions)
+proompting/
+
+# Secrets and sensitive files
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+.secrets/
+secrets/
+credentials/
+
+# SSH keys (except public keys)
+.ssh/id_*
+!.ssh/id_*.pub
+.ssh/known_hosts
+
+# GPG keys
+.gnupg/
+*.gpg
+*.asc
+
+# AWS credentials
+.aws/credentials
+.aws/config
+
+# Cloud provider credentials
+.gcloud/
+.azure/
+.kube/config
+
+# Password stores
+.password-store/
+.pass/
+
+# History files that might contain sensitive data
+.*_history
+.bash_history
+.zsh_history
+.python_history
+.node_repl_history
+.mysql_history
+.psql_history
+.rediscli_auth
+
+# Token files
+*token*
+*api_key*
+*apikey*
+.netrc
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-*
+.cursor/
+
+# Logs
+*.log
+logs/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+.python-version
+.venv/
+venv/
+
+# Rust
+target/
+Cargo.lock
+
+# Backup files
+*.bak
+*.backup
+*.old
+backup/
+
+# Test outputs
+test-results/
+coverage/
+
+# Local configuration overrides
+*.local
+local.*
+.local/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Secrets and private data
+secrets/
+private/
+*.secret
+
+# Generated files
+*.zwc
+.zcompdump*
+
+# Local overrides
+*.local
+local/ # Migration scripts with secrets
+scripts/migrate-*.sh
+

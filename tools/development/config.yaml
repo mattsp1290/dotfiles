@@ -1,0 +1,402 @@
+# Development Tools Configuration
+# Configuration for modern CLI tools and development utilities
+
+# Modern CLI Tool Replacements
+cli_tools:
+  # Enhanced file operations
+  file_tools:
+    bat:
+      # Syntax highlighting and git integration
+      theme: "Sublime Snazzy"
+      style: "numbers,changes,header"
+      pager: "less -FR"
+      tabs: 4
+      
+    exa:
+      # Modern ls replacement
+      default_flags: "--long --header --git"
+      time_style: "long-iso"
+      color: "always"
+      
+    fd:
+      # Better find
+      hidden: false
+      no_ignore: false
+      follow_links: false
+      color: "always"
+      
+    ripgrep:
+      # Ultra-fast text search
+      smart_case: true
+      hidden: false
+      follow_links: false
+      max_columns: 150
+      
+  # Text processing
+  text_tools:
+    jq:
+      # JSON processor
+      color_output: true
+      compact_output: false
+      raw_output: false
+      
+    yq:
+      # YAML processor  
+      output_format: "yaml"
+      color: true
+      indent: 2
+      
+    miller:
+      # CSV/JSON processor
+      input_format: "auto"
+      output_format: "table"
+      
+  # Interactive tools
+  interactive:
+    fzf:
+      # Fuzzy finder
+      height: "40%"
+      layout: "reverse"
+      border: true
+      preview: "bat --color=always --style=numbers --line-range=:500 {}"
+      preview_window: "right:50%"
+      
+    lazygit:
+      # Terminal UI for git
+      theme: "default"
+      refresher: 1000
+      confirmation_popup: true
+      
+# Git Tools Configuration
+git_tools:
+  # Enhanced git diff
+  delta:
+    syntax_theme: "Sublime Snazzy"
+    line_numbers: true
+    decorations: true
+    navigate: true
+    light: false
+    side_by_side: false
+    
+  # GitHub CLI
+  github_cli:
+    # Default editor for gh
+    editor: ""
+    
+    # Default protocol
+    git_protocol: "ssh"
+    
+    # Prompt for confirmation
+    prompt: "enabled"
+    
+    # Aliases
+    aliases:
+      co: "pr checkout"
+      pv: "pr view"
+      
+  # Secret detection
+  gitleaks:
+    # Configuration file path
+    config: ".gitleaks.toml"
+    
+    # Verbose output
+    verbose: false
+    
+    # Report format
+    report_format: "json"
+
+# Network and HTTP Tools
+network_tools:
+  # HTTPie configuration
+  httpie:
+    default_options:
+      - "--print=HhBb"
+      - "--style=colorful"
+      - "--check-status"
+      
+    # Default headers
+    headers:
+      User-Agent: "HTTPie/Custom"
+      
+  # curl alternative
+  curlie:
+    # Default options
+    default_options:
+      - "--compressed"
+      - "--location"
+      - "--show-error"
+
+# Performance and Monitoring Tools
+performance_tools:
+  # Process monitoring
+  procs:
+    # Sort by CPU usage
+    sort_column: "cpu"
+    
+    # Color output
+    color: "always"
+    
+    # Tree view
+    tree: false
+    
+  # System monitoring
+  bottom:
+    # Temperature sensor
+    celsius: true
+    
+    # Update rate in milliseconds
+    rate: 1000
+    
+    # Default widget
+    default_widget: "proc"
+    
+  # Disk usage
+  dust:
+    # Display apparent size
+    apparent_size: false
+    
+    # Reverse sort order
+    reverse: false
+    
+    # Number of lines to show
+    number_of_lines: 20
+    
+  # Disk usage analyzer
+  ncdu:
+    # Color scheme
+    color: "dark"
+    
+    # Show hidden files
+    show_hidden: false
+    
+    # Follow symlinks
+    follow_symlinks: false
+
+# Terminal and Shell Enhancements
+terminal_tools:
+  # Cross-shell prompt
+  starship:
+    # Configuration file
+    config: "$HOME/.config/starship.toml"
+    
+    # Default preset
+    preset: "plain-text-symbols"
+    
+  # Smarter cd command
+  zoxide:
+    # Hook into shell
+    hook: "pwd"
+    
+    # Case sensitivity
+    case_sensitive: false
+    
+    # Resolve symlinks
+    resolve_symlinks: false
+    
+  # Terminal multiplexer
+  tmux:
+    # Default shell
+    default_shell: "/bin/zsh"
+    
+    # Mouse support
+    mouse: true
+    
+    # 256 color support
+    default_terminal: "screen-256color"
+
+# File and Archive Tools
+file_tools:
+  # Archive management
+  archive:
+    # Default compression
+    compression: "gzip"
+    
+    # Preserve permissions
+    preserve_permissions: true
+    
+    # Verbose output
+    verbose: true
+    
+  # Cloud storage sync
+  rclone:
+    # Configuration directory
+    config_dir: "$HOME/.config/rclone"
+    
+    # Cache directory
+    cache_dir: "$HOME/.cache/rclone"
+    
+    # Default options
+    default_options:
+      - "--progress"
+      - "--transfers=4"
+      - "--checkers=8"
+
+# Security Tools
+security_tools:
+  # Modern encryption
+  age:
+    # Default armor output
+    armor: true
+    
+    # Recipients file
+    recipients_file: "$HOME/.config/age/recipients.txt"
+    
+  # Secrets management
+  sops:
+    # Default key type
+    key_type: "age"
+    
+    # Configuration file
+    config: ".sops.yaml"
+    
+    # Encrypted suffix
+    encrypted_suffix: "_encrypted"
+
+# Benchmarking and Testing
+benchmark_tools:
+  # Command-line benchmarking
+  hyperfine:
+    # Number of warmup runs
+    warmup: 3
+    
+    # Minimum number of runs
+    min_runs: 10
+    
+    # Export format
+    export_format: "json"
+    
+  # HTTP benchmarking
+  siege:
+    # Concurrent users
+    concurrent: 10
+    
+    # Time to run test
+    time: "1M"
+    
+    # Delay between requests
+    delay: 1
+
+# Documentation Tools
+documentation:
+  # Fast tldr client
+  tealdeer:
+    # Auto update cache
+    auto_update: true
+    
+    # Cache directory
+    cache_dir: "$HOME/.cache/tealdeer"
+    
+    # Update interval (days)
+    update_interval: 30
+
+# Development Workflows
+workflows:
+  # File operations
+  file_operations:
+    # Better file listing
+    list_files: "exa --long --header --git"
+    
+    # Search files
+    find_files: "fd"
+    
+    # Search content
+    search_content: "rg"
+    
+    # View files
+    view_file: "bat"
+    
+  # Git operations
+  git_operations:
+    # Enhanced diff
+    diff: "git diff"
+    
+    # Interactive git
+    interactive: "lazygit"
+    
+    # GitHub operations
+    github: "gh"
+    
+    # Security scanning
+    scan_secrets: "gitleaks detect"
+    
+  # System monitoring
+  monitoring:
+    # Process monitoring
+    processes: "procs"
+    
+    # System resources
+    system: "bottom"
+    
+    # Disk usage
+    disk: "dust"
+    
+  # Network operations
+  network:
+    # HTTP requests
+    http: "http"
+    
+    # API testing
+    api_test: "http"
+    
+    # curl alternative
+    curl: "curlie"
+
+# Aliases and Shortcuts
+aliases:
+  # File operations
+  ll: "exa --long --header --git"
+  la: "exa --long --all --header --git"
+  tree: "exa --tree"
+  
+  # Search operations
+  find: "fd"
+  grep: "rg"
+  
+  # Text viewing
+  cat: "bat"
+  less: "bat --paging=always"
+  
+  # System monitoring
+  ps: "procs"
+  top: "bottom"
+  du: "dust"
+  
+  # Git operations
+  gd: "git diff"
+  gl: "git log --oneline --graph"
+  gs: "git status"
+  
+  # HTTP operations
+  curl: "curlie"
+  
+# Tool Integration
+integration:
+  # Shell integration
+  shell:
+    # Enable shell completions
+    completions: true
+    
+    # Shell history integration
+    history: true
+    
+    # Environment variables
+    env_vars:
+      EDITOR: "code"
+      PAGER: "bat"
+      BAT_THEME: "Sublime Snazzy"
+      
+  # Editor integration
+  editor:
+    # VS Code extensions
+    vscode_extensions:
+      - "ms-vscode.theme-tomorrow-night-blue"
+      - "bradlc.vscode-tailwindcss"
+      - "esbenp.prettier-vscode"
+      
+  # Terminal integration
+  terminal:
+    # Color schemes
+    color_schemes:
+      - "Sublime Snazzy"
+      - "Tomorrow Night"
+      - "Dracula" 

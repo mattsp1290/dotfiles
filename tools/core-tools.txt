@@ -1,0 +1,40 @@
+# Core Cross-Platform Development Tools
+# These tools are essential for most development workflows and work consistently across macOS and Linux
+
+# Version Management System
+asdf                    # Multi-language version manager - replaces nvm, pyenv, rbenv, etc.
+
+# Modern CLI Tools (Enhanced replacements for standard tools)
+bat                     # Better 'cat' with syntax highlighting and git integration
+exa                     # Modern replacement for 'ls' with colors and icons
+fd                      # Better 'find' - simple, fast, and user-friendly
+ripgrep                 # Ultra-fast text search (rg) - better grep
+fzf                     # Fuzzy finder for command line and vim
+jq                      # JSON processor - parse and manipulate JSON
+yq                      # YAML processor - like jq but for YAML
+
+# Git Tools
+git-delta               # Enhanced git diff with better syntax highlighting
+gh                      # GitHub CLI for repository management
+gitleaks                # Detect and prevent secrets in git repos
+
+# Container and Orchestration
+docker                  # Container runtime (where not already installed)
+docker-compose          # Multi-container Docker applications
+kubectl                 # Kubernetes command-line interface
+helm                    # Kubernetes package manager
+k9s                     # Terminal UI for Kubernetes clusters
+
+# Network and Debugging
+httpie                  # User-friendly HTTP client
+curlie                  # Frontend to curl with httpie-like syntax
+
+# Essential Utilities
+direnv                  # Environment variable manager per directory
+stow                    # Symlink farm manager (if not already installed)
+tree                    # Display directory structure
+ncdu                    # NCurses disk usage analyzer
+
+# Security Tools
+age                     # Modern encryption tool (successor to GPG for files)
+sops                    # Secrets management for config files 

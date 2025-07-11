@@ -1,0 +1,93 @@
+# Optional Cross-Platform Development Tools
+# These tools are for specialized workflows and advanced use cases
+
+# Cloud Platform CLIs
+aws                     # AWS CLI v2 for Amazon Web Services
+gcloud                  # Google Cloud CLI with components
+azure                   # Azure CLI for Microsoft Azure
+terraform               # Infrastructure as Code tool
+vault                   # HashiCorp Vault for secrets management
+consul                  # HashiCorp Consul for service discovery
+nomad                   # HashiCorp Nomad for workload orchestration
+
+# Advanced Container Tools
+crane                   # Tool for interacting with container registries
+skopeo                  # Tool for container image operations
+buildah                 # Tool for building OCI images
+podman                  # Daemonless container engine alternative to Docker
+trivy                   # Vulnerability scanner for containers and filesystems
+
+# Kubernetes Extended Ecosystem
+kubectx                 # Switch between Kubernetes contexts
+kubens                  # Switch between Kubernetes namespaces
+kustomize               # Kubernetes configuration management
+stern                   # Multi-pod and container log tailing
+flux                    # GitOps toolkit for Kubernetes
+argocd                  # GitOps continuous delivery tool
+istioctl                # Istio service mesh management
+
+# Advanced Development Tools
+dive                    # Tool for exploring Docker image layers
+lazygit                 # Simple terminal UI for git commands
+gitui                   # Terminal UI for git
+grype                   # Vulnerability scanner for container images and filesystems
+syft                    # SBOM (Software Bill of Materials) generator
+cosign                  # Container signing and verification
+
+# Performance and Monitoring
+ctop                    # Top-like interface for container metrics
+htop                    # Interactive process viewer
+iotop                   # I/O usage monitor
+bandwhich               # Terminal bandwidth utilization tool
+dust                    # More intuitive version of du
+procs                   # Modern replacement for ps
+bottom                  # Terminal system monitor
+
+# Data Processing and APIs
+miller                  # CSV/JSON/YAML processor (like awk for data)
+xsv                     # Fast CSV command line toolkit
+dasel                   # Query and modify data structures (JSON, YAML, XML, CSV)
+usql                    # Universal command-line interface for SQL databases
+
+# Language-Specific Tools
+node                    # Node.js runtime (via asdf)
+python                  # Python interpreter (via asdf)
+ruby                    # Ruby interpreter (via asdf)
+golang                  # Go compiler (via asdf)
+rust                    # Rust toolchain (via asdf)
+deno                    # Secure runtime for JavaScript and TypeScript
+
+# Infrastructure Tools
+ansible                 # Configuration management and deployment
+packer                  # Machine image builder
+vagrant                 # Virtual machine management
+
+# Network Tools
+nmap                    # Network discovery and security auditing
+wireshark               # Network protocol analyzer (tshark CLI)
+mtr                     # Network diagnostics (traceroute + ping)
+dog                     # DNS lookup tool (dig alternative)
+
+# File and Archive Tools
+rclone                  # Sync files to cloud storage
+restic                  # Backup program
+unrar                   # Extract RAR archives
+p7zip                   # 7-Zip archive manager
+
+# Text Processing
+rg                      # ripgrep (alternative name)
+sd                      # Intuitive find & replace CLI (sed alternative)
+choose                  # Human-friendly alternative to cut and awk
+tealdeer                # Fast tldr client (simplified man pages)
+
+# Terminal and Shell
+starship                # Cross-shell prompt
+tmux                    # Terminal multiplexer
+screen                  # Terminal multiplexer alternative
+zoxide                  # Smarter cd command
+autojump                # Navigation tool for faster directory switching
+
+# Benchmarking and Testing
+hyperfine               # Command-line benchmarking tool
+ab                      # Apache HTTP server benchmarking tool
+siege                   # HTTP load testing and benchmarking utility 

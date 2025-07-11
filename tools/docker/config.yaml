@@ -1,0 +1,99 @@
+# Docker and Container Tools Configuration
+# Configuration for Docker and related container tools
+
+docker:
+  # Docker Desktop settings
+  desktop:
+    experimental: true
+    buildkit: true
+    compose_v2: true
+  
+  # Docker daemon configuration
+  daemon:
+    # Storage driver (overlay2 is recommended)
+    storage-driver: overlay2
+    
+    # Enable experimental features
+    experimental: true
+    
+    # Registry mirrors (add your own if needed)
+    registry-mirrors: []
+    
+    # Insecure registries (for local development)
+    insecure-registries: []
+    
+    # Log configuration
+    log-driver: json-file
+    log-opts:
+      max-size: 10m
+      max-file: 3
+
+# Container tools to install
+tools:
+  core:
+    - docker
+    - docker-compose
+    - kubectl
+    - helm
+  
+  optional:
+    - k9s              # Kubernetes TUI
+    - kubectx          # Kubernetes context switcher
+    - kubens           # Kubernetes namespace switcher
+    - kustomize        # Kubernetes configuration management
+    - stern            # Multi-pod log tailing
+    - dive             # Docker image explorer
+    - ctop             # Container metrics
+    - crane            # Container registry tool
+    - skopeo           # Container image operations
+
+# Kubernetes tools configuration
+kubernetes:
+  # Default cluster configurations
+  contexts: []
+  
+  # Useful kubectl aliases
+  aliases:
+    k: kubectl
+    kx: kubectx
+    kns: kubens
+    kg: kubectl get
+    kd: kubectl describe
+    ka: kubectl apply
+    kdel: kubectl delete
+
+# Docker Compose configuration
+compose:
+  # Default environment variables
+  env_vars:
+    COMPOSE_DOCKER_CLI_BUILD: 1
+    DOCKER_BUILDKIT: 1
+  
+  # Common service configurations
+  networks:
+    default:
+      driver: bridge
+  
+  volumes:
+    # Define common volumes here
+    node_modules: {}
+    postgres_data: {}
+
+# Development workflows
+workflows:
+  # Common Docker commands
+  commands:
+    build: docker build -t {{image_name}} .
+    run: docker run -it --rm {{image_name}}
+    shell: docker run -it --rm {{image_name}} /bin/bash
+    logs: docker logs -f {{container_name}}
+    exec: docker exec -it {{container_name}} /bin/bash
+  
+  # Development patterns
+  patterns:
+    - name: "Multi-stage builds"
+      description: "Use multi-stage builds for smaller production images"
+    - name: "Volume mounts"
+      description: "Use bind mounts for development, named volumes for data"
+    - name: "Health checks"
+      description: "Always include health checks in production containers" 

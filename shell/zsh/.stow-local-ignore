@@ -1,0 +1,7 @@
+*.local
+*.backup.*
+.zsh_history
+.zsh_sessions
+test-config.sh
+*.tmp
+*.log 

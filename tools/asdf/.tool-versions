@@ -1,0 +1,30 @@
+# Default tool versions for reproducible development environments
+# These can be overridden by project-specific .tool-versions files
+
+# Core Programming Languages
+nodejs 20.12.0
+python 3.12.2
+ruby 3.3.0
+golang 1.22.1
+
+# Infrastructure Tools
+terraform 1.7.4
+kubectl 1.29.3
+helm 3.14.3
+
+# Additional Tools
+awscli 2.15.30
+gcloud 468.0.0
+azure-cli 2.58.0
+
+# Utilities
+direnv 2.34.0
+jq 1.7.1
+yq 4.42.1
+
+# Container Tools (when available via asdf)
+docker-compose 2.26.1
+
+# Development Tools
+git-delta 0.16.5
+gh 2.46.0 

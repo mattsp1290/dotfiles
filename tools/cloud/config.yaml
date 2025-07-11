@@ -1,0 +1,287 @@
+# Cloud Tools Configuration
+# Configuration for cloud platform CLIs and related tools
+
+# AWS CLI Configuration
+aws:
+  # Default region and output format
+  default:
+    region: us-west-2
+    output: json
+    
+  # CLI configuration options
+  cli:
+    # Use AWS CLI v2 features
+    cli_auto_prompt: on-partial
+    cli_pager: ""
+    
+    # Enable parameter validation
+    parameter_validation: true
+    
+    # S3 transfer settings
+    s3:
+      max_concurrent_requests: 10
+      max_bandwidth: 100MB/s
+      multipart_threshold: 64MB
+      multipart_chunksize: 16MB
+
+  # Common AWS services and tools
+  services:
+    - ec2
+    - s3
+    - iam
+    - lambda
+    - ecs
+    - eks
+    - rds
+    - cloudformation
+    - ssm
+    
+  # Additional AWS tools
+  tools:
+    - aws-vault          # AWS credential management
+    - awslogs           # CloudWatch logs CLI
+    - aws-sam-cli       # Serverless Application Model
+    - copilot           # Container application deployment
+
+# Google Cloud Configuration
+gcloud:
+  # Default project and region
+  default:
+    project: ""
+    region: us-central1
+    zone: us-central1-a
+    
+  # CLI configuration
+  core:
+    # Disable usage reporting
+    disable_usage_reporting: true
+    
+    # Custom CA certs
+    custom_ca_certs_file: ""
+    
+    # Account and project settings
+    account: ""
+    project: ""
+    
+  # Additional components to install
+  components:
+    - kubectl
+    - docker-credential-gcloud
+    - cloud-sql-proxy
+    - pubsub-emulator
+    - datastore-emulator
+    - firestore-emulator
+    
+  # GCP services
+  services:
+    - compute
+    - storage
+    - sql
+    - kubernetes
+    - functions
+    - run
+    - pubsub
+    - firestore
+
+# Azure CLI Configuration
+azure:
+  # Default settings
+  default:
+    location: westus2
+    output: json
+    
+  # CLI configuration
+  core:
+    # Disable telemetry
+    collect_telemetry: false
+    
+    # Output settings
+    output: json
+    
+    # Logging
+    logging:
+      enable_log_file: true
+      
+  # Azure services
+  services:
+    - vm
+    - storage
+    - keyvault
+    - aks
+    - functions
+    - webapp
+    - sql
+    - cosmosdb
+    
+  # Additional tools
+  tools:
+    - azure-functions-core-tools
+    - bicep
+
+# Terraform Configuration
+terraform:
+  # Version constraints
+  version: "~> 1.7"
+  
+  # Backend configuration templates
+  backends:
+    s3:
+      bucket: "terraform-state-${random_id}"
+      key: "terraform.tfstate"
+      region: "us-west-2"
+      encrypt: true
+      dynamodb_table: "terraform-locks"
+      
+    azurerm:
+      resource_group_name: "terraform-state-rg"
+      storage_account_name: "terraformstate${random_id}"
+      container_name: "terraform-state"
+      key: "terraform.tfstate"
+      
+    gcs:
+      bucket: "terraform-state-${random_id}"
+      prefix: "terraform/state"
+      
+  # Provider versions
+  providers:
+    aws: "~> 5.0"
+    azurerm: "~> 3.0"
+    google: "~> 4.0"
+    kubernetes: "~> 2.0"
+    helm: "~> 2.0"
+    
+  # Common modules
+  modules:
+    - vpc
+    - security-groups
+    - iam
+    - kubernetes
+    - monitoring
+
+# HashiCorp Tools
+hashicorp:
+  # Vault configuration
+  vault:
+    # Default address (override with VAULT_ADDR)
+    address: "https://vault.example.com:8200"
+    
+    # Auth methods
+    auth_methods:
+      - userpass
+      - ldap
+      - github
+      - aws
+      - kubernetes
+      
+  # Consul configuration
+  consul:
+    # Default address
+    address: "127.0.0.1:8500"
+    
+    # Data center
+    datacenter: "dc1"
+    
+  # Nomad configuration
+  nomad:
+    # Default address
+    address: "http://127.0.0.1:4646"
+    
+    # Region
+    region: "global"
+
+# Kubernetes Tools
+kubernetes:
+  # kubectl configuration
+  kubectl:
+    # Default namespace
+    namespace: default
+    
+    # Useful aliases
+    aliases:
+      k: kubectl
+      kg: kubectl get
+      kd: kubectl describe
+      ka: kubectl apply
+      kdel: kubectl delete
+      
+  # Helm configuration
+  helm:
+    # Repository management
+    repositories:
+      - name: stable
+        url: https://charts.helm.sh/stable
+      - name: bitnami
+        url: https://charts.bitnami.com/bitnami
+      - name: ingress-nginx
+        url: https://kubernetes.github.io/ingress-nginx
+        
+  # Common tools
+  tools:
+    - kubectl
+    - helm
+    - k9s
+    - kubectx
+    - kubens
+    - kustomize
+    - stern
+    - flux
+    - argocd
+
+# Development Workflows
+workflows:
+  # Multi-cloud patterns
+  patterns:
+    - name: "Infrastructure as Code"
+      description: "Use Terraform for consistent infrastructure across clouds"
+      tools: [terraform, vault]
+      
+    - name: "Container Orchestration"
+      description: "Use Kubernetes for application deployment"
+      tools: [kubectl, helm, k9s]
+      
+    - name: "CI/CD Integration"
+      description: "Integrate cloud tools with CI/CD pipelines"
+      tools: [aws, gcloud, azure, terraform]
+      
+  # Common commands
+  commands:
+    # Terraform workflow
+    tf_init: terraform init
+    tf_plan: terraform plan
+    tf_apply: terraform apply
+    tf_destroy: terraform destroy
+    
+    # Kubernetes workflow
+    k8s_apply: kubectl apply -f
+    k8s_logs: kubectl logs -f
+    k8s_exec: kubectl exec -it
+    
+    # Cloud authentication
+    aws_login: aws sso login
+    gcloud_auth: gcloud auth login
+    azure_login: az login
+
+# Security Configuration
+security:
+  # Credential management
+  credentials:
+    # Use credential helpers where possible
+    aws_vault: true
+    gcloud_credential_helper: true
+    azure_credential_helper: true
+    
+    # MFA requirements
+    aws_mfa: true
+    gcloud_2fa: true
+    azure_mfa: true
+    
+  # Policy management
+  policies:
+    # Least privilege access
+    principle: least_privilege
+    
+    # Regular rotation
+    credential_rotation: 90_days
+    
+    # Audit logging
+    audit_enabled: true 
