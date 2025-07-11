@@ -1,0 +1,280 @@
+# =============================================================================
+# Git Configuration - User Agnostic
+# =============================================================================
+# This is the main Git configuration file with secure defaults and 
+# comprehensive aliases. Personal information is handled via includes.
+
+[core]
+    # Editor and pager configuration
+    editor = nvim
+    pager = less -FRX
+    
+    # Line ending configuration (cross-platform)
+    autocrlf = input
+    safecrlf = true
+    
+    # Global gitignore and gitattributes
+    excludesfile = ~/.config/git/ignore
+    attributesfile = ~/.config/git/attributes
+    
+    # Performance and security
+    preloadindex = true
+    fscache = true
+    longpaths = true
+    
+    # Git hooks directory
+    hooksPath = ~/.config/git/hooks
+
+[init]
+    # Default branch name
+    defaultBranch = main
+    
+    # Template directory for new repositories
+    templatedir = ~/.config/git/template
+
+[push]
+    # Safer push defaults
+    default = simple
+    autoSetupRemote = true
+    followTags = true
+    
+    # Push options
+    recurseSubmodules = check
+
+[pull]
+    # Pull strategy
+    rebase = false
+    ff = only
+
+[fetch]
+    # Fetch configuration
+    prune = true
+    pruneTags = true
+    parallel = 0
+
+[branch]
+    # Branch configuration
+    autosetupmerge = always
+    autosetuprebase = always
+
+[rebase]
+    # Rebase configuration
+    autoStash = true
+    autoSquash = true
+    abbreviateCommands = true
+
+[merge]
+    # Merge configuration
+    tool = vimdiff
+    conflictstyle = diff3
+    autoStash = true
+    
+    # Merge drivers
+    ours = true
+
+[diff]
+    # Diff configuration
+    tool = vimdiff
+    renames = copies
+    algorithm = patience
+    colorMoved = default
+    submodule = log
+    
+    # Better diff for common file types
+    noprefix = false
+
+[status]
+    # Status configuration
+    showUntrackedFiles = all
+    submoduleSummary = true
+
+[color]
+    # Color configuration
+    ui = auto
+    diff = auto
+    status = auto
+    branch = auto
+    interactive = auto
+
+[color "diff"]
+    meta = cyan
+    frag = magenta bold
+    old = red bold
+    new = green bold
+    whitespace = red reverse
+
+[color "branch"]
+    current = yellow reverse
+    local = yellow
+    remote = green
+
+[color "status"]
+    added = green
+    changed = red
+    untracked = cyan
+
+[log]
+    # Log configuration
+    date = short
+    decorate = short
+    follow = true
+
+[tag]
+    # Tag configuration
+    sort = version:refname
+
+[versionsort]
+    # Version sorting
+    prereleaseSuffix = -pre
+    prereleaseSuffix = .pre
+    prereleaseSuffix = -beta
+    prereleaseSuffix = .beta
+    prereleaseSuffix = -rc
+    prereleaseSuffix = .rc
+
+# =============================================================================
+# Aliases - Comprehensive Git Shortcuts
+# =============================================================================
+
+[alias]
+    # === Basic Aliases ===
+    st = status
+    co = checkout
+    br = branch
+    ci = commit
+    df = diff
+    dc = diff --cached
+    
+    # === Information Aliases ===
+    who = shortlog -n -s --no-merges
+    what = show --name-only
+    when = for-each-ref --sort='-committerdate:iso8601' --format=' %(committerdate:relative)%09%(refname:short)' refs/heads
+    where = branch -vv
+    
+    # === Log Aliases ===
+    lg = log --oneline --graph --decorate --all
+    lga = log --oneline --graph --decorate --all --branches --remotes --tags
+    lgp = log --oneline --graph --decorate --all --simplify-by-decoration
+    last = log -1 HEAD
+    ll = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --numstat
+    ld = log --pretty=format:"%C(yellow)%h\\ %C(green)%ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=short --graph
+    ls = log --pretty=format:"%C(green)%h\\ %C(yellow)[%ad]%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=relative
+    
+    # === Diff Aliases ===
+    d = diff
+    ds = diff --stat
+    dc = diff --cached
+    dcs = diff --cached --stat
+    
+    # === Branch Management ===
+    branches = branch -a
+    remotes = remote -v
+    tags = tag -l
+    
+    # === Commit Aliases ===
+    cm = commit -m
+    ca = commit -am
+    amend = commit --amend
+    amendne = commit --amend --no-edit
+    
+    # === Staging Aliases ===
+    a = add
+    aa = add --all
+    ap = add --patch
+    unstage = reset HEAD --
+    
+    # === Stash Aliases ===
+    sl = stash list
+    sa = stash apply
+    ss = stash save
+    sp = stash pop
+    
+    # === Reset Aliases ===
+    r = reset
+    r1 = reset HEAD^
+    r2 = reset HEAD^^
+    rh = reset --hard
+    rh1 = reset HEAD^ --hard
+    rh2 = reset HEAD^^ --hard
+    
+    # === Remote Aliases ===
+    rao = remote add origin
+    rau = remote add upstream
+    rso = remote set-url origin
+    rsu = remote set-url upstream
+    
+    # === Workflow Aliases ===
+    new = checkout -b
+    del = branch -d
+    delr = push origin --delete
+    
+    # === Advanced Aliases ===
+    fixup = !sh -c 'REV=$(git rev-parse $1) && git commit --fixup $@ && git rebase -i --autosquash $REV^' -
+    squash = !sh -c 'REV=$(git rev-parse $1) && git commit --squash $@ && git rebase -i --autosquash $REV^' -
+    
+    # === Utility Aliases ===
+    visual = !gitk
+    find = !git ls-files | grep -i
+    grep = grep -Ii
+    la = "!git config -l | grep alias | cut -c 7-"
+    
+    # === Safety Aliases ===
+    please = push --force-with-lease
+    commend = commit --amend --no-edit
+    it = !git init && git commit -m "root" --allow-empty
+    
+    # === Maintenance Aliases ===
+    prune-all = !git remote | xargs -n 1 git remote prune
+    aliases = !git config --get-regexp 'alias.*' | colrm 1 6 | sed 's/[ ]/ = /'
+    
+    # === GitHub/GitLab Integration ===
+    issues = !hub browse -- issues
+    browse = !hub browse
+    
+    # === File Management ===
+    tracked = ls-tree -r HEAD --name-only
+    untracked = ls-files --others --exclude-standard
+    ignored = ls-files --others --ignored --exclude-standard
+
+# =============================================================================
+# URL Rewrites for SSH Authentication
+# =============================================================================
+
+[url "git@github.com:"]
+    insteadOf = https://github.com/
+
+[url "git@gitlab.com:"]
+    insteadOf = https://gitlab.com/
+
+[url "git@bitbucket.org:"]
+    insteadOf = https://bitbucket.org/
+
+# =============================================================================
+# Security Configuration
+# =============================================================================
+
+[transfer]
+    fsckobjects = true
+
+[fetch]
+    fsckobjects = true
+
+[receive]
+    fsckObjects = true
+
+# =============================================================================
+# Conditional Includes for Profile Management
+# =============================================================================
+
+[includeIf "gitdir:~/work/"]
+    path = ~/.config/git/includes/work.gitconfig
+
+[includeIf "gitdir:~/personal/"]
+    path = ~/.config/git/includes/personal.gitconfig
+
+[includeIf "gitdir:~/opensource/"]
+    path = ~/.config/git/includes/opensource.gitconfig
+
+# Include personal Git identity and credentials (from template injection)
+[include]
+    path = ~/.gitconfig.local 

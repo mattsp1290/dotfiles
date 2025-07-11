@@ -1,0 +1,50 @@
+# Work SSH Configuration
+# Configuration for work-related hosts and services
+# This file uses template injection for sensitive data
+
+# Work servers template - populated by secret injection
+# Template: templates/ssh/work-servers.ssh.template
+
+# Example work server configuration (commented out for security)
+# Host work-bastion
+#     HostName {{ WORK_BASTION_HOST }}
+#     User {{ WORK_USERNAME }}
+#     Port {{ WORK_SSH_PORT | default(22) }}
+#     IdentityFile ~/.ssh/{{ WORK_SSH_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey
+#     ForwardAgent yes
+#     # Jump host configuration
+#     ProxyCommand none
+
+# Internal work servers via bastion
+# Host work-server-*
+#     User {{ WORK_USERNAME }}
+#     Port 22
+#     IdentityFile ~/.ssh/{{ WORK_SSH_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey
+#     # Use bastion as jump host
+#     ProxyJump work-bastion
+#     ForwardAgent no
+
+# Work development environment
+# Host work-dev
+#     HostName {{ WORK_DEV_HOST }}
+#     User {{ WORK_USERNAME }}
+#     Port 22
+#     IdentityFile ~/.ssh/{{ WORK_SSH_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     # Development-specific settings
+#     RemoteForward 52698 localhost:52698  # VS Code remote development
+#     RequestTTY yes
+#     ForwardX11 no
+
+# Work GitLab or internal Git server
+# Host work-git
+#     HostName {{ WORK_GIT_HOST }}
+#     User git
+#     Port {{ WORK_GIT_PORT | default(22) }}
+#     IdentityFile ~/.ssh/{{ WORK_SSH_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey 

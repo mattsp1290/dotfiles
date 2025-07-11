@@ -1,0 +1,77 @@
+# Work SSH Servers Configuration Template
+# This file is processed by the secret injection system
+# Variables are replaced with values from 1Password or other secret stores
+
+{% if WORK_BASTION_HOST %}
+Host work-bastion
+    HostName {{ WORK_BASTION_HOST }}
+    User {{ WORK_USERNAME | default('ec2-user') }}
+    Port {{ WORK_SSH_PORT | default(22) }}
+    IdentityFile ~/.ssh/{{ WORK_SSH_KEY | default('id_rsa') }}
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+    ForwardAgent yes
+    # Jump host configuration
+    ProxyCommand none
+{% endif %}
+
+{% if WORK_DEV_HOST %}
+Host work-dev
+    HostName {{ WORK_DEV_HOST }}
+    User {{ WORK_USERNAME | default('ec2-user') }}
+    Port {{ WORK_SSH_PORT | default(22) }}
+    IdentityFile ~/.ssh/{{ WORK_SSH_KEY | default('id_rsa') }}
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+    # Development-specific settings
+    RemoteForward 52698 localhost:52698  # VS Code remote development
+    RequestTTY yes
+    ForwardX11 no
+    {% if WORK_BASTION_HOST %}
+    ProxyJump work-bastion
+    {% endif %}
+{% endif %}
+
+{% if WORK_PROD_HOST %}
+Host work-prod
+    HostName {{ WORK_PROD_HOST }}
+    User {{ WORK_USERNAME | default('ec2-user') }}
+    Port {{ WORK_SSH_PORT | default(22) }}
+    IdentityFile ~/.ssh/{{ WORK_SSH_KEY | default('id_rsa') }}
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+    # Production - no agent forwarding for security
+    ForwardAgent no
+    {% if WORK_BASTION_HOST %}
+    ProxyJump work-bastion
+    {% endif %}
+{% endif %}
+
+{% if WORK_GIT_HOST %}
+Host work-git
+    HostName {{ WORK_GIT_HOST }}
+    User git
+    Port {{ WORK_GIT_PORT | default(22) }}
+    IdentityFile ~/.ssh/{{ WORK_SSH_KEY | default('id_rsa') }}
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+    # Git server optimizations
+    Compression yes
+    ControlMaster auto
+    ControlPath /tmp/ssh_mux_work_git_%r
+    ControlPersist 10m
+{% endif %}
+
+# Work server pattern for internal hosts
+{% if WORK_INTERNAL_PATTERN %}
+Host {{ WORK_INTERNAL_PATTERN }}
+    User {{ WORK_USERNAME | default('ec2-user') }}
+    Port 22
+    IdentityFile ~/.ssh/{{ WORK_SSH_KEY | default('id_rsa') }}
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+    {% if WORK_BASTION_HOST %}
+    ProxyJump work-bastion
+    {% endif %}
+    ForwardAgent no
+{% endif %} 

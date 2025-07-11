@@ -1,0 +1,398 @@
+name: Security Validation
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      deep_scan:
+        description: 'Enable deep security scanning'
+        required: false
+        default: false
+        type: boolean
+      skip_history:
+        description: 'Skip git history scanning'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  # Security scan configuration
+  SECURITY_SCAN_TIMEOUT: 300  # 5 minutes
+  FAIL_ON_SECURITY_ISSUES: true
+  GENERATE_SECURITY_REPORTS: true
+
+jobs:
+  # =============================================================================
+  # Secret Scanning
+  # =============================================================================
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for comprehensive scanning
+
+      - name: Setup Security Scanning Environment
+        run: |
+          # Install security scanning tools
+          echo "Installing security tools..."
+          sudo apt-get update -qq
+          
+          # Install jq for JSON processing
+          sudo apt-get install -y jq
+          
+          # Create logs directory
+          mkdir -p tests/security/logs tests/security/reports
+
+      - name: Run Built-in Secret Scanner
+        run: |
+          echo "Running built-in secret scanning..."
+          chmod +x tests/security/scan-secrets.sh
+          
+          # Run with appropriate flags
+          if [[ "${{ github.event.inputs.deep_scan }}" == "true" ]]; then
+            ./tests/security/scan-secrets.sh --verbose
+          else
+            ./tests/security/scan-secrets.sh
+          fi
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload Secret Scan Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: secret-scan-results
+          path: |
+            tests/security/logs/*
+            tests/security/reports/*
+          retention-days: 30
+
+      - name: Generate Secret Scan Summary
+        if: always()
+        run: |
+          echo "## Secret Scan Results" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ -f tests/security/reports/.latest-report ]]; then
+            latest_report=$(cat tests/security/reports/.latest-report)
+            if [[ -f "$latest_report" ]]; then
+              echo "### Summary" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              tail -20 "$latest_report" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          echo "📊 Full results available in artifacts" >> $GITHUB_STEP_SUMMARY
+
+  # =============================================================================
+  # File Permission Validation
+  # =============================================================================
+  permission-check:
+    name: File Permissions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Permission Checker
+        run: |
+          echo "Checking file permissions..."
+          chmod +x tests/security/check-permissions.sh
+          ./tests/security/check-permissions.sh --verbose
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload Permission Check Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: permission-check-results
+          path: |
+            tests/security/logs/*
+            tests/security/reports/*
+          retention-days: 30
+
+  # =============================================================================
+  # Git History Security Analysis
+  # =============================================================================
+  git-history-scan:
+    name: Git History Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event.inputs.skip_history != 'true'
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history required
+
+      - name: Run Git History Scanner
+        run: |
+          echo "Scanning git history for security issues..."
+          chmod +x tests/security/git-history-scan.sh
+          
+          # Run with appropriate flags
+          if [[ "${{ github.event.inputs.deep_scan }}" == "true" ]]; then
+            ./tests/security/git-history-scan.sh --deep --verbose
+          else
+            ./tests/security/git-history-scan.sh --verbose
+          fi
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload Git History Scan Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-history-scan-results
+          path: |
+            tests/security/logs/*
+            tests/security/reports/*
+          retention-days: 30
+
+  # =============================================================================
+  # Template Security Testing
+  # =============================================================================
+  template-security:
+    name: Template Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Template Processing Tools
+        run: |
+          # Install envsubst and other template tools
+          sudo apt-get update -qq
+          sudo apt-get install -y gettext-base
+
+      - name: Run Template Security Tests
+        run: |
+          echo "Testing template security..."
+          chmod +x tests/security/template-security-test.sh
+          
+          # Run with appropriate flags
+          if [[ "${{ github.event.inputs.deep_scan }}" == "true" ]]; then
+            ./tests/security/template-security-test.sh --verbose
+          else
+            ./tests/security/template-security-test.sh --fast --verbose
+          fi
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload Template Security Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: template-security-results
+          path: |
+            tests/security/logs/*
+            tests/security/reports/*
+          retention-days: 30
+
+  # =============================================================================
+  # Pre-commit Hook Validation
+  # =============================================================================
+  precommit-validation:
+    name: Pre-commit Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python for pre-commit
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Validate Pre-commit Configuration
+        run: |
+          if [[ -f .pre-commit-config.yaml ]]; then
+            echo "Validating pre-commit configuration..."
+            pre-commit validate-config
+            
+            echo "Running pre-commit hooks..."
+            pre-commit run --all-files --show-diff-on-failure
+          else
+            echo "No pre-commit configuration found"
+            exit 0
+          fi
+
+  # =============================================================================
+  # Security Report Generation
+  # =============================================================================
+  security-report:
+    name: Security Report
+    runs-on: ubuntu-latest
+    needs: [secret-scan, permission-check, git-history-scan, template-security, precommit-validation]
+    if: always()
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: security-results
+
+      - name: Generate Comprehensive Security Report
+        run: |
+          echo "# 🔒 Security Validation Report" > security-report.md
+          echo "" >> security-report.md
+          echo "**Date:** $(date)" >> security-report.md
+          echo "**Repository:** ${{ github.repository }}" >> security-report.md
+          echo "**Commit:** ${{ github.sha }}" >> security-report.md
+          echo "**Workflow:** ${{ github.workflow }}" >> security-report.md
+          echo "" >> security-report.md
+          
+          # Job status summary
+          echo "## Job Status Summary" >> security-report.md
+          echo "" >> security-report.md
+          echo "| Job | Status |" >> security-report.md
+          echo "|-----|--------|" >> security-report.md
+          echo "| Secret Scan | ${{ needs.secret-scan.result }} |" >> security-report.md
+          echo "| Permission Check | ${{ needs.permission-check.result }} |" >> security-report.md
+          echo "| Git History Scan | ${{ needs.git-history-scan.result }} |" >> security-report.md
+          echo "| Template Security | ${{ needs.template-security.result }} |" >> security-report.md
+          echo "| Pre-commit Validation | ${{ needs.precommit-validation.result }} |" >> security-report.md
+          echo "" >> security-report.md
+          
+          # Overall status
+          overall_status="✅ PASSED"
+          if [[ "${{ needs.secret-scan.result }}" == "failure" ]] || 
+             [[ "${{ needs.permission-check.result }}" == "failure" ]] || 
+             [[ "${{ needs.git-history-scan.result }}" == "failure" ]] || 
+             [[ "${{ needs.template-security.result }}" == "failure" ]] || 
+             [[ "${{ needs.precommit-validation.result }}" == "failure" ]]; then
+            overall_status="❌ FAILED"
+          fi
+          
+          echo "## Overall Security Status: $overall_status" >> security-report.md
+          echo "" >> security-report.md
+          
+          # Add recommendations
+          echo "## Recommendations" >> security-report.md
+          echo "" >> security-report.md
+          echo "- Review all failed security checks above" >> security-report.md
+          echo "- Download artifacts for detailed analysis" >> security-report.md
+          echo "- Address any security issues before merging" >> security-report.md
+          echo "- Consider implementing additional security measures" >> security-report.md
+          echo "" >> security-report.md
+          
+          # Add artifacts information
+          echo "## Available Artifacts" >> security-report.md
+          echo "" >> security-report.md
+          if [[ -d security-results ]]; then
+            for artifact in security-results/*; do
+              if [[ -d "$artifact" ]]; then
+                artifact_name=$(basename "$artifact")
+                echo "- 📁 $artifact_name" >> security-report.md
+              fi
+            done
+          fi
+          
+          echo "" >> security-report.md
+          echo "---" >> security-report.md
+          echo "*This report was generated automatically by the security validation workflow.*" >> security-report.md
+
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-security-report
+          path: security-report.md
+          retention-days: 90
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = './security-report.md';
+            
+            if (fs.existsSync(path)) {
+              const report = fs.readFileSync(path, 'utf8');
+              
+              // Truncate if too long for GitHub comment
+              const maxLength = 65536;
+              const finalReport = report.length > maxLength 
+                ? report.substring(0, maxLength - 100) + '\n\n*Report truncated due to length limits.*'
+                : report;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: finalReport
+              });
+            }
+
+      - name: Set Security Status
+        if: always()
+        run: |
+          if [[ "${{ needs.secret-scan.result }}" == "failure" ]] || 
+             [[ "${{ needs.permission-check.result }}" == "failure" ]] || 
+             [[ "${{ needs.git-history-scan.result }}" == "failure" ]] || 
+             [[ "${{ needs.template-security.result }}" == "failure" ]] || 
+             [[ "${{ needs.precommit-validation.result }}" == "failure" ]]; then
+            echo "❌ Security validation failed!"
+            echo "Please review the security issues and fix them before proceeding."
+            exit 1
+          else
+            echo "✅ All security validations passed!"
+          fi
+
+  # =============================================================================
+  # Security Baseline Update (scheduled only)
+  # =============================================================================
+  update-baseline:
+    name: Update Security Baseline
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Security Baselines
+        run: |
+          echo "Updating security scan baselines..."
+          
+          # Update secret scan baseline if tools are available
+          if command -v detect-secrets >/dev/null 2>&1; then
+            detect-secrets scan --baseline tests/security/config/secrets-baseline.json . || true
+          fi
+          
+          # Check if there are changes to commit
+          if git diff --quiet; then
+            echo "No baseline updates needed"
+          else
+            echo "Updating security baselines"
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add tests/security/config/
+            git commit -m "chore: update security scan baselines [automated]" || true
+            git push || true
+          fi 

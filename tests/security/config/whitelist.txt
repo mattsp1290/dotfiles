@@ -1,0 +1,82 @@
+# =============================================================================
+# Security Scan Whitelist
+# =============================================================================
+# This file contains patterns that are approved exceptions for security scans
+# Each line represents a pattern that should be ignored during secret scanning
+# Lines starting with # are comments and will be ignored
+#
+# Format: regex patterns (one per line)
+# Use this file to whitelist false positives from security tools
+# =============================================================================
+
+# Example patterns (commonly flagged but safe in dotfiles context)
+example[_-]?password
+test[_-]?key
+sample[_-]?token
+placeholder[_-]?secret
+
+# Template variables (these are intentional placeholders)
+\$\{.*\}
+\{\{.*\}\}
+<%.*%>
+
+# Documentation examples
+password.*example
+api.*key.*example
+secret.*example
+
+# Configuration file comments
+#.*password
+#.*secret
+#.*token
+#.*key
+
+# Test files and fixtures
+test.*password
+test.*secret
+test.*token
+test.*key
+
+# README and documentation placeholders
+your[_-]?password
+your[_-]?secret
+your[_-]?token
+your[_-]?api[_-]?key
+
+# Common false positives in configuration templates
+REPLACE_WITH_YOUR_PASSWORD
+REPLACE_WITH_YOUR_SECRET
+REPLACE_WITH_YOUR_TOKEN
+REPLACE_WITH_YOUR_KEY
+
+# Encrypted or encoded content (not actual secrets)
+BEGIN.*CERTIFICATE
+PUBLIC.*KEY
+
+# Environment variable references (not actual values)
+ENV_PASSWORD
+ENV_SECRET
+ENV_TOKEN
+ENV_API_KEY
+
+# Git commit hashes (high entropy but not secrets)
+[a-f0-9]{40}
+
+# Base64 encoded example content
+example.*base64
+sample.*base64
+
+# Common dotfiles patterns that may trigger false positives
+\.zsh_history
+\.bash_history
+\.mysql_history
+\.psql_history
+
+# Tool configuration that may contain "secret" words
+git.*secret
+docker.*secret
+kubernetes.*secret
+
+# Add your project-specific whitelist patterns below:
+# my-project-specific-pattern
+# another-safe-pattern 

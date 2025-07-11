@@ -1,0 +1,57 @@
+# =============================================================================
+# Open Source Git Configuration
+# =============================================================================
+# This file is automatically included for repositories in ~/opensource/
+# It contains open source contribution specific settings
+
+[user]
+    # Open source identity - typically same as personal but could be different
+    name = ${GIT_OPENSOURCE_NAME}
+    email = ${GIT_OPENSOURCE_EMAIL}
+    # Open source signing key
+    signingkey = ${GIT_OPENSOURCE_SIGNING_KEY}
+
+[commit]
+    # Always sign commits for open source contributions
+    gpgsign = true
+
+[tag]
+    # Always sign tags for open source
+    gpgsign = true
+
+# Open source project defaults
+[init]
+    defaultBranch = main
+
+[push]
+    # Conservative settings for open source
+    default = simple
+    autoSetupRemote = false
+    followTags = true
+
+[pull]
+    # Standard open source workflow
+    rebase = true
+    ff = only
+
+# Open source aliases (extends global aliases)
+[alias]
+    # Contribution workflow
+    contrib-init = !git clone $1 && cd $(basename $1 .git) && git remote add upstream $1 && git remote set-url origin git@github.com:${GITHUB_PERSONAL_USERNAME}/$(basename $1 .git).git
+    fork-sync = !git fetch upstream && git checkout main && git rebase upstream/main && git push origin main
+    
+    # Pull request workflow
+    pr-prep = !git fetch upstream && git rebase upstream/main && git push origin $(git branch --show-current)
+    contrib = !git checkout main && git pull upstream main && git checkout -b contrib/
+    
+    # Contribution management
+    upstream-sync = !git fetch upstream && git checkout main && git reset --hard upstream/main && git push origin main --force-with-lease
+    clean-branches = !git branch | grep -v '^\\*\\|main\\|master' | xargs git branch -D
+    
+    # Release and changelog
+    changelog = !git log --oneline --pretty=format:'- %s (%h)' $(git describe --tags --abbrev=0)..HEAD
+    contributors = !git log --format='%aN <%aE>' | sort -u
+    
+    # Open source etiquette
+    thanks = !echo "Thank you for your contribution! 🙏"
+    welcome = !echo "Welcome to the project! Please read CONTRIBUTING.md 📖" 

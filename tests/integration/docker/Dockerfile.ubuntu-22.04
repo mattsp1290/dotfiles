@@ -1,0 +1,104 @@
+FROM ubuntu:22.04
+
+ARG UBUNTU_VERSION=22.04
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Set up test environment metadata
+LABEL description="Ubuntu 22.04 dotfiles integration testing environment"
+LABEL version="1.0.0"
+LABEL platform="ubuntu-22.04"
+
+# Install essential packages for dotfiles testing
+RUN apt-get update && apt-get install -y \
+    # Core utilities
+    curl \
+    wget \
+    git \
+    stow \
+    # Build tools
+    build-essential \
+    # Shell environments
+    bash \
+    zsh \
+    fish \
+    # Text editors for testing
+    vim \
+    nano \
+    # Network tools
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    # Testing utilities
+    time \
+    # Process management
+    psmisc \
+    procps \
+    # File system tools
+    findutils \
+    # Archive tools
+    tar \
+    gzip \
+    unzip \
+    # Modern tools available in 22.04
+    fd-find \
+    ripgrep \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create test user (non-root for security testing)
+RUN useradd -m -s /bin/bash testuser && \
+    echo "testuser:testuser" | chpasswd && \
+    usermod -aG sudo testuser
+
+# Set up test environment directories
+RUN mkdir -p /test-results /workspace && \
+    chown -R testuser:testuser /test-results /workspace
+
+# Install additional tools specific to 22.04
+RUN apt-get update && apt-get install -y \
+    # Version control
+    git-lfs \
+    # Package managers
+    python3-pip \
+    python3-venv \
+    nodejs \
+    npm \
+    # Container tools
+    podman \
+    # Security tools
+    age \
+    # Text processing
+    jq \
+    yq \
+    # Networking
+    openssh-client \
+    curl \
+    # Performance tools
+    htop \
+    iotop \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install modern shell tools
+RUN pip3 install --no-cache-dir \
+    pipx \
+    && pipx ensurepath
+
+# Set up git configuration for testing
+USER testuser
+RUN git config --global user.name "Test User" && \
+    git config --global user.email "test@example.com" && \
+    git config --global init.defaultBranch main && \
+    git config --global pull.rebase false
+
+# Create test workspace
+WORKDIR /workspace
+
+# Set environment variables for testing
+ENV DOTFILES_CI=true
+ENV TEST_PLATFORM=ubuntu-22.04
+ENV DEBIAN_FRONTEND=noninteractive
+ENV HOME=/home/testuser
+ENV USER=testuser
+ENV PATH=/home/testuser/.local/bin:$PATH
+
+# Default command runs integration tests with performance focus
+CMD ["/bin/bash", "-c", "tests/integration/fresh-install.sh && tests/integration/upgrade.sh && tests/integration/performance.sh"] 

@@ -1,0 +1,58 @@
+# =============================================================================
+# Personal Git Configuration
+# =============================================================================
+# This file is automatically included for repositories in ~/personal/
+# It contains personal Git identity and signing configuration
+
+[user]
+    # Personal identity - will be injected from secrets
+    name = ${GIT_PERSONAL_NAME}
+    email = ${GIT_PERSONAL_EMAIL}
+    # Personal GPG signing key
+    signingkey = ${GIT_PERSONAL_SIGNING_KEY}
+
+[commit]
+    # Sign commits with personal key
+    gpgsign = true
+
+[tag]
+    # Sign tags with personal key
+    gpgsign = true
+
+# Alternative SSH signing (Git 2.34+)
+# [gpg]
+#     format = ssh
+# [user]
+#     signingkey = ~/.ssh/id_ed25519_personal.pub
+
+# Personal-specific URL rewrites
+[url "git@github.com:${GITHUB_PERSONAL_USERNAME}/"]
+    insteadOf = https://github.com/${GITHUB_PERSONAL_USERNAME}/
+
+# Personal project defaults
+[init]
+    defaultBranch = main
+
+[push]
+    # More permissive for personal projects
+    default = simple
+    autoSetupRemote = true
+    followTags = true
+
+[pull]
+    # Personal preference for pull strategy
+    rebase = true
+
+# Personal aliases (extends global aliases)
+[alias]
+    # Personal project shortcuts
+    personal-init = !git init && git add . && git commit -m "feat: initial commit"
+    publish = !git push -u origin $(git branch --show-current)
+    
+    # Quick personal workflow
+    save = !git add -A && git commit -m "wip: save work in progress"
+    undo = reset HEAD~1 --mixed
+    
+    # Personal project management
+    cleanup = !git branch --merged | grep -v '\\*\\|main\\|master\\|develop' | xargs -n 1 git branch -d
+    fresh = !git checkout main && git pull && git prune-all 

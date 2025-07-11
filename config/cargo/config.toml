@@ -1,0 +1,134 @@
+# Cargo Configuration - Optimized for Development
+
+[registries]
+# Default registry configuration
+crates-io = { index = "https://github.com/rust-lang/crates.io-index" }
+
+# Enterprise/Mirror Support (examples - to be configured per environment)
+# company = { index = "https://crates.company.com/git/index" }
+
+[registry]
+# Global registry settings
+default = "crates-io"
+
+[source.crates-io]
+# Primary source configuration
+replace-with = "crates-io"
+
+# Mirror configurations (examples - uncomment to use)
+# [source.mirror]
+# registry = "https://crates.company.com/"
+# 
+# [source.crates-io]
+# replace-with = "mirror"
+
+[net]
+# Network settings
+retry = 3
+git-fetch-with-cli = false
+offline = false
+
+# Proxy settings (uncomment if needed)
+# http-proxy = "http://proxy.company.com:8080"
+# https-proxy = "http://proxy.company.com:8080"
+
+[build]
+# Build optimization settings
+jobs = 0  # Use all available cores
+rustc-wrapper = ""
+rustc-workspace-wrapper = ""
+rustdoc-wrapper = ""
+
+# Target directory
+target-dir = "target"
+
+# Incremental compilation
+incremental = true
+
+# Debug settings for development
+[target.'cfg(debug_assertions)']
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+codegen-units = 256
+rpath = false
+
+# Release settings for production
+[target.'cfg(not(debug_assertions))']
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = 'abort'
+codegen-units = 1
+rpath = false
+
+[install]
+# Installation settings
+root = "~/.cargo"
+
+[http]
+# HTTP settings
+check-revoke = true
+ssl-version = "tlsv1.2"
+low-speed-limit = 10
+timeout = 300
+multiplexing = true
+user-agent = "cargo"
+
+# Authentication (using environment variables)
+# [http]
+# cainfo = "/path/to/ca-certificates.crt"
+
+[patch]
+# Patch configurations for dependency overrides
+# [patch.crates-io]
+# foo = { git = "https://github.com/example/foo" }
+
+[profile.dev]
+# Development profile
+opt-level = 0
+debug = true
+split-debuginfo = 'unpacked'
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+rpath = false
+
+[profile.release]
+# Release profile
+opt-level = 3
+debug = false
+split-debuginfo = 'packed'
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = 'abort'
+incremental = false
+codegen-units = 1
+rpath = false
+
+[profile.test]
+# Test profile
+opt-level = 0
+debug = 2
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'unwind'
+incremental = true
+codegen-units = 256
+
+[term]
+# Terminal output settings
+verbose = false
+color = 'auto'
+progress.when = 'auto'
+progress.width = 80 

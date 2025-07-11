@@ -1,0 +1,271 @@
+# =============================================================================
+# Pre-commit Security Configuration
+# =============================================================================
+# Security-focused pre-commit hooks for the dotfiles repository
+# Part of the TEST-004 Security Validation implementation
+#
+# Install with: pre-commit install
+# Run manually: pre-commit run --all-files
+# =============================================================================
+
+default_stages: [commit, push]
+default_language_version:
+  python: python3
+
+repos:
+  # =============================================================================
+  # Built-in Security Hooks
+  # =============================================================================
+  - repo: local
+    hooks:
+      # Secret scanning with our custom script
+      - id: secret-scan
+        name: Secret Scanner
+        entry: tests/security/scan-secrets.sh
+        language: script
+        args: ['--fast']
+        always_run: true
+        pass_filenames: false
+        stages: [commit, push]
+
+      # File permission checking
+      - id: permission-check
+        name: Permission Checker
+        entry: tests/security/check-permissions.sh
+        language: script
+        args: ['--report-only']
+        always_run: true
+        pass_filenames: false
+        stages: [commit]
+
+      # Template security validation
+      - id: template-security
+        name: Template Security
+        entry: tests/security/template-security-test.sh
+        language: script
+        args: ['--fast', '--report-only']
+        files: '^templates/.*'
+        pass_filenames: false
+        stages: [commit]
+
+  # =============================================================================
+  # Generic Security Hooks
+  # =============================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Prevent large files from being committed
+      - id: check-added-large-files
+        args: ['--maxkb=1024']  # 1MB limit
+        stages: [commit]
+
+      # Check for private keys
+      - id: detect-private-key
+        stages: [commit, push]
+
+      # Check for AWS credentials
+      - id: detect-aws-credentials
+        args: ['--allow-missing-credentials']
+        stages: [commit, push]
+
+      # Prevent committing to protected branches
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'master', '--branch', 'production']
+        stages: [commit]
+
+      # Check file permissions
+      - id: check-executables-have-shebangs
+        stages: [commit]
+
+      # JSON validation
+      - id: check-json
+        stages: [commit]
+
+      # YAML validation
+      - id: check-yaml
+        stages: [commit]
+
+      # TOML validation
+      - id: check-toml
+        stages: [commit]
+
+      # Check for merge conflicts
+      - id: check-merge-conflict
+        stages: [commit]
+
+      # Check for debug statements
+      - id: debug-statements
+        stages: [commit]
+
+      # Trailing whitespace
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        stages: [commit]
+
+      # End of file fixer
+      - id: end-of-file-fixer
+        stages: [commit]
+
+  # =============================================================================
+  # Advanced Secret Detection
+  # =============================================================================
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect Secrets
+        args: 
+          - '--baseline'
+          - 'tests/security/config/secrets-baseline.json'
+          - '--exclude-files'
+          - '.*\.git/.*'
+          - '--exclude-files'
+          - '.*tests/security/logs/.*'
+          - '--exclude-files'
+          - '.*tests/security/reports/.*'
+        stages: [commit, push]
+
+  # =============================================================================
+  # Shell Script Security
+  # =============================================================================
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        name: Shell Script Security Check
+        args: 
+          - '--severity=warning'
+          - '--enable=all'
+        files: \.(sh|bash|zsh|fish)$
+        stages: [commit]
+
+  # =============================================================================
+  # File Content Security
+  # =============================================================================
+  - repo: local
+    hooks:
+      # Check for hardcoded secrets in specific file types
+      - id: check-secrets-in-files
+        name: Check Secrets in Files
+        entry: bash
+        language: system
+        args:
+          - -c
+          - |
+            # Check for common secret patterns
+            if grep -r -E "(password|secret|key|token)\s*[=:]\s*['\"][^'\"]{8,}['\"]" --include="*.sh" --include="*.py" --include="*.js" --include="*.json" --include="*.yaml" --include="*.yml" --include="*.env*" .; then
+              echo "❌ Potential hardcoded secrets found!"
+              echo "Please review the files above and remove any secrets."
+              echo "Use environment variables or secure secret management instead."
+              exit 1
+            fi
+        pass_filenames: false
+        stages: [commit]
+
+      # Check for suspicious file extensions
+      - id: check-sensitive-files
+        name: Check Sensitive File Extensions
+        entry: bash
+        language: system
+        args:
+          - -c
+          - |
+            # Check for files that shouldn't be committed
+            sensitive_files=$(find . -type f \( -name "*.key" -o -name "*.pem" -o -name "*.p12" -o -name "*.pfx" -o -name "*.jks" -o -name "*.keystore" -o -name "*_rsa" -o -name "*_dsa" -o -name "*_ecdsa" -o -name "*_ed25519" \) -not -path "./.git/*" || true)
+            
+            if [[ -n "$sensitive_files" ]]; then
+              echo "❌ Sensitive files detected:"
+              echo "$sensitive_files"
+              echo "These file types should not be committed to the repository."
+              echo "Please remove them or add to .gitignore if they're templates."
+              exit 1
+            fi
+        pass_filenames: false
+        stages: [commit]
+
+      # Check environment files for secrets
+      - id: check-env-files
+        name: Check Environment Files
+        entry: bash
+        language: system
+        args:
+          - -c
+          - |
+            # Find .env files and check for actual secrets (not templates)
+            env_files=$(find . -name ".env*" -type f -not -path "./.git/*" || true)
+            
+            if [[ -n "$env_files" ]]; then
+              for file in $env_files; do
+                # Check if file contains actual values (not template variables)
+                if grep -E "^[A-Z_]+=[^${}][^${}]+" "$file" >/dev/null 2>&1; then
+                  echo "⚠️  Environment file may contain actual values: $file"
+                  echo "Please ensure no secrets are hardcoded in environment files."
+                  echo "Use template variables like \${SECRET_NAME} instead."
+                fi
+              done
+            fi
+        pass_filenames: false
+        stages: [commit]
+
+  # =============================================================================
+  # Python Security (if Python files present)
+  # =============================================================================
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        name: Python Security Check
+        args: ['-r', '.', '-f', 'json', '-o', '/tmp/bandit-report.json']
+        files: \.py$
+        stages: [commit]
+
+  # =============================================================================
+  # Dependency Security (if applicable)
+  # =============================================================================
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.2
+    hooks:
+      - id: python-safety-dependencies-check
+        files: requirements.*\.txt$
+        stages: [commit]
+
+  # =============================================================================
+  # Git Security
+  # =============================================================================
+  - repo: local
+    hooks:
+      # Check commit message for secrets
+      - id: check-commit-message
+        name: Check Commit Message Security
+        entry: bash
+        language: system
+        args:
+          - -c
+          - |
+            # Get the commit message
+            commit_msg=$(git log --format=%B -n 1 HEAD 2>/dev/null || echo "")
+            
+            # Check for common secret patterns in commit message
+            if echo "$commit_msg" | grep -iE "(password|secret|key|token|credential)" >/dev/null; then
+              echo "⚠️  Commit message contains security-related keywords"
+              echo "Please ensure no secrets are mentioned in the commit message"
+              echo "Current message: $commit_msg"
+              # Don't fail, just warn
+            fi
+        pass_filenames: false
+        stages: [commit-msg]
+
+# =============================================================================
+# Configuration
+# =============================================================================
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: [secret-scan, permission-check, template-security]  # Skip heavy local hooks in CI
+  submodules: false 

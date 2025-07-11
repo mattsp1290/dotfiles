@@ -1,0 +1,71 @@
+# Universal Snap Packages - Cross-Distribution Tools
+# This file contains snap packages that work across all Linux distributions
+# Install with: scripts/linux-packages.sh --snap
+# 
+# Package Format: package_name  # Description
+# Use '#OPTIONAL' comment to mark optional packages
+
+# =============================================================================
+# DEVELOPMENT TOOLS
+# =============================================================================
+
+# Version Control & Code Hosting
+gh                            # GitHub command-line tool
+code                          # Visual Studio Code #OPTIONAL
+codium                        # VSCodium (open source VS Code) #OPTIONAL
+
+# Containerization
+docker                        # Docker containerization platform #OPTIONAL
+
+# =============================================================================
+# MODERN CLI TOOLS
+# =============================================================================
+
+# Enhanced CLI Utilities
+lsd                           # Modern ls replacement with icons
+delta                        # Better git diff viewer #OPTIONAL
+
+# =============================================================================
+# PRODUCTIVITY TOOLS
+# =============================================================================
+
+# Note Taking & Documentation
+obsidian                      # Knowledge management tool #OPTIONAL
+discord                       # Communication platform #OPTIONAL
+
+# =============================================================================
+# CLOUD TOOLS
+# =============================================================================
+
+# Cloud CLI Tools
+aws-cli                       # Amazon Web Services CLI #OPTIONAL
+google-cloud-cli              # Google Cloud Platform CLI #OPTIONAL
+azure-cli                     # Microsoft Azure CLI #OPTIONAL
+
+# =============================================================================
+# SPECIALIZED DEVELOPMENT TOOLS
+# =============================================================================
+
+# Database Tools
+beekeeper-studio              # Database management tool #OPTIONAL
+
+# API Development
+postman                       # API development platform #OPTIONAL
+insomnia                      # API client and design tool #OPTIONAL
+
+# =============================================================================
+# PACKAGE MANAGERS & RUNTIME MANAGERS
+# =============================================================================
+
+# Node.js Version Management
+node                          # Node.js runtime (latest LTS) #OPTIONAL
+
+# =============================================================================
+# NOTES
+# =============================================================================
+
+# Installation Notes:
+# - Most snaps require --classic mode for full system access
+# - Some snaps may conflict with distribution packages
+# - Verify snap is installed: sudo systemctl enable --now snapd
+# - Enable classic support: sudo ln -s /var/lib/snapd/snap /snap 

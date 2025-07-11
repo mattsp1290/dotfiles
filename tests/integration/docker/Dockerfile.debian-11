@@ -1,0 +1,99 @@
+FROM debian:11-slim
+
+ARG DEBIAN_VERSION=11
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Set up test environment metadata
+LABEL description="Debian 11 dotfiles integration testing environment"
+LABEL version="1.0.0"
+LABEL platform="debian-11"
+
+# Install essential packages for dotfiles testing
+RUN apt-get update && apt-get install -y \
+    # Core utilities
+    curl \
+    wget \
+    git \
+    stow \
+    # Build tools
+    build-essential \
+    # Shell environments
+    bash \
+    zsh \
+    # Text editors for testing
+    vim \
+    nano \
+    # Network tools
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    # Testing utilities
+    time \
+    # Process management
+    psmisc \
+    procps \
+    # File system tools
+    findutils \
+    # Archive tools
+    tar \
+    gzip \
+    unzip \
+    bzip2 \
+    xz-utils \
+    # Debian-specific tools
+    apt-transport-https \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create test user (non-root for security testing)
+RUN useradd -m -s /bin/bash testuser && \
+    echo "testuser:testuser" | chpasswd && \
+    usermod -aG sudo testuser
+
+# Install sudo (not included in slim image)
+RUN apt-get update && apt-get install -y sudo && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set up test environment directories
+RUN mkdir -p /test-results /workspace && \
+    chown -R testuser:testuser /test-results /workspace
+
+# Install additional development tools
+RUN apt-get update && apt-get install -y \
+    # Version control
+    subversion \
+    mercurial \
+    # Package managers
+    python3-pip \
+    # Compression tools
+    zip \
+    # Text processing
+    jq \
+    # Networking
+    openssh-client \
+    dnsutils \
+    # Debian package tools
+    dpkg-dev \
+    devscripts \
+    # Performance monitoring
+    sysstat \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up git configuration for testing
+USER testuser
+RUN git config --global user.name "Test User" && \
+    git config --global user.email "test@example.com" && \
+    git config --global init.defaultBranch main
+
+# Create test workspace
+WORKDIR /workspace
+
+# Set environment variables for testing
+ENV DOTFILES_CI=true
+ENV TEST_PLATFORM=debian-11
+ENV DEBIAN_FRONTEND=noninteractive
+ENV HOME=/home/testuser
+ENV USER=testuser
+
+# Default command runs fresh installation tests
+CMD ["/bin/bash", "-c", "tests/integration/fresh-install.sh"] 

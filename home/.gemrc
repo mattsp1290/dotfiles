@@ -1,0 +1,47 @@
+# RubyGems Configuration - Optimized for Development
+---
+# Gem Sources Configuration
+:sources:
+  - https://rubygems.org/
+
+# Installation Preferences
+gem: --no-document --no-ri --no-rdoc
+:gem: --no-document --no-ri --no-rdoc
+install: --no-document --env-shebang
+:install: --no-document --env-shebang
+update: --no-document --env-shebang
+:update: --no-document --env-shebang
+
+# Performance Settings
+:concurrent_downloads: 8
+:download_timeout: 300
+:http_proxy: 
+:https_proxy: 
+
+# Security and SSL
+:ssl_verify_mode: 1
+:ssl_ca_cert: 
+:ssl_client_cert: 
+
+# Verbose and Logging
+:verbose: false
+:really_verbose: false
+:backtrace: false
+:benchmark: false
+
+# Development Settings
+:bulk_threshold: 1000
+:disable_default_gem_server: false
+
+# Enterprise/Mirror Support (examples - to be configured per environment)
+# For corporate environments, uncomment and configure:
+# :sources:
+#   - https://gems.company.com/
+#   - https://rubygems.org/
+
+# Build and Compilation
+:build_root: 
+:user_install: true
+
+# Cache Settings  
+:update_sources: true 

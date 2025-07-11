@@ -1,0 +1,172 @@
+# Core Pacman Package List - Essential Development Tools
+# This file contains packages that are fundamental for most development workflows
+# Install with: scripts/linux-packages.sh --core
+# 
+# Package Format: package_name  # Description
+# Use '#OPTIONAL' comment to mark optional packages within core list
+# Use '#AUR' comment to mark packages that require AUR helper
+
+# =============================================================================
+# CORE DEVELOPMENT TOOLS
+# =============================================================================
+
+# Build Tools & Compilation
+base-devel                    # Basic development tools group (gcc, make, etc.)
+cmake                         # Cross-platform build system
+pkgconf                       # Package configuration tool
+autoconf                      # Tool for generating configure scripts
+automake                      # Tool for generating Makefile.in files
+libtool                       # Generic library support script
+
+# Version Control
+git                           # Distributed version control system
+git-lfs                       # Git Large File Storage
+
+# Essential Shell Utilities
+bash-completion               # Programmable completion for bash
+zsh                          # Z shell (enhanced shell)
+stow                         # Symlink farm manager (for dotfiles)
+direnv                       # Load/unload environment variables based on $PWD
+tree                         # Display directories as trees
+htop                         # Interactive process viewer
+neofetch                     # System information tool
+
+# Modern CLI Tools (Enhanced replacements for standard tools)
+bat                          # Clone of cat with syntax highlighting
+fzf                          # Command-line fuzzy finder
+fd                           # Modern replacement for find
+ripgrep                      # Fast text search tool (modern grep)
+exa                          # Modern replacement for ls #OPTIONAL
+
+# Data Processing & Text Manipulation
+jq                           # Lightweight JSON processor
+yq                           # YAML processor (jq for YAML) #OPTIONAL
+sed                          # Stream editor
+gawk                         # GNU awk text processing tool
+
+# Network & File Transfer
+curl                         # Command line tool for transferring data
+wget                         # Internet file retriever
+httpie                       # User-friendly cURL replacement #OPTIONAL
+
+# Compression & Archives
+zip                          # Create and extract ZIP archives
+unzip                        # Extract ZIP archives
+p7zip                        # 7-Zip file archiver
+tar                          # Archive utility
+gzip                         # GNU compression utility
+
+# =============================================================================
+# PROGRAMMING LANGUAGES & RUNTIME MANAGEMENT
+# =============================================================================
+
+# Python Development
+python                       # Python 3 interpreter
+python-pip                   # Python package installer
+python-setuptools            # Python setuptools
+python-wheel                 # Python wheel support
+
+# Node.js Development
+nodejs                       # Node.js JavaScript runtime
+npm                          # Node package manager
+
+# Ruby Development (for Jekyll, gems, etc.)
+ruby                         # Ruby programming language
+rubygems                     # Ruby package manager
+
+# Go Development
+go                           # Go programming language #OPTIONAL
+
+# =============================================================================
+# SYSTEM UTILITIES
+# =============================================================================
+
+# File System & Storage
+rsync                        # File synchronization tool
+ncdu                         # Disk usage analyzer
+duf                          # Modern disk usage utility #OPTIONAL
+
+# Process & System Monitoring
+lsof                         # List open files
+psmisc                       # Utilities for managing processes
+procps-ng                    # Process monitoring utilities
+
+# Network Utilities
+net-tools                    # Network configuration tools
+bind                         # DNS lookup utilities (includes dig, nslookup)
+gnu-netcat                   # TCP/IP swiss army knife
+
+# Text Editors
+vim                          # Vi IMproved text editor
+nano                         # Simple text editor
+
+# =============================================================================
+# DEVELOPMENT UTILITIES
+# =============================================================================
+
+# SSH & Remote Access
+openssh                      # OpenSSH client and server
+
+# GPG & Security
+gnupg                        # GNU Privacy Guard
+pinentry                     # PIN entry program for GPG
+
+# Database Tools
+sqlite                       # SQLite command line interface
+
+# Container Tools (if not using Docker Desktop)
+containerd                   # Container runtime #OPTIONAL
+runc                         # OCI container runtime #OPTIONAL
+
+# =============================================================================
+# FONTS (ESSENTIAL FOR DEVELOPMENT)
+# =============================================================================
+
+# Programming Fonts
+ttf-fira-code                # Fira Code font with ligatures
+ttf-jetbrains-mono           # JetBrains Mono programming font #OPTIONAL
+ttf-hack                     # Hack programming font #OPTIONAL
+
+# =============================================================================
+# LIBRARIES & DEPENDENCIES
+# =============================================================================
+
+# SSL/TLS
+ca-certificates              # Common CA certificates
+openssl                      # SSL/TLS toolkit
+
+# Development Libraries  
+openssl                      # SSL/TLS development
+libffi                       # Foreign Function Interface library
+libxml2                      # XML C parser library
+libxslt                      # XSLT processing library
+libyaml                      # YAML library
+readline                     # GNU readline library
+zlib                         # Compression library
+
+# Build Dependencies
+linux-headers                # Linux kernel headers
+glibc                        # GNU C library
+
+# =============================================================================
+# AUR PACKAGES (Requires AUR Helper)
+# =============================================================================
+
+# Note: These require an AUR helper like yay or paru
+# Uncomment if you have an AUR helper installed
+
+# Modern CLI Tools from AUR
+# lsd                         # Modern ls replacement with icons #AUR
+# delta                       # Better git diff viewer #AUR
+
+# Development Tools from AUR
+# github-cli                  # GitHub CLI tool #AUR
+# docker-desktop              # Docker Desktop #AUR
+
+# =============================================================================
+# SNAP PACKAGES (Universal)
+# =============================================================================
+
+# Note: These are managed separately via snap
+# See os/linux/packages/snap.txt for snap-specific packages
+# Install snapd first: sudo pacman -S snapd 

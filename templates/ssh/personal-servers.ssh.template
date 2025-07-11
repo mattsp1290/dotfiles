@@ -1,0 +1,47 @@
+# Personal SSH Servers Configuration Template
+# This file is processed by the secret injection system
+# Variables are replaced with values from 1Password or other secret stores
+
+{% if PERSONAL_SERVER_HOST %}
+Host personal-server
+    HostName {{ PERSONAL_SERVER_HOST }}
+    User {{ PERSONAL_SERVER_USER | default('root') }}
+    Port {{ PERSONAL_SERVER_PORT | default(22) }}
+    IdentityFile ~/.ssh/{{ PERSONAL_SERVER_KEY | default('id_rsa') }}
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+{% endif %}
+
+{% if PERSONAL_VPS_HOST %}
+Host personal-vps
+    HostName {{ PERSONAL_VPS_HOST }}
+    User {{ PERSONAL_VPS_USER | default('root') }}
+    Port {{ PERSONAL_VPS_PORT | default(22) }}
+    IdentityFile ~/.ssh/{{ PERSONAL_VPS_KEY | default('id_rsa') }}
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+{% endif %}
+
+{% if HOMELAB_HOST %}
+Host homelab
+    HostName {{ HOMELAB_HOST }}
+    User {{ HOMELAB_USER | default('pi') }}
+    Port {{ HOMELAB_PORT | default(22) }}
+    IdentityFile ~/.ssh/{{ HOMELAB_KEY | default('id_rsa') }}
+    IdentitiesOnly yes
+    # Local network - less strict security
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+{% endif %}
+
+{% if PI_HOST %}
+Host pi
+    HostName {{ PI_HOST }}
+    User {{ PI_USER | default('pi') }}
+    Port {{ PI_PORT | default(22) }}
+    IdentityFile ~/.ssh/{{ PI_KEY | default('id_rsa') }}
+    IdentitiesOnly yes
+    # Raspberry Pi optimizations
+    Compression yes
+    ServerAliveInterval 30
+{% endif %} 

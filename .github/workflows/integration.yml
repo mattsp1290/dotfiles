@@ -1,0 +1,279 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run integration tests daily at 3 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - fresh-install
+          - upgrade
+          - rollback
+          - security
+          - performance
+
+env:
+  DOTFILES_CI: true
+  TEST_TIMEOUT: 1800  # 30 minutes
+
+jobs:
+  # Quick validation before running full integration tests
+  pre-integration:
+    name: Pre-Integration Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Validate test scripts
+        run: |
+          echo "Validating integration test scripts..."
+          
+          # Check that all test scripts exist and are executable
+          test_scripts=(
+            "tests/integration/fresh-install.sh"
+            "tests/integration/upgrade.sh" 
+            "tests/integration/rollback.sh"
+            "tests/integration/security.sh"
+            "tests/integration/performance.sh"
+          )
+          
+          for script in "${test_scripts[@]}"; do
+            if [[ ! -f "$script" ]]; then
+              echo "ERROR: Missing test script: $script"
+              exit 1
+            fi
+            
+            if [[ ! -x "$script" ]]; then
+              echo "Making $script executable"
+              chmod +x "$script"
+            fi
+          done
+          
+          echo "All test scripts validated"
+
+  # Ubuntu integration tests
+  ubuntu-integration:
+    name: Ubuntu Integration Tests
+    needs: pre-integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu-version: [20.04, 22.04]
+        test-suite: [fresh-install, upgrade, rollback, security, performance]
+            
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Ubuntu environment
+        run: |
+          echo "Setting up Ubuntu ${{ matrix.ubuntu-version }} environment"
+          sudo apt-get update
+          sudo apt-get install -y stow git curl wget
+          
+      - name: Make test scripts executable
+        run: |
+          chmod +x tests/integration/*.sh
+          
+      - name: Run integration tests
+        run: |
+          echo "Running ${{ matrix.test-suite }} tests on Ubuntu ${{ matrix.ubuntu-version }}"
+          
+          export DOTFILES_CI=true
+          export TEST_PLATFORM=ubuntu-${{ matrix.ubuntu-version }}
+          
+          # Create results directory
+          mkdir -p test-results/ubuntu-${{ matrix.ubuntu-version }}
+          
+          # Run appropriate test
+          case "${{ matrix.test-suite }}" in
+            "fresh-install")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/fresh-install.sh
+              ;;
+            "upgrade")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/upgrade.sh
+              ;;
+            "rollback")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/rollback.sh
+              ;;
+            "security")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/security.sh
+              ;;
+            "performance")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/performance.sh
+              ;;
+          esac
+          
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-results-ubuntu-${{ matrix.ubuntu-version }}-${{ matrix.test-suite }}
+          path: test-results/
+          retention-days: 30
+
+  # macOS integration tests
+  macos-integration:
+    name: macOS Integration Tests
+    needs: pre-integration
+    runs-on: macos-latest
+    timeout-minutes: 60
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite: [fresh-install, upgrade, rollback, security, performance]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up macOS environment
+        run: |
+          echo "Setting up macOS testing environment..."
+          
+          # Install required tools
+          if ! command -v stow >/dev/null 2>&1; then
+            brew install stow
+          fi
+          
+          # Set up git configuration
+          git config --global user.name "Test User"
+          git config --global user.email "test@example.com"
+          git config --global init.defaultBranch main
+          
+          echo "macOS environment ready"
+          
+      - name: Make test scripts executable
+        run: |
+          chmod +x tests/integration/*.sh
+          
+      - name: Run integration tests
+        run: |
+          echo "Running ${{ matrix.test-suite }} tests on macOS"
+          
+          export DOTFILES_CI=true
+          export TEST_PLATFORM=macos-latest
+          
+          # Create results directory
+          mkdir -p test-results/macos-latest
+          
+          # Run appropriate test
+          case "${{ matrix.test-suite }}" in
+            "fresh-install")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/fresh-install.sh
+              ;;
+            "upgrade")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/upgrade.sh
+              ;;
+            "rollback")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/rollback.sh
+              ;;
+            "security")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/security.sh
+              ;;
+            "performance")
+              timeout ${{ env.TEST_TIMEOUT }} tests/integration/performance.sh
+              ;;
+          esac
+          
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-results-macos-${{ matrix.test-suite }}
+          path: test-results/
+          retention-days: 30
+
+  # Complete workflow testing
+  complete-workflow:
+    name: Complete Workflow Test
+    needs: pre-integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y stow git curl wget
+          
+      - name: Run complete workflow test
+        run: |
+          echo "Running complete workflow integration test..."
+          
+          chmod +x tests/integration/test-complete-workflow.sh
+          timeout ${{ env.TEST_TIMEOUT }} tests/integration/test-complete-workflow.sh
+          
+      - name: Upload workflow results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: complete-workflow-results
+          path: test-results/
+          retention-days: 30
+
+  # Generate test report
+  test-report:
+    name: Generate Test Report
+    needs: [ubuntu-integration, macos-integration, complete-workflow]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download all test results
+        uses: actions/download-artifact@v3
+        with:
+          path: all-results/
+          
+      - name: Generate comprehensive report
+        run: |
+          echo "Generating comprehensive integration test report..."
+          
+          mkdir -p final-report
+          
+          # Create summary
+          echo "Integration Test Summary" > final-report/summary.txt
+          echo "======================" >> final-report/summary.txt
+          echo "GitHub Run: ${{ github.run_number }}" >> final-report/summary.txt
+          echo "Commit: ${{ github.sha }}" >> final-report/summary.txt
+          echo "Branch: ${{ github.ref_name }}" >> final-report/summary.txt
+          echo "Generated: $(date)" >> final-report/summary.txt
+          echo "" >> final-report/summary.txt
+          
+          # Count test results
+          total_results=$(find all-results -name "*.log" -o -name "*.json" | wc -l)
+          echo "Total test artifacts: $total_results" >> final-report/summary.txt
+          
+          echo "Comprehensive test report generated"
+          
+      - name: Upload final report
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-test-report
+          path: final-report/
+          retention-days: 90 

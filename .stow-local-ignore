@@ -1,0 +1,82 @@
+# VCS files
+\.git
+\.gitignore
+\.gitmodules
+\.gitattributes
+
+# Documentation
+README.*
+LICENSE.*
+CONTRIBUTING.*
+CHANGELOG.*
+docs
+TODO.*
+NOTES.*
+
+# Build and test files
+Makefile
+\.travis\.yml
+\.github
+tests
+test
+
+# Scripts and development
+scripts
+bin
+tools
+
+# Editor files
+\#.*\#
+\.#.*
+.*~
+.*\.swp
+.*\.swo
+.*\.swn
+\.vim
+\.vscode
+\.idea
+
+# macOS
+\.DS_Store
+\.localized
+Icon\r
+
+# Temporary files
+.*\.tmp
+.*\.temp
+.*\.cache
+.*\.log
+
+# Backup files
+.*\.backup
+.*\.bak
+.*\.old
+.*\.orig
+
+# Project-specific
+\.stow-local-ignore
+\.stowrc
+install\.sh
+bootstrap\.sh
+proompting
+private
+templates
+
+# Archives
+.*\.tar
+.*\.tar\.gz
+.*\.tgz
+.*\.zip
+.*\.7z
+
+# Language-specific
+__pycache__
+\.pyc
+node_modules
+\.npm
+\.cargo
+\.rustup
+\.gem
+
+# OS-specific (handled by package selection)
+# These will be selectively stowed based on current OS 

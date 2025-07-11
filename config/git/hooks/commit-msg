@@ -1,0 +1,290 @@
+#!/usr/bin/env bash
+
+# =============================================================================
+# Git Commit Message Hook
+# =============================================================================
+# This hook validates commit message format and enforces conventional commits
+# It can be customized per repository by modifying the rules below
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+# Configuration
+MIN_LENGTH=10
+MAX_LENGTH=72
+MAX_BODY_LINE_LENGTH=80
+
+# Read the commit message
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Remove comments and empty lines for validation
+CLEAN_MSG=$(echo "$COMMIT_MSG" | grep -v '^#' | grep -v '^$' | head -1)
+
+# =============================================================================
+# Validation Functions
+# =============================================================================
+
+validate_length() {
+    local msg="$1"
+    local length=${#msg}
+    
+    if [[ $length -lt $MIN_LENGTH ]]; then
+        log_error "Commit message too short ($length chars). Minimum: $MIN_LENGTH characters."
+        log_info "Example: 'feat: add user authentication system'"
+        return 1
+    fi
+    
+    if [[ $length -gt $MAX_LENGTH ]]; then
+        log_error "Commit message too long ($length chars). Maximum: $MAX_LENGTH characters."
+        log_info "Keep the subject line concise and use the body for details."
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_conventional_commits() {
+    local msg="$1"
+    
+    # Conventional Commits pattern
+    # type(scope): description
+    # where type is: feat, fix, docs, style, refactor, test, chore, etc.
+    local pattern='^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: .{3,}'
+    
+    if [[ ! "$msg" =~ $pattern ]]; then
+        log_error "Commit message does not follow Conventional Commits format."
+        cat << 'EOF'
+
+Expected format: type(scope): description
+
+Valid types:
+  feat:     A new feature
+  fix:      A bug fix
+  docs:     Documentation only changes
+  style:    Changes that do not affect the meaning of the code
+  refactor: A code change that neither fixes a bug nor adds a feature
+  perf:     A code change that improves performance
+  test:     Adding missing tests or correcting existing tests
+  chore:    Other changes that don't modify src or test files
+  ci:       Changes to our CI configuration files and scripts
+  build:    Changes that affect the build system or external dependencies
+  revert:   Reverts a previous commit
+
+Examples:
+  feat: add user authentication
+  fix(auth): resolve login timeout issue
+  docs: update API documentation
+  style: format code according to style guide
+  refactor(user): simplify user data validation
+  perf: improve database query performance
+  test: add tests for user service
+  chore: update dependencies
+  ci: add automated testing workflow
+  build: update webpack configuration
+
+EOF
+        return 1
+    fi
+    
+    return 0
+}
+
+validate_subject_format() {
+    local msg="$1"
+    
+    # Extract just the subject line (first line)
+    local subject
+    subject=$(echo "$msg" | head -1)
+    
+    # Check if subject starts with uppercase (after type:)
+    if [[ "$subject" =~ ^[a-z]+(\(.+\))?: [A-Z] ]]; then
+        log_error "Subject should start with lowercase after the type and colon."
+        log_info "Example: 'feat: add new feature' (not 'feat: Add new feature')"
+        return 1
+    fi
+    
+    # Check for trailing period
+    if [[ "$subject" =~ \.$  ]]; then
+        log_error "Subject line should not end with a period."
+        return 1
+    fi
+    
+    # Check for imperative mood hints
+    local bad_starts=("added" "adding" "adds" "fixed" "fixing" "fixes" "updated" "updating" "updates" "changed" "changing" "changes")
+    local subject_words
+    subject_words=$(echo "$subject" | sed 's/^[a-z]*(\([^)]*\))?: //' | tr '[:upper:]' '[:lower:]')
+    
+    for bad_start in "${bad_starts[@]}"; do
+        if [[ "$subject_words" =~ ^$bad_start[[:space:]] ]]; then
+            log_warn "Consider using imperative mood: use '$bad_start' → '${bad_start%ed}' or '${bad_start%ing}' or '${bad_start%s}'"
+            log_info "Example: 'fix: resolve issue' instead of 'fix: fixed issue'"
+            break
+        fi
+    done
+    
+    return 0
+}
+
+validate_body_format() {
+    local msg="$1"
+    
+    # Check if there's a body (more than one line)
+    local line_count
+    line_count=$(echo "$msg" | grep -v '^#' | grep -v '^$' | wc -l | tr -d ' ')
+    
+    if [[ $line_count -gt 1 ]]; then
+        # Check for blank line between subject and body
+        local second_line
+        second_line=$(echo "$msg" | grep -v '^#' | sed -n '2p')
+        
+        if [[ -n "$second_line" ]]; then
+            log_error "There should be a blank line between the subject and body."
+            return 1
+        fi
+        
+        # Check body line lengths
+        local line_num=0
+        while IFS= read -r line; do
+            line_num=$((line_num + 1))
+            
+            # Skip comment lines and empty lines
+            if [[ "$line" =~ ^# ]] || [[ -z "$line" ]]; then
+                continue
+            fi
+            
+            # Skip the subject line and blank line
+            if [[ $line_num -le 2 ]]; then
+                continue
+            fi
+            
+            local line_length=${#line}
+            if [[ $line_length -gt $MAX_BODY_LINE_LENGTH ]]; then
+                log_warn "Body line $line_num is too long ($line_length chars). Consider wrapping at $MAX_BODY_LINE_LENGTH characters."
+            fi
+        done <<< "$msg"
+    fi
+    
+    return 0
+}
+
+check_merge_commit() {
+    local msg="$1"
+    
+    # Check if this is a merge commit
+    if [[ "$msg" =~ ^Merge ]]; then
+        log_info "Detected merge commit - skipping conventional commit validation"
+        return 0
+    fi
+    
+    return 1
+}
+
+check_revert_commit() {
+    local msg="$1"
+    
+    # Check if this is a revert commit
+    if [[ "$msg" =~ ^Revert ]]; then
+        log_info "Detected revert commit - skipping some validations"
+        return 0
+    fi
+    
+    return 1
+}
+
+check_fixup_commit() {
+    local msg="$1"
+    
+    # Check if this is a fixup commit
+    if [[ "$msg" =~ ^fixup! ]] || [[ "$msg" =~ ^squash! ]]; then
+        log_info "Detected fixup/squash commit - skipping validations"
+        return 0
+    fi
+    
+    return 1
+}
+
+# =============================================================================
+# Main Validation
+# =============================================================================
+
+main() {
+    log_info "Validating commit message..."
+    
+    # Skip validation for empty commits (shouldn't happen, but just in case)
+    if [[ -z "$CLEAN_MSG" ]]; then
+        log_error "Empty commit message"
+        exit 1
+    fi
+    
+    # Skip validation for special commit types
+    if check_merge_commit "$CLEAN_MSG" || check_revert_commit "$CLEAN_MSG" || check_fixup_commit "$CLEAN_MSG"; then
+        exit 0
+    fi
+    
+    local exit_code=0
+    
+    # Length validation
+    if ! validate_length "$CLEAN_MSG"; then
+        exit_code=1
+    fi
+    
+    # Conventional commits validation
+    if ! validate_conventional_commits "$CLEAN_MSG"; then
+        exit_code=1
+    fi
+    
+    # Subject format validation
+    if ! validate_subject_format "$CLEAN_MSG"; then
+        exit_code=1
+    fi
+    
+    # Body format validation (warnings only)
+    validate_body_format "$COMMIT_MSG"
+    
+    if [[ $exit_code -eq 0 ]]; then
+        log_success "Commit message validation passed!"
+    else
+        log_error "Commit message validation failed!"
+        log_info ""
+        log_info "Your commit message:"
+        log_info "---"
+        echo "$CLEAN_MSG"
+        log_info "---"
+        log_info ""
+        log_info "You can edit your commit message with: git commit --amend"
+    fi
+    
+    exit $exit_code
+}
+
+# Allow bypassing the hook in CI environments or with environment variable
+if [[ "${CI:-}" == "true" ]] || [[ "${SKIP_COMMIT_MSG:-}" == "true" ]]; then
+    log_info "Skipping commit message validation (CI environment or SKIP_COMMIT_MSG set)"
+    exit 0
+fi
+
+main "$@" 

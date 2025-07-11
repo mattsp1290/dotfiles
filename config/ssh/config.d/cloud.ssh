@@ -1,0 +1,66 @@
+# Cloud Provider SSH Configuration
+# Configuration for AWS, GCP, Azure, and other cloud providers
+
+# AWS EC2 instances
+# Template: templates/ssh/aws-servers.ssh.template
+
+# AWS EC2 general configuration
+# Host aws-*
+#     User ec2-user
+#     Port 22
+#     IdentityFile ~/.ssh/{{ AWS_SSH_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey
+#     StrictHostKeyChecking no
+#     UserKnownHostsFile /dev/null
+#     # AWS instances often change IPs
+
+# AWS production environment
+# Host aws-prod
+#     HostName {{ AWS_PROD_HOST }}
+#     User {{ AWS_PROD_USER | default(ec2-user) }}
+#     Port 22
+#     IdentityFile ~/.ssh/{{ AWS_PROD_KEY }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey
+
+# AWS development/staging environment
+# Host aws-dev
+#     HostName {{ AWS_DEV_HOST }}
+#     User {{ AWS_DEV_USER | default(ec2-user) }}
+#     Port 22
+#     IdentityFile ~/.ssh/{{ AWS_DEV_KEY }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey
+
+# Google Cloud Platform instances
+# Host gcp-*
+#     User {{ GCP_USERNAME }}
+#     Port 22
+#     IdentityFile ~/.ssh/{{ GCP_SSH_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey
+
+# Azure Virtual Machines
+# Host azure-*
+#     User {{ AZURE_USERNAME }}
+#     Port 22
+#     IdentityFile ~/.ssh/{{ AZURE_SSH_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey
+
+# DigitalOcean Droplets
+# Host do-*
+#     User root
+#     Port 22
+#     IdentityFile ~/.ssh/{{ DO_SSH_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey
+
+# Linode instances
+# Host linode-*
+#     User root
+#     Port 22
+#     IdentityFile ~/.ssh/{{ LINODE_SSH_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey 

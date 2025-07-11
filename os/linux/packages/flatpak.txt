@@ -1,0 +1,78 @@
+# Universal Flatpak Packages - Cross-Distribution Applications
+# This file contains flatpak packages that work across all Linux distributions  
+# Install with: scripts/linux-packages.sh --flatpak
+# 
+# Package Format: package_id  # Description
+# Use '#OPTIONAL' comment to mark optional packages
+
+# =============================================================================
+# DEVELOPMENT TOOLS
+# =============================================================================
+
+# Code Editors & IDEs
+com.visualstudio.code          # Visual Studio Code #OPTIONAL
+com.vscodium.codium            # VSCodium (open source VS Code) #OPTIONAL
+org.vim.Vim                    # Vim text editor #OPTIONAL
+
+# Version Control
+io.github.shiftey.Desktop      # GitHub Desktop #OPTIONAL
+
+# =============================================================================
+# PRODUCTIVITY APPLICATIONS
+# =============================================================================
+
+# Communication
+com.discordapp.Discord         # Discord communication platform #OPTIONAL
+com.slack.Slack                # Slack team communication #OPTIONAL
+us.zoom.Zoom                   # Zoom video conferencing #OPTIONAL
+
+# Note Taking & Documentation
+md.obsidian.Obsidian           # Obsidian knowledge management #OPTIONAL
+com.notion.Notion              # Notion workspace #OPTIONAL
+
+# =============================================================================
+# DEVELOPMENT UTILITIES
+# =============================================================================
+
+# Database Tools
+io.beekeeperstudio.Studio      # Beekeeper Studio database client #OPTIONAL
+
+# API Development
+com.getpostman.Postman         # Postman API platform #OPTIONAL
+rest.insomnia.Insomnia         # Insomnia API client #OPTIONAL
+
+# Design & Graphics
+org.gimp.GIMP                  # GNU Image Manipulation Program #OPTIONAL
+org.inkscape.Inkscape          # Inkscape vector graphics #OPTIONAL
+
+# =============================================================================
+# SYSTEM UTILITIES
+# =============================================================================
+
+# File Management
+org.gnome.FileRoller           # Archive manager #OPTIONAL
+
+# System Monitoring
+org.gnome.SystemMonitor        # System resource monitor #OPTIONAL
+
+# =============================================================================
+# MEDIA & ENTERTAINMENT
+# =============================================================================
+
+# Video Players
+org.videolan.VLC               # VLC media player #OPTIONAL
+io.mpv.Mpv                     # MPV media player #OPTIONAL
+
+# =============================================================================
+# FLATPAK SETUP NOTES
+# =============================================================================
+
+# Repository Setup:
+# Add Flathub repository: flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+# Update repositories: flatpak update
+# 
+# Installation Notes:
+# - Flatpaks run in sandboxes with limited system access
+# - May require additional permissions for full functionality
+# - Use Flatseal for managing flatpak permissions
+# - Some flatpaks may have theming issues 

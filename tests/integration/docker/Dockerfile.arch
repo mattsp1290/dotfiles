@@ -1,0 +1,104 @@
+FROM archlinux:latest
+
+# Set up test environment metadata
+LABEL description="Arch Linux dotfiles integration testing environment"
+LABEL version="1.0.0"
+LABEL platform="arch"
+
+# Update package database and install essential packages
+RUN pacman -Syu --noconfirm && pacman -S --noconfirm \
+    # Core utilities
+    curl \
+    wget \
+    git \
+    stow \
+    # Build tools
+    base-devel \
+    # Shell environments
+    bash \
+    zsh \
+    fish \
+    # Text editors for testing
+    vim \
+    nano \
+    # Network tools
+    ca-certificates \
+    # Testing utilities
+    time \
+    # Process management
+    psmisc \
+    procps-ng \
+    # File system tools
+    findutils \
+    # Archive tools
+    tar \
+    gzip \
+    unzip \
+    bzip2 \
+    xz \
+    # Arch-specific tools
+    pacman-contrib \
+    && pacman -Scc --noconfirm
+
+# Create test user (non-root for security testing)
+RUN useradd -m -s /bin/bash testuser && \
+    echo "testuser:testuser" | chpasswd && \
+    usermod -aG wheel testuser
+
+# Install sudo and additional tools
+RUN pacman -S --noconfirm \
+    sudo \
+    # Version control
+    git-lfs \
+    subversion \
+    mercurial \
+    # Package managers
+    python-pip \
+    nodejs \
+    npm \
+    # Development tools
+    python \
+    python-setuptools \
+    # Compression tools
+    zip \
+    p7zip \
+    # Text processing
+    jq \
+    yq \
+    # Networking
+    openssh \
+    bind \
+    # Performance monitoring
+    htop \
+    iotop \
+    # Modern Arch tools
+    fd \
+    ripgrep \
+    bat \
+    exa \
+    && pacman -Scc --noconfirm
+
+# Set up test environment directories
+RUN mkdir -p /test-results /workspace && \
+    chown -R testuser:testuser /test-results /workspace
+
+# Enable wheel group for sudo
+RUN echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Set up git configuration for testing
+USER testuser
+RUN git config --global user.name "Test User" && \
+    git config --global user.email "test@example.com" && \
+    git config --global init.defaultBranch main
+
+# Create test workspace
+WORKDIR /workspace
+
+# Set environment variables for testing
+ENV DOTFILES_CI=true
+ENV TEST_PLATFORM=arch
+ENV HOME=/home/testuser
+ENV USER=testuser
+
+# Default command runs fresh installation tests
+CMD ["/bin/bash", "-c", "tests/integration/fresh-install.sh"] 

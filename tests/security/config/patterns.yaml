@@ -1,0 +1,189 @@
+# =============================================================================
+# Custom Secret Detection Patterns
+# =============================================================================
+# Organization-specific patterns for secret detection
+# These patterns complement the built-in detection rules
+# =============================================================================
+
+patterns:
+  # High-priority secrets (immediate security risk)
+  - name: "Private SSH Keys"
+    regex: "-----BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY-----"
+    severity: "critical"
+    description: "SSH private keys should never be committed"
+
+  - name: "PGP Private Keys"
+    regex: "-----BEGIN PGP PRIVATE KEY BLOCK-----"
+    severity: "critical"
+    description: "PGP private keys expose cryptographic secrets"
+
+  - name: "AWS Access Keys"
+    regex: "AKIA[0-9A-Z]{16}"
+    severity: "critical"
+    description: "AWS access keys provide cloud infrastructure access"
+
+  - name: "Generic API Keys"
+    regex: "api[_-]?key[_-]?[=:]\s*['\"][a-zA-Z0-9_\-]{20,}['\"]"
+    severity: "high"
+    description: "Generic API key patterns"
+
+  # Service-specific patterns
+  - name: "GitHub Personal Access Tokens"
+    regex: "gh[pousr]_[A-Za-z0-9_]{36}"
+    severity: "high"
+    description: "GitHub personal access tokens"
+
+  - name: "GitLab Personal Access Tokens"
+    regex: "glpat-[A-Za-z0-9_\-]{20}"
+    severity: "high"
+    description: "GitLab personal access tokens"
+
+  - name: "Slack Bot Tokens"
+    regex: "xoxb-[0-9]{11}-[0-9]{11}-[a-zA-Z0-9]{24}"
+    severity: "high"
+    description: "Slack bot tokens"
+
+  - name: "Discord Bot Tokens"
+    regex: "[MN][A-Za-z\d]{23}\.[\w-]{6}\.[\w-]{27}"
+    severity: "high"
+    description: "Discord bot tokens"
+
+  - name: "Stripe API Keys"
+    regex: "sk_live_[0-9a-zA-Z]{24}"
+    severity: "critical"
+    description: "Stripe live API keys"
+
+  - name: "Twilio API Keys"
+    regex: "SK[a-z0-9]{32}"
+    severity: "high"
+    description: "Twilio API keys"
+
+  # Database connection strings
+  - name: "Database URLs with embedded credentials"
+    regex: "[a-zA-Z][a-zA-Z0-9+.-]*://[a-zA-Z0-9._-]+:[a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+[:/]"
+    severity: "high"
+    description: "Database connection strings with embedded credentials"
+
+  # Certificate and key files
+  - name: "PKCS12 Certificates"
+    regex: "-----BEGIN PKCS12-----"
+    severity: "high"
+    description: "PKCS12 certificate files"
+
+  - name: "X509 Certificates"
+    regex: "-----BEGIN CERTIFICATE-----"
+    severity: "medium"
+    description: "X.509 certificates (may contain sensitive info)"
+
+  # Cloud provider patterns
+  - name: "Google Cloud Service Account Keys"
+    regex: "\"type\":\\s*\"service_account\""
+    severity: "critical"
+    description: "Google Cloud service account JSON keys"
+
+  - name: "Azure Storage Account Keys"
+    regex: "DefaultEndpointsProtocol=https;AccountName=[^;]+;AccountKey=[A-Za-z0-9+/]+=*;"
+    severity: "critical"
+    description: "Azure storage account connection strings"
+
+  # Password patterns
+  - name: "Hardcoded Passwords"
+    regex: "password[_-]?[=:]\\s*['\"][^'\"]{8,}['\"]"
+    severity: "high"
+    description: "Hardcoded password values"
+
+  - name: "JDBC Connection Strings"
+    regex: "jdbc:[a-zA-Z0-9]+://[^\\s]+password=[^\\s&]+"
+    severity: "high"
+    description: "JDBC connection strings with passwords"
+
+  # Token patterns
+  - name: "JWT Tokens"
+    regex: "eyJ[A-Za-z0-9_/+\\-]*\\.[A-Za-z0-9_/+\\-]*\\.[A-Za-z0-9_/+\\-]*"
+    severity: "medium"
+    description: "JSON Web Tokens (may contain sensitive claims)"
+
+  # High-entropy strings (potential secrets)
+  - name: "High Entropy Base64"
+    regex: "['\"][A-Za-z0-9+/]{40,}={0,2}['\"]"
+    severity: "medium"
+    description: "High-entropy base64 strings (potential secrets)"
+
+  - name: "High Entropy Hex"
+    regex: "['\"][A-Fa-f0-9]{32,}['\"]"
+    severity: "medium"
+    description: "High-entropy hexadecimal strings (potential secrets)"
+
+  # Configuration file patterns
+  - name: "Environment Variable Secrets"
+    regex: "export\\s+[A-Z_]*(?:SECRET|KEY|TOKEN|PASSWORD)[A-Z_]*\\s*=\\s*['\"][^'\"]{8,}['\"]"
+    severity: "high"
+    description: "Environment variables containing secrets"
+
+  # Specific file content patterns
+  - name: "Private Key Files"
+    regex: "\\.(pem|key|p12|pfx|jks|keystore)$"
+    severity: "high"
+    description: "Files with private key extensions"
+    file_pattern: true
+
+  - name: "Credential Files"
+    regex: "(credentials?|secrets?|passwords?)$"
+    severity: "high"
+    description: "Files with credential-related names"
+    file_pattern: true
+
+# Exclusions (patterns to ignore even if they match above)
+exclusions:
+  - "example"
+  - "sample"
+  - "test"
+  - "placeholder"
+  - "dummy"
+  - "fake"
+  - "mock"
+  - "template"
+  - "README"
+  - "\.md$"
+  - "\.txt$"
+  - "documentation"
+
+# File extensions to always scan
+scan_extensions:
+  - ".env"
+  - ".sh"
+  - ".bash"
+  - ".zsh"
+  - ".fish"
+  - ".py"
+  - ".js"
+  - ".ts"
+  - ".json"
+  - ".yaml"
+  - ".yml"
+  - ".toml"
+  - ".ini"
+  - ".conf"
+  - ".config"
+  - ".xml"
+  - ".properties"
+
+# File extensions to skip
+skip_extensions:
+  - ".jpg"
+  - ".jpeg"
+  - ".png"
+  - ".gif"
+  - ".pdf"
+  - ".zip"
+  - ".tar"
+  - ".gz"
+  - ".bz2"
+  - ".mp3"
+  - ".mp4"
+  - ".avi"
+  - ".mov"
+  - ".exe"
+  - ".dll"
+  - ".so"
+  - ".dylib" 

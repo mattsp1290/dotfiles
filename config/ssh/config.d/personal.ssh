@@ -1,0 +1,42 @@
+# Personal SSH Configuration
+# Configuration for personal servers and services
+# This file uses template injection for sensitive data
+
+# Personal servers template - populated by secret injection
+# Template: templates/ssh/personal-servers.ssh.template
+
+# Example personal server configuration (commented out for security)
+# Host myserver
+#     HostName {{ PERSONAL_SERVER_HOST }}
+#     User {{ PERSONAL_SERVER_USER }}
+#     Port {{ PERSONAL_SERVER_PORT | default(22) }}
+#     IdentityFile ~/.ssh/{{ PERSONAL_SERVER_KEY | default(id_rsa) }}
+#     IdentitiesOnly yes
+#     PreferredAuthentications publickey
+
+# Personal VPS or cloud instances
+# Host personal-vps
+#     HostName {{ PERSONAL_VPS_HOST }}
+#     User {{ PERSONAL_VPS_USER }}
+#     Port 22
+#     IdentityFile ~/.ssh/id_rsa
+#     IdentitiesOnly yes
+
+# Home lab or local servers
+# Host homelab
+#     HostName {{ HOMELAB_HOST }}
+#     User {{ HOMELAB_USER }}
+#     Port 22
+#     IdentityFile ~/.ssh/id_rsa
+#     ForwardAgent no
+#     # Local network - less strict security
+#     StrictHostKeyChecking no
+#     UserKnownHostsFile /dev/null
+
+# Raspberry Pi or IoT devices
+# Host pi
+#     HostName {{ PI_HOST }}
+#     User pi
+#     Port 22
+#     IdentityFile ~/.ssh/id_rsa
+#     IdentitiesOnly yes 

@@ -1,0 +1,404 @@
+#!/usr/bin/env bash
+
+# =============================================================================
+# Git Pre-Push Hook
+# =============================================================================
+# This hook performs security checks and branch protection before pushing
+# It can be customized per repository by modifying the checks below
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging functions
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+# Read input (remote and URL are passed via stdin)
+remote="$1"
+url="$2"
+
+# Protected branches that should not be pushed to directly
+protected_branches=("main" "master" "develop" "production" "staging")
+
+# =============================================================================
+# Validation Functions
+# =============================================================================
+
+check_protected_branches() {
+    log_info "Checking for direct pushes to protected branches..."
+    
+    local failed=0
+    
+    while read local_ref local_sha remote_ref remote_sha; do
+        if [[ "$local_ref" == "(delete)" ]]; then
+            # Deletion - check if it's a protected branch
+            local branch_name
+            branch_name=$(echo "$remote_ref" | sed 's|refs/heads/||')
+            
+            for protected in "${protected_branches[@]}"; do
+                if [[ "$branch_name" == "$protected" ]]; then
+                    log_error "Attempt to delete protected branch: $branch_name"
+                    log_error "Deletion of protected branches is not allowed"
+                    failed=1
+                fi
+            done
+        else
+            # Regular push - check if pushing to protected branch
+            local branch_name
+            branch_name=$(echo "$remote_ref" | sed 's|refs/heads/||')
+            
+            for protected in "${protected_branches[@]}"; do
+                if [[ "$branch_name" == "$protected" ]]; then
+                    log_error "Direct push to protected branch: $branch_name"
+                    log_error "Please use a pull request/merge request instead"
+                    log_info "Create a feature branch: git checkout -b feature/your-feature"
+                    failed=1
+                fi
+            done
+        fi
+    done
+    
+    if [[ $failed -eq 1 ]]; then
+        return 1
+    fi
+    
+    log_success "Protected branch check passed"
+    return 0
+}
+
+check_commit_signatures() {
+    log_info "Checking commit signatures..."
+    
+    local failed=0
+    local unsigned_commits=()
+    
+    while read local_ref local_sha remote_ref remote_sha; do
+        if [[ "$local_ref" == "(delete)" ]] || [[ "$local_sha" == "0000000000000000000000000000000000000000" ]]; then
+            continue
+        fi
+        
+        # Get range of commits to push
+        local range
+        if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
+            # New branch - check all commits
+            range="$local_sha"
+        else
+            # Existing branch - check new commits
+            range="$remote_sha..$local_sha"
+        fi
+        
+        # Check each commit for signature
+        while IFS= read -r commit; do
+            if [[ -n "$commit" ]]; then
+                if ! git verify-commit "$commit" 2>/dev/null; then
+                    unsigned_commits+=("$commit")
+                fi
+            fi
+        done < <(git rev-list "$range" 2>/dev/null || true)
+    done
+    
+    if [[ ${#unsigned_commits[@]} -gt 0 ]]; then
+        log_warn "Found ${#unsigned_commits[@]} unsigned commit(s):"
+        for commit in "${unsigned_commits[@]}"; do
+            local commit_info
+            commit_info=$(git log --oneline -1 "$commit")
+            log_warn "  $commit_info"
+        done
+        log_info "Consider setting up commit signing: https://docs.github.com/en/authentication/managing-commit-signature-verification"
+        # Don't fail for unsigned commits, just warn
+    else
+        log_success "All commits are signed"
+    fi
+    
+    return 0
+}
+
+check_commit_messages() {
+    log_info "Checking commit message quality..."
+    
+    local failed=0
+    local bad_commits=()
+    
+    while read local_ref local_sha remote_ref remote_sha; do
+        if [[ "$local_ref" == "(delete)" ]] || [[ "$local_sha" == "0000000000000000000000000000000000000000" ]]; then
+            continue
+        fi
+        
+        # Get range of commits to push
+        local range
+        if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
+            # New branch - check last 10 commits
+            range="$local_sha"
+            local commit_list
+            commit_list=$(git rev-list --max-count=10 "$range" 2>/dev/null || true)
+        else
+            # Existing branch - check new commits
+            range="$remote_sha..$local_sha"
+            local commit_list
+            commit_list=$(git rev-list "$range" 2>/dev/null || true)
+        fi
+        
+        # Check each commit message
+        while IFS= read -r commit; do
+            if [[ -n "$commit" ]]; then
+                local msg
+                msg=$(git log --format=%s -1 "$commit")
+                
+                # Skip merge commits and fixup commits
+                if [[ "$msg" =~ ^Merge ]] || [[ "$msg" =~ ^fixup! ]] || [[ "$msg" =~ ^squash! ]]; then
+                    continue
+                fi
+                
+                # Check for common bad patterns
+                if [[ ${#msg} -lt 10 ]]; then
+                    bad_commits+=("$commit: Message too short")
+                elif [[ "$msg" =~ ^(wip|WIP|temp|TEMP|fix|Fix|update|Update)$ ]]; then
+                    bad_commits+=("$commit: Generic message")
+                elif [[ "$msg" =~ \.$ ]]; then
+                    bad_commits+=("$commit: Subject ends with period")
+                fi
+            fi
+        done <<< "$commit_list"
+    done
+    
+    if [[ ${#bad_commits[@]} -gt 0 ]]; then
+        log_warn "Found commits with suboptimal messages:"
+        for bad_commit in "${bad_commits[@]}"; do
+            log_warn "  $bad_commit"
+        done
+        log_info "Consider using conventional commits: feat:, fix:, docs:, etc."
+        # Don't fail for bad commit messages, just warn
+    else
+        log_success "Commit message quality check passed"
+    fi
+    
+    return 0
+}
+
+check_large_files() {
+    log_info "Checking for large files..."
+    
+    local max_size=$((100 * 1024 * 1024)) # 100MB
+    local failed=0
+    local large_files=()
+    
+    while read local_ref local_sha remote_ref remote_sha; do
+        if [[ "$local_ref" == "(delete)" ]] || [[ "$local_sha" == "0000000000000000000000000000000000000000" ]]; then
+            continue
+        fi
+        
+        # Get range of commits to push
+        local range
+        if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
+            # New branch - check all files
+            range="$local_sha"
+        else
+            # Existing branch - check new commits
+            range="$remote_sha..$local_sha"
+        fi
+        
+        # Check files in the range
+        while IFS= read -r file; do
+            if [[ -n "$file" && -f "$file" ]]; then
+                local size
+                size=$(git cat-file -s "$local_sha:$file" 2>/dev/null || echo 0)
+                if [[ $size -gt $max_size ]]; then
+                    large_files+=("$file ($(( size / 1024 / 1024 ))MB)")
+                    failed=1
+                fi
+            fi
+        done < <(git diff-tree --no-commit-id --name-only -r "$range" 2>/dev/null || true)
+    done
+    
+    if [[ $failed -eq 1 ]]; then
+        log_error "Found large files that should use Git LFS:"
+        for large_file in "${large_files[@]}"; do
+            log_error "  $large_file"
+        done
+        log_info "Consider using Git LFS: git lfs track '*.extension'"
+        return 1
+    fi
+    
+    log_success "Large file check passed"
+    return 0
+}
+
+check_secret_leaks() {
+    log_info "Checking for potential secret leaks..."
+    
+    local failed=0
+    local secret_files=()
+    
+    while read local_ref local_sha remote_ref remote_sha; do
+        if [[ "$local_ref" == "(delete)" ]] || [[ "$local_sha" == "0000000000000000000000000000000000000000" ]]; then
+            continue
+        fi
+        
+        # Get range of commits to push
+        local range
+        if [[ "$remote_sha" == "0000000000000000000000000000000000000000" ]]; then
+            # New branch - check current state
+            range="$local_sha"
+        else
+            # Existing branch - check new commits
+            range="$remote_sha..$local_sha"
+        fi
+        
+        # Check for secret-like files
+        while IFS= read -r file; do
+            if [[ -n "$file" ]]; then
+                if [[ "$file" =~ \.(key|pem|p12|pfx|crt|cer)$ ]]; then
+                    secret_files+=("$file")
+                    failed=1
+                elif [[ "$file" =~ (credentials|secrets|\.env|id_rsa|id_dsa|id_ecdsa|id_ed25519)$ ]]; then
+                    secret_files+=("$file")
+                    failed=1
+                fi
+            fi
+        done < <(git diff-tree --no-commit-id --name-only -r "$range" 2>/dev/null || true)
+        
+        # Check diff content for secret patterns
+        local secret_patterns=(
+            'BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY'
+            'aws_access_key_id'
+            'aws_secret_access_key'
+            'github_token'
+            'gitlab_token'
+            'password.*=.*["\'"'"'][^"'"'"']{8,}["\'"'"']'
+            'api[_-]?key.*=.*["\'"'"'][^"'"'"']{16,}["\'"'"']'
+        )
+        
+        for pattern in "${secret_patterns[@]}"; do
+            if git diff "$range" | grep -iE "$pattern" >/dev/null 2>&1; then
+                log_error "Potential secret found in diff matching pattern: $pattern"
+                failed=1
+            fi
+        done
+    done
+    
+    if [[ $failed -eq 1 ]]; then
+        if [[ ${#secret_files[@]} -gt 0 ]]; then
+            log_error "Found potential secret files:"
+            for secret_file in "${secret_files[@]}"; do
+                log_error "  $secret_file"
+            done
+        fi
+        log_error "Secret leak detection failed! Please review and remove sensitive data."
+        return 1
+    fi
+    
+    log_success "Secret leak check passed"
+    return 0
+}
+
+check_working_directory() {
+    log_info "Checking working directory state..."
+    
+    # Check for uncommitted changes
+    if ! git diff-index --quiet HEAD --; then
+        log_warn "You have uncommitted changes in your working directory"
+        log_info "Consider committing or stashing these changes"
+    fi
+    
+    # Check for untracked files
+    local untracked
+    untracked=$(git ls-files --others --exclude-standard)
+    if [[ -n "$untracked" ]]; then
+        log_warn "You have untracked files:"
+        echo "$untracked" | head -5 | while read -r file; do
+            log_warn "  $file"
+        done
+        if [[ $(echo "$untracked" | wc -l) -gt 5 ]]; then
+            log_warn "  ... and $(( $(echo "$untracked" | wc -l) - 5 )) more"
+        fi
+    fi
+    
+    log_success "Working directory check completed"
+    return 0
+}
+
+# =============================================================================
+# Main Hook Execution
+# =============================================================================
+
+main() {
+    log_info "Running pre-push checks for remote '$remote' ($url)"
+    
+    # Read the push information from stdin
+    local push_info
+    push_info=$(cat)
+    
+    if [[ -z "$push_info" ]]; then
+        log_info "No refs to push"
+        exit 0
+    fi
+    
+    local exit_code=0
+    
+    # Process each ref being pushed
+    while read local_ref local_sha remote_ref remote_sha; do
+        if [[ -n "$local_ref" ]]; then
+            log_info "Processing push: $local_ref -> $remote_ref"
+            
+            # Protected branch check (mandatory)
+            if ! echo "$local_ref $local_sha $remote_ref $remote_sha" | check_protected_branches; then
+                exit_code=1
+            fi
+            
+            # Secret leak check (mandatory)
+            if ! echo "$local_ref $local_sha $remote_ref $remote_sha" | check_secret_leaks; then
+                exit_code=1
+            fi
+            
+            # Large file check (mandatory)
+            if ! echo "$local_ref $local_sha $remote_ref $remote_sha" | check_large_files; then
+                exit_code=1
+            fi
+            
+            # Commit signature check (informational)
+            echo "$local_ref $local_sha $remote_ref $remote_sha" | check_commit_signatures
+            
+            # Commit message check (informational)
+            echo "$local_ref $local_sha $remote_ref $remote_sha" | check_commit_messages
+        fi
+    done <<< "$push_info"
+    
+    # Working directory check (informational)
+    check_working_directory
+    
+    if [[ $exit_code -eq 0 ]]; then
+        log_success "All pre-push checks passed!"
+    else
+        log_error "Some pre-push checks failed. Push blocked."
+        log_info "You can bypass this hook with: git push --no-verify"
+    fi
+    
+    exit $exit_code
+}
+
+# Allow bypassing the hook in CI environments
+if [[ "${CI:-}" == "true" ]] || [[ "${SKIP_PRE_PUSH:-}" == "true" ]]; then
+    log_info "Skipping pre-push checks (CI environment or SKIP_PRE_PUSH set)"
+    exit 0
+fi
+
+main "$@" 

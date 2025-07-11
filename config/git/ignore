@@ -1,0 +1,462 @@
+# =============================================================================
+# Global Git Ignore Patterns
+# =============================================================================
+# Comprehensive gitignore patterns for common development artifacts
+
+# =============================================================================
+# Operating System Files
+# =============================================================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# Editor and IDE Files
+# =============================================================================
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+Session.vim
+Sessionx.vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.project
+.externalToolBuilders/
+*.launch
+.pydevproject
+.cproject
+.autotools
+.factorypath
+.buildpath
+.target
+.tern-project
+.texlipse
+.springBeans
+.recommenders/
+.apt_generated/
+.cache-main
+.scala_dependencies
+.worksheet
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+*.sublime-settings
+
+# Atom
+.atom/
+
+# =============================================================================
+# Language-Specific Files
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.python-version
+.pyenv
+.pytest_cache/
+.coverage
+.coverage.*
+.cache
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Node.js / JavaScript / TypeScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+pids
+*.pid
+*.seed
+*.pid.lock
+lib-cov
+coverage
+.nyc_output
+.grunt
+bower_components
+.lock-wscript
+build/Release
+.npmrc
+.yarn-integrity
+.yarn-metadata.json
+.yarnrc
+.eslintcache
+.parcel-cache
+.cache
+.next
+.nuxt
+dist
+.sass-cache/
+*.tgz
+*.tar.gz
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Go
+vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# Java
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
+
+# C/C++
+*.o
+*.a
+*.lib
+*.so
+*.dll
+*.exe
+*.out
+*.app
+
+# Ruby
+*.gem
+*.rbc
+/.config
+/coverage/
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/tmp/
+.bundle/
+vendor/bundle
+lib/bundler/man
+.rvmrc
+.rbenv-version
+.ruby-version
+.ruby-gemset
+
+# PHP
+composer.phar
+/vendor/
+.env.php
+.env
+
+# =============================================================================
+# Build and Dependency Directories
+# =============================================================================
+
+# General build directories
+build/
+dist/
+out/
+target/
+bin/
+obj/
+
+# =============================================================================
+# Security and Credentials
+# =============================================================================
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# API keys and secrets
+*.pem
+*.key
+*.p12
+*.pfx
+credentials
+secrets
+.secrets
+api-keys
+.api-keys
+
+# SSH keys
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*.ppk
+
+# AWS
+.aws/credentials
+.aws/config
+
+# =============================================================================
+# Temporary and Cache Files
+# =============================================================================
+
+# General temporary files
+*.tmp
+*.temp
+*.log
+*.cache
+.cache/
+tmp/
+temp/
+
+# Backup files
+*.backup
+*.bak
+*.old
+*.orig
+*~
+
+# =============================================================================
+# Database Files
+# =============================================================================
+
+*.db
+*.sqlite
+*.sqlite3
+*.db3
+
+# =============================================================================
+# Archive Files
+# =============================================================================
+
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+*.bz2
+*.xz
+
+# =============================================================================
+# Documentation Build Files
+# =============================================================================
+
+# Sphinx documentation
+docs/_build/
+docs/.doctrees/
+.sphinx/
+
+# Doxygen
+docs/html/
+docs/latex/
+
+# =============================================================================
+# Package Manager Files
+# =============================================================================
+
+# Homebrew
+Brewfile.lock.json
+
+# Yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# pnpm
+.pnp
+.pnp.js
+
+# =============================================================================
+# Shell and Terminal Files
+# =============================================================================
+
+# Zsh
+*.zwc
+.zcompdump*
+.zsh_history
+
+# Bash
+.bash_history
+
+# =============================================================================
+# Misc Development Files
+# =============================================================================
+
+# ctags
+tags
+TAGS
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Logs
+logs
+*.log
+
+# Docker
+.dockerignore
+
+# Vagrant
+.vagrant/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# =============================================================================
+# Personal and Local Files
+# =============================================================================
+
+# Personal notes and todo files
+TODO
+TODO.md
+NOTES
+NOTES.md
+.notes/
+
+# Local configuration
+local.config
+.local/ 

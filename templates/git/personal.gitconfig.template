@@ -1,0 +1,38 @@
+# =============================================================================
+# Personal Git Profile Template
+# =============================================================================
+# This template is processed and output to config/git/includes/personal.gitconfig
+# It contains placeholder variables that will be replaced with actual values
+
+[user]
+    # Personal identity
+    name = ${GIT_PERSONAL_NAME}
+    email = ${GIT_PERSONAL_EMAIL}
+    # Personal GPG signing key
+    signingkey = ${GIT_PERSONAL_SIGNING_KEY}
+
+[commit]
+    # Sign commits with personal key
+    gpgsign = ${GIT_PERSONAL_SIGN_COMMITS}
+
+[tag]
+    # Sign tags with personal key
+    gpgsign = ${GIT_PERSONAL_SIGN_TAGS}
+
+# Personal-specific URL rewrites
+[url "git@github.com:${GITHUB_PERSONAL_USERNAME}/"]
+    insteadOf = https://github.com/${GITHUB_PERSONAL_USERNAME}/
+
+# Personal project defaults
+[init]
+    defaultBranch = ${GIT_PERSONAL_DEFAULT_BRANCH}
+
+[push]
+    # Personal project push settings
+    default = simple
+    autoSetupRemote = true
+    followTags = true
+
+[pull]
+    # Personal preference for pull strategy
+    rebase = ${GIT_PERSONAL_PULL_REBASE} 

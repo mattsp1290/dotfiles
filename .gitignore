@@ -1,6 +1,13 @@
 # Proompting directory (agent task definitions)
 proompting/
 
+# Secret scanning and audit results
+**/secret_scanning/*.json
+**/audit/**/*.json
+trufflehog*.json
+*.audit.json
+tests/security/reports
+
 # Secrets and sensitive files
 .env
 .env.*

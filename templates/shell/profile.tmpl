@@ -1,0 +1,36 @@
+#!/bin/bash
+# Shell Profile Template
+# Add to ~/.profile or ~/.bash_profile
+
+# GitHub Configuration
+export GITHUB_TOKEN="${GITHUB_TOKEN}"
+export GITHUB_USER="your-username"
+
+# GitLab Configuration  
+export GITLAB_TOKEN="${GITLAB_TOKEN}"
+
+# AI/ML API Keys
+export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}"
+export OPENAI_API_KEY="${OPENAI_API_KEY}"
+
+# AWS Configuration
+export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+export AWS_DEFAULT_REGION="us-east-1"
+
+# Homebrew GitHub Token (for private taps)
+export HOMEBREW_GITHUB_API_TOKEN="${HOMEBREW_GITHUB_API_TOKEN}"
+
+# Work-specific exports (conditional)
+if [[ "$OP_ACCOUNT_ALIAS" == "work" ]]; then
+    export DATADOG_API_KEY="${DATADOG_API_KEY}"
+    export DATADOG_APP_KEY="${DATADOG_APP_KEY}"
+    export DD_API_KEY="${DATADOG_API_KEY}"
+    export DD_APP_KEY="${DATADOG_APP_KEY}"
+fi
+
+# Personal-specific exports (conditional)
+if [[ "$OP_ACCOUNT_ALIAS" == "personal" ]]; then
+    export DIGITALOCEAN_TOKEN="${DIGITALOCEAN_TOKEN}"
+    export CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN}"
+fi 

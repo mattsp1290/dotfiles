@@ -1,0 +1,413 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  DOTFILES_CI: true
+  TEST_DEBUG: false
+
+jobs:
+  # Quick smoke tests
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up test environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y stow shellcheck
+          
+      - name: Run syntax checks
+        run: |
+          find scripts -name "*.sh" -exec shellcheck {} \;
+          find tests -name "*.sh" -exec shellcheck {} \;
+          
+      - name: Verify test framework
+        run: |
+          bash tests/helpers/test-utils.sh --version || true
+          bash scripts/test-dotfiles.sh --dry-run --type unit
+
+  # Unit tests across platforms
+  unit-tests:
+    name: Unit Tests
+    needs: smoke-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        shell: [bash]
+        include:
+          - os: ubuntu-20.04
+            shell: bash
+          - os: ubuntu-22.04
+            shell: bash
+            
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y stow git curl wget
+          
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install stow git
+          
+      - name: Set up shell environment
+        run: |
+          echo "SHELL=${{ matrix.shell }}" >> $GITHUB_ENV
+          
+      - name: Run unit tests
+        run: |
+          bash scripts/test-dotfiles.sh \
+            --type unit \
+            --jobs 2 \
+            --report unit-tests-${{ matrix.os }}.json \
+            --timeout 300
+            
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit-test-results-${{ matrix.os }}
+          path: unit-tests-${{ matrix.os }}.json
+          retention-days: 30
+
+  # Integration tests
+  integration-tests:
+    name: Integration Tests
+    needs: unit-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y stow git curl wget build-essential
+          
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install stow git
+          
+      - name: Run integration tests
+        run: |
+          bash scripts/test-dotfiles.sh \
+            --type integration \
+            --jobs 1 \
+            --report integration-tests-${{ matrix.os }}.json \
+            --timeout 600 \
+            --verbose
+            
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-test-results-${{ matrix.os }}
+          path: integration-tests-${{ matrix.os }}.json
+          retention-days: 30
+
+  # Performance benchmarks
+  performance-tests:
+    name: Performance Tests
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y stow git curl wget time
+          
+      - name: Run performance tests
+        run: |
+          bash scripts/test-dotfiles.sh \
+            --type performance \
+            --benchmark \
+            --jobs 1 \
+            --report performance-tests.json \
+            --timeout 300
+            
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-test-results
+          path: performance-tests.json
+          retention-days: 30
+
+  # Security tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install security tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-secrets bandit
+          
+      - name: Scan for secrets
+        run: |
+          git secrets --register-aws
+          git secrets --install
+          git secrets --scan
+          
+      - name: Check file permissions
+        run: |
+          find . -type f -name "*.sh" -not -perm 644 -not -perm 755 | tee bad-permissions.txt
+          if [ -s bad-permissions.txt ]; then
+            echo "Files with incorrect permissions found:"
+            cat bad-permissions.txt
+            exit 1
+          fi
+          
+      - name: Verify no secrets in test output
+        run: |
+          # Ensure test framework doesn't leak secrets
+          bash scripts/test-dotfiles.sh --dry-run --verbose 2>&1 | \
+            grep -i "password\|token\|key\|secret" | \
+            grep -v "mock\|test\|example" && exit 1 || exit 0
+
+  # Cross-platform compatibility
+  compatibility-tests:
+    name: Compatibility Tests
+    needs: unit-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-18.04
+            name: "Ubuntu 18.04"
+          - os: ubuntu-20.04
+            name: "Ubuntu 20.04"
+          - os: ubuntu-22.04
+            name: "Ubuntu 22.04"
+          - os: macos-11
+            name: "macOS Big Sur"
+          - os: macos-12
+            name: "macOS Monterey"
+          - os: macos-13
+            name: "macOS Ventura"
+            
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y stow git
+          
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install stow git
+          
+      - name: Test OS detection
+        run: |
+          bash scripts/lib/detect-os.sh
+          
+      - name: Test basic functionality
+        run: |
+          bash scripts/test-dotfiles.sh \
+            --pattern "test-os-detection" \
+            --timeout 300
+
+  # Code quality checks
+  quality-checks:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt
+          
+      - name: Run ShellCheck
+        run: |
+          find . -name "*.sh" -type f | xargs shellcheck
+          
+      - name: Check shell formatting
+        run: |
+          find . -name "*.sh" -type f | xargs shfmt -d -i 4
+          
+      - name: Verify executable permissions
+        run: |
+          # Check that shell scripts are executable
+          find scripts -name "*.sh" -type f -not -executable | tee non-executable.txt
+          if [ -s non-executable.txt ]; then
+            echo "Non-executable shell scripts found:"
+            cat non-executable.txt
+            exit 1
+          fi
+
+  # Generate test report
+  test-report:
+    name: Generate Test Report
+    needs: [unit-tests, integration-tests, performance-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download all test results
+        uses: actions/download-artifact@v3
+        with:
+          path: test-results/
+          
+      - name: Combine test results
+        run: |
+          mkdir -p combined-results
+          
+          # Combine JSON reports
+          echo '{"summary": {"total": 0, "passed": 0, "failed": 0, "skipped": 0}, "tests": []}' > combined-results/all-tests.json
+          
+          # Process each test result file
+          for result_file in test-results/*/*.json; do
+            if [ -f "$result_file" ]; then
+              echo "Processing: $result_file"
+              # Simple combination - in practice you'd want a more sophisticated merge
+              cat "$result_file" >> combined-results/raw-results.txt
+            fi
+          done
+          
+      - name: Generate HTML report
+        run: |
+          cat > combined-results/test-report.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Dotfiles Test Report - CI Run</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 20px; }
+                  .summary { background: #f5f5f5; padding: 15px; border-radius: 5px; }
+                  .success { color: #28a745; }
+                  .failure { color: #dc3545; }
+                  .warning { color: #ffc107; }
+              </style>
+          </head>
+          <body>
+              <h1>Dotfiles Test Report</h1>
+              <div class="summary">
+                  <h2>CI Run Summary</h2>
+                  <p>Build: ${{ github.run_number }}</p>
+                  <p>Commit: ${{ github.sha }}</p>
+                  <p>Branch: ${{ github.ref_name }}</p>
+                  <p>Generated: $(date)</p>
+              </div>
+              <h2>Test Results</h2>
+              <p>Detailed results are available in the individual artifact files.</p>
+          </body>
+          </html>
+          EOF
+          
+      - name: Upload combined results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-report
+          path: combined-results/
+          retention-days: 90
+
+  # Notify on failures
+  notify-failure:
+    name: Notify on Failure
+    needs: [unit-tests, integration-tests, performance-tests, security-tests]
+    if: failure() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Create issue on failure
+        if: github.event_name == 'schedule'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Scheduled test failure - ' + new Date().toISOString().split('T')[0],
+              body: 'The scheduled test run failed. Please check the [workflow run](' + 
+                    context.payload.repository.html_url + '/actions/runs/' + context.runId + ') for details.',
+              labels: ['bug', 'ci-failure']
+            });
+
+  # Cleanup old artifacts
+  cleanup:
+    name: Cleanup Old Artifacts
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Delete old artifacts
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 30);
+            
+            for (const artifact of artifacts.data.artifacts) {
+              const createdAt = new Date(artifact.created_at);
+              if (createdAt < cutoff) {
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id
+                });
+                console.log(`Deleted artifact: ${artifact.name}`);
+              }
+            } 

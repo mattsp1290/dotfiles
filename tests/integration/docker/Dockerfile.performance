@@ -1,0 +1,186 @@
+FROM ubuntu:22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Set up test environment metadata
+LABEL description="Performance testing Ubuntu environment"
+LABEL version="1.0.0"
+LABEL platform="performance"
+
+# Install essential packages for performance testing
+RUN apt-get update && apt-get install -y \
+    # Core utilities
+    curl \
+    wget \
+    git \
+    stow \
+    # Build tools
+    build-essential \
+    # Shell environments
+    bash \
+    zsh \
+    fish \
+    # Text editors
+    vim \
+    nano \
+    # Network tools
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    # Performance monitoring tools
+    htop \
+    iotop \
+    atop \
+    sysstat \
+    iostat \
+    vmstat \
+    # Process monitoring
+    psmisc \
+    procps \
+    # Memory analysis
+    valgrind \
+    # Network monitoring
+    iftop \
+    nethogs \
+    # Disk I/O
+    fio \
+    # Timing utilities
+    time \
+    # Benchmarking tools
+    stress \
+    stress-ng \
+    sysbench \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create test user optimized for performance testing
+RUN useradd -m -s /bin/bash testuser && \
+    echo "testuser:testuser" | chpasswd && \
+    usermod -aG sudo testuser
+
+# Set up test environment directories
+RUN mkdir -p /test-results /workspace /benchmark-data && \
+    chown -R testuser:testuser /test-results /workspace /benchmark-data
+
+# Install additional performance and profiling tools
+RUN apt-get update && apt-get install -y \
+    # System profiling
+    perf-tools-unstable \
+    linux-tools-common \
+    linux-tools-generic \
+    # Memory profiling
+    massif-visualizer \
+    # File system tools
+    tree \
+    ncdu \
+    # Modern performance tools
+    fd-find \
+    ripgrep \
+    # Text processing
+    jq \
+    yq \
+    # Network tools
+    openssh-client \
+    # Python for performance scripts
+    python3 \
+    python3-pip \
+    python3-psutil \
+    # Node.js for some benchmarks
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python performance monitoring packages
+RUN pip3 install --no-cache-dir \
+    psutil \
+    py-cpuinfo \
+    memory-profiler \
+    line-profiler
+
+# Set up performance monitoring scripts
+RUN mkdir -p /usr/local/bin/perf-scripts
+
+# Create system monitoring script
+RUN cat > /usr/local/bin/perf-scripts/monitor-system.sh << 'EOF'
+#!/bin/bash
+# System performance monitoring script
+
+echo "=== System Performance Monitor ==="
+echo "Timestamp: $(date)"
+echo ""
+
+echo "CPU Information:"
+lscpu | grep -E "(Model name|CPU\(s\)|Thread|Core)"
+echo ""
+
+echo "Memory Information:"
+free -h
+echo ""
+
+echo "Disk Usage:"
+df -h /
+echo ""
+
+echo "Load Average:"
+uptime
+echo ""
+
+echo "Top Processes by CPU:"
+ps aux --sort=-pcpu | head -10
+echo ""
+
+echo "Top Processes by Memory:"
+ps aux --sort=-pmem | head -10
+EOF
+
+RUN chmod +x /usr/local/bin/perf-scripts/monitor-system.sh
+
+# Create performance benchmark script
+RUN cat > /usr/local/bin/perf-scripts/benchmark.sh << 'EOF'
+#!/bin/bash
+# Performance benchmark script
+
+echo "=== Performance Benchmarks ==="
+echo "Timestamp: $(date)"
+echo ""
+
+# CPU benchmark
+echo "CPU Benchmark (sysbench):"
+sysbench cpu --cpu-max-prime=20000 --threads=1 run 2>/dev/null | grep -E "(events per second|total time)"
+echo ""
+
+# Memory benchmark
+echo "Memory Benchmark (sysbench):"
+sysbench memory --memory-total-size=1G run 2>/dev/null | grep -E "(transferred|total time)"
+echo ""
+
+# File I/O benchmark
+echo "File I/O Benchmark (dd):"
+sync && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
+dd if=/dev/zero of=/tmp/benchmark_file bs=1M count=100 2>&1 | tail -1
+rm -f /tmp/benchmark_file
+echo ""
+EOF
+
+RUN chmod +x /usr/local/bin/perf-scripts/benchmark.sh
+
+# Set up git configuration for testing
+USER testuser
+RUN git config --global user.name "Performance Test User" && \
+    git config --global user.email "performance-test@example.com" && \
+    git config --global init.defaultBranch main
+
+# Create test workspace
+WORKDIR /workspace
+
+# Set environment variables for performance testing
+ENV DOTFILES_CI=true
+ENV TEST_PLATFORM=performance
+ENV PERFORMANCE_TEST=true
+ENV BENCHMARK_MODE=true
+ENV DEBIAN_FRONTEND=noninteractive
+ENV HOME=/home/testuser
+ENV USER=testuser
+ENV PATH=/usr/local/bin/perf-scripts:$PATH
+
+# Default command runs performance tests
+CMD ["/bin/bash", "-c", "tests/integration/performance.sh"] 

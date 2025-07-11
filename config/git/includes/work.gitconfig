@@ -1,0 +1,82 @@
+# =============================================================================
+# Work Git Configuration
+# =============================================================================
+# This file is automatically included for repositories in ~/work/
+# It contains work-specific Git identity and configuration
+
+[user]
+    # Work identity - will be injected from secrets
+    name = ${GIT_WORK_NAME}
+    email = ${GIT_WORK_EMAIL}
+    # Work GPG signing key (if different from personal)
+    signingkey = ${GIT_WORK_SIGNING_KEY}
+
+[commit]
+    # Sign commits with work key (may be required by company policy)
+    gpgsign = true
+
+[tag]
+    # Sign tags with work key
+    gpgsign = true
+
+# Alternative SSH signing for work (Git 2.34+)
+# [gpg]
+#     format = ssh
+# [user]
+#     signingkey = ~/.ssh/id_ed25519_work.pub
+
+# Work-specific URL rewrites
+[url "git@github.com:${GITHUB_WORK_ORG}/"]
+    insteadOf = https://github.com/${GITHUB_WORK_ORG}/
+
+[url "git@gitlab.work.com:"]
+    insteadOf = https://gitlab.work.com/
+
+# Work project defaults
+[init]
+    defaultBranch = main
+
+[push]
+    # More conservative for work projects
+    default = simple
+    autoSetupRemote = false
+    followTags = false
+
+[pull]
+    # Work preference - often required by team policies
+    rebase = false
+    ff = only
+
+[branch]
+    # Work-specific branch configuration
+    autosetupmerge = always
+    autosetuprebase = never
+
+# Work-specific merge configuration
+[merge]
+    # Conservative merge settings for work
+    ff = false
+    tool = vimdiff
+
+# Work aliases (extends global aliases)
+[alias]
+    # Work-specific workflow
+    work-init = !git init && git add . && git commit -m "chore: initial project setup"
+    pr = !gh pr create --fill
+    mr = !glab mr create --fill
+    
+    # Code review workflow
+    review = !git fetch origin && git checkout origin/main && git checkout -b review/$(date +%Y%m%d-%H%M%S)
+    review-clean = !git branch | grep '^  review/' | xargs git branch -D
+    
+    # Release workflow
+    release-prep = !git checkout main && git pull && git checkout -b release/$(date +%Y.%m.%d)
+    hotfix = !git checkout main && git pull && git checkout -b hotfix/
+    
+    # Team collaboration
+    sync = !git fetch --all && git rebase origin/main
+    team-log = log --graph --pretty=format:'%h -%d %s (%cr) <%an>' --abbrev-commit --since='1 week ago'
+    
+    # Work project management
+    feature = !git checkout main && git pull && git checkout -b feature/
+    bugfix = !git checkout main && git pull && git checkout -b bugfix/ 

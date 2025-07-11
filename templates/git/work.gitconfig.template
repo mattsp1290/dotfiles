@@ -1,0 +1,42 @@
+# =============================================================================
+# Work Git Profile Template
+# =============================================================================
+# This template is processed and output to config/git/includes/work.gitconfig
+# It contains placeholder variables that will be replaced with actual values
+
+[user]
+    # Work identity
+    name = ${GIT_WORK_NAME}
+    email = ${GIT_WORK_EMAIL}
+    # Work GPG signing key
+    signingkey = ${GIT_WORK_SIGNING_KEY}
+
+[commit]
+    # Sign commits with work key
+    gpgsign = ${GIT_WORK_SIGN_COMMITS}
+
+[tag]
+    # Sign tags with work key
+    gpgsign = ${GIT_WORK_SIGN_TAGS}
+
+# Work-specific URL rewrites
+[url "git@github.com:${GITHUB_WORK_ORG}/"]
+    insteadOf = https://github.com/${GITHUB_WORK_ORG}/
+
+[url "git@gitlab.work.com:"]
+    insteadOf = https://gitlab.work.com/
+
+# Work project defaults
+[init]
+    defaultBranch = ${GIT_WORK_DEFAULT_BRANCH}
+
+[push]
+    # Work project push settings (often more conservative)
+    default = simple
+    autoSetupRemote = false
+    followTags = false
+
+[pull]
+    # Work preference for pull strategy
+    rebase = ${GIT_WORK_PULL_REBASE}
+    ff = only 

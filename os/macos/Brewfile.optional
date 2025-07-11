@@ -1,0 +1,233 @@
+# Optional Homebrew Bundle - Specialized Development Tools
+# This file contains packages for specific workflows and advanced use cases
+# Install with: brew bundle install --file=os/macos/Brewfile.optional
+
+# Include core packages first
+instance_eval(File.read(File.join(File.dirname(__FILE__), "Brewfile")))
+
+# Custom taps for specialized tools
+tap "azure/functions"
+tap "cj-bc/sonic-pi-tool"
+tap "datadog/tap", "git@github.com:DataDog/homebrew-tap.git"
+tap "withgraphite/tap"
+
+# =============================================================================
+# CLOUD & INFRASTRUCTURE TOOLS
+# =============================================================================
+
+# AWS Tools
+brew "awscli"                  # Official Amazon AWS command-line interface
+cask "aws-vault"               # Securely store and access AWS credentials
+
+# Azure Tools
+brew "azure-cli"               # Microsoft Azure CLI 2.0
+brew "azure/functions/azure-functions-core-tools@4"  # Azure Functions Core Tools
+
+# Google Cloud
+cask "google-cloud-sdk"        # Google Cloud SDK and CLI tools
+
+# HashiCorp Tools
+brew "consul-template"         # Template rendering with Consul
+brew "tfenv"                   # Terraform version manager
+
+# =============================================================================
+# KUBERNETES & CONTAINER ORCHESTRATION
+# =============================================================================
+
+brew "helm"                    # Kubernetes package manager
+brew "minikube"               # Run Kubernetes locally
+brew "kubectx"                # Tool to switch between kubectl contexts
+brew "kubernetes-cli"         # Kubernetes command-line interface
+brew "tilt"                   # Microservice development environment
+
+# Container Tools
+brew "dive"                   # Tool for exploring Docker image layers
+brew "lima"                   # Linux virtual machines on macOS
+brew "qemu"                   # Generic machine emulator and virtualizer
+
+# =============================================================================
+# ADVANCED DEVELOPMENT TOOLS
+# =============================================================================
+
+# Build Tools
+brew "cmake"                  # Cross-platform build system
+brew "bazelisk"               # User-friendly Bazel launcher
+brew "gcc"                    # GNU Compiler Collection
+cask "bzl"                    # Bazel wrapper
+
+# Testing Tools
+brew "bats-core"              # Bash Automated Testing System
+
+# Code Quality & Security
+brew "golangci-lint"          # Fast Go linters runner
+brew "trivy"                  # Vulnerability scanner for containers
+brew "trufflehog"             # Find and verify credentials
+
+# Documentation & Visualization
+brew "graphviz"               # Graph visualization software
+brew "docutils"               # Text processing for reStructuredText
+brew "gum"                    # Tool for glamorous shell scripts
+
+# =============================================================================
+# DATABASE TOOLS
+# =============================================================================
+
+brew "postgresql@14"          # PostgreSQL database server
+brew "libpq"                  # Postgres C API library
+cask "dbeaver-community"      # Universal database tool
+
+# =============================================================================
+# SPECIALIZED PROGRAMMING LANGUAGES & TOOLS
+# =============================================================================
+
+# Multiple Go versions
+brew "go@1.21"                # Go 1.21 for compatibility
+brew "gimme"                  # Shell script to install any Go version
+
+# Multiple Python versions
+brew "python@3.10"           # Python 3.10 for compatibility
+brew "python@3.11"           # Python 3.11 for compatibility
+
+# Other Languages
+brew "sbcl"                   # Steel Bank Common Lisp
+cask "temurin@8"              # OpenJDK 8 from Eclipse Adoptium
+
+# Git Tools
+brew "graphite"               # Stacked changes for GitHub
+brew "withgraphite/tap/graphite"  # Graphite CLI for stacked changes
+
+# =============================================================================
+# EXERCISE & LEARNING TOOLS
+# =============================================================================
+
+brew "exercism"               # Command-line tool for exercism.io
+
+# =============================================================================
+# DATADOG-SPECIFIC TOOLS
+# =============================================================================
+# Note: These are company-specific tools - remove if not working at Datadog
+
+brew "datadog/tap/devkube"                    # Provision and manage devkubes
+brew "datadog/tap/docker-local-dev"          # Local Docker development
+brew "datadog/tap/kubectl-analyse"           # Extract info from K8s objects
+brew "datadog/tap/kubectl-iscale"            # Safely scale K8s workloads
+brew "datadog/tap/kubectl-multiexec"         # Parallel commands on K8s
+brew "datadog/tap/kubectl-template"          # Render helm charts
+brew "datadog/tap/latest-artifact"           # Find latest artifact versions
+brew "datadog/tap/latest-chart"              # Find latest chart versions
+brew "datadog/tap/latest-datacenter-config"  # Latest datacenter config
+brew "datadog/tap/latest-image"              # Find latest image versions
+brew "datadog/tap/s22-checker"               # Check for secrets in repos
+brew "datadog/tap/sce"                       # Safe Change Executor
+brew "datadog/tap/to-prod"                   # Deploy to production
+brew "datadog/tap/to-staging"                # Deploy to staging
+brew "datadog/tap/trigger-ci"                # Run CI pipeline
+
+# Datadog GUI Tools
+cask "atlas"                  # Atlas Platform CLI
+cask "datadog-workspaces"     # Datadog workspace management
+cask "dd-auth"                # Datadog OAuth credential provisioning
+cask "dd-gitsign"             # Simplify git commit signing
+cask "ddauth"                 # Datadog authN-methods CLI
+cask "ddr"                    # Datadog application releases
+cask "ddtool"                 # Datadog infrastructure CLI
+
+# Temporal Tools (Datadog-specific)
+brew "tctl"                   # Temporal CLI
+cask "rapid"                  # Rapid service management
+cask "tctl-data-converter"    # Temporal data converter plugin
+cask "tctl-local-auth"        # Temporal authentication plugin
+cask "tctx"                   # Temporal cluster switching
+cask "tilt-functions"         # Tilt functions
+
+# =============================================================================
+# UTILITY TOOLS
+# =============================================================================
+
+brew "lftp"                   # Sophisticated file transfer program
+brew "keyring"                # Python keyring service access
+brew "virtualenv"             # Python virtual environments (legacy)
+brew "oras"                   # OCI Registry As Storage
+brew "z"                      # Jump to frequently used directories
+
+# Compression & Data
+brew "lz4"                    # Fast compression algorithm
+brew "yq"                     # YAML processor (jq for YAML)
+
+# =============================================================================
+# OPTIONAL GUI APPLICATIONS
+# =============================================================================
+
+# None currently - add as needed for specific workflows
+
+# =============================================================================
+# VISUAL STUDIO CODE EXTENSIONS
+# =============================================================================
+# Note: These will only install if VS Code is already installed
+
+vscode "azurite.azurite"                              # Azure Storage emulator
+vscode "bazelbuild.vscode-bazel"                      # Bazel support
+vscode "bencoleman.armview"                           # ARM template viewer
+vscode "charliermarsh.ruff"                           # Python linter
+vscode "datadog.datadog-vscode"                       # Datadog extension
+vscode "docker.docker"                                # Docker support
+vscode "github.copilot"                               # GitHub Copilot
+vscode "github.copilot-chat"                          # GitHub Copilot Chat
+vscode "github.vscode-github-actions"                 # GitHub Actions
+vscode "golang.go"                                    # Go language support
+vscode "hashicorp.terraform"                          # Terraform support
+vscode "jakearl.vscode-sonic-pi"                      # Sonic Pi support
+vscode "mathiasfrohlich.kotlin"                       # Kotlin support
+vscode "mattn.lisp"                                   # Lisp support
+vscode "mechatroner.rainbow-csv"                      # CSV with colors
+vscode "ms-azuretools.vscode-azure-github-copilot"    # Azure Copilot
+vscode "ms-azuretools.vscode-azureappservice"         # Azure App Service
+vscode "ms-azuretools.vscode-azurefunctions"          # Azure Functions
+vscode "ms-azuretools.vscode-azureresourcegroups"     # Azure Resource Groups
+vscode "ms-azuretools.vscode-azurestaticwebapps"      # Azure Static Web Apps
+vscode "ms-azuretools.vscode-bicep"                   # Azure Bicep
+vscode "ms-azuretools.vscode-containers"              # Container support
+vscode "ms-dotnettools.vscode-dotnet-runtime"         # .NET runtime
+vscode "ms-pyright.pyright"                           # Python static type checker
+vscode "ms-python.debugpy"                            # Python debugger
+vscode "ms-python.isort"                              # Python import sorting
+vscode "ms-python.python"                             # Python support
+vscode "ms-python.vscode-pylance"                     # Python language server
+vscode "ms-toolsai.jupyter"                           # Jupyter notebooks
+vscode "ms-toolsai.jupyter-keymap"                    # Jupyter keybindings
+vscode "ms-toolsai.jupyter-renderers"                 # Jupyter renderers
+vscode "ms-toolsai.vscode-jupyter-cell-tags"          # Jupyter cell tags
+vscode "ms-toolsai.vscode-jupyter-slideshow"          # Jupyter slideshows
+vscode "ms-vscode-remote.remote-containers"           # Remote containers
+vscode "ms-vscode-remote.remote-ssh"                  # Remote SSH
+vscode "ms-vscode-remote.remote-ssh-edit"             # Remote SSH editing
+vscode "ms-vscode-remote.remote-wsl"                  # Remote WSL
+vscode "ms-vscode-remote.vscode-remote-extensionpack" # Remote development pack
+vscode "ms-vscode.cmake-tools"                        # CMake tools
+vscode "ms-vscode.cpptools"                           # C/C++ support
+vscode "ms-vscode.cpptools-extension-pack"            # C/C++ extension pack
+vscode "ms-vscode.cpptools-themes"                    # C/C++ themes
+vscode "ms-vscode.remote-explorer"                    # Remote explorer
+vscode "ms-vscode.remote-server"                      # Remote server
+vscode "ms-vsliveshare.vsliveshare"                   # Live Share
+vscode "msazurermtools.azurerm-vscode-tools"          # Azure Resource Manager
+vscode "openai.chatgpt"                               # ChatGPT integration
+vscode "p403n1x87.austin-vscode"                      # Python performance profiler
+vscode "pamaron.pytest-runner"                        # Pytest runner
+vscode "redhat.java"                                  # Java support
+vscode "rust-lang.rust-analyzer"                      # Rust support
+vscode "saoudrizwan.claude-dev"                       # Claude AI assistant
+vscode "scott carver.vscode-supercollider"            # SuperCollider support
+vscode "svelte.svelte-vscode"                         # Svelte support
+vscode "tonybaloney.vscode-pets"                      # Virtual pets
+vscode "twxs.cmake"                                   # CMake support
+vscode "usernamehw.errorlens"                         # Error highlighting
+vscode "visualstudioexptteam.intellicode-api-usage-examples"  # IntelliCode examples
+vscode "visualstudioexptteam.vscodeintellicode"       # IntelliCode
+vscode "vscjava.vscode-gradle"                        # Gradle support
+vscode "vscjava.vscode-java-debug"                    # Java debugging
+vscode "vscjava.vscode-java-dependency"               # Java dependencies
+vscode "vscjava.vscode-java-pack"                     # Java extension pack
+vscode "vscjava.vscode-java-test"                     # Java testing
+vscode "vscjava.vscode-maven"                         # Maven support
+vscode "zxh404.vscode-proto3"                         # Protocol Buffers 

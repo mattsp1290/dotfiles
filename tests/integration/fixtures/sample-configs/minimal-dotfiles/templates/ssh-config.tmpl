@@ -1,0 +1,35 @@
+# SSH Configuration Template for Integration Testing
+# This template demonstrates secret injection functionality
+
+# Default settings
+Host *
+    AddKeysToAgent yes
+    UseKeychain yes
+    IdentitiesOnly yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+
+# Test server configuration with templated values
+Host testserver
+    HostName {{ .test_hostname | default "test.example.com" }}
+    User {{ .test_username | default "testuser" }}
+    Port {{ .test_port | default "22" }}
+    IdentityFile ~/.ssh/{{ .test_key_name | default "id_rsa" }}
+    
+# Production server (would use real secrets)
+Host production
+    HostName {{ .prod_hostname }}
+    User {{ .prod_username }}
+    Port {{ .prod_port | default "22" }}
+    IdentityFile ~/.ssh/{{ .prod_key_name }}
+    ProxyJump {{ .bastion_host }}
+
+# Development environment
+Host dev-*
+    User {{ .dev_username | default "developer" }}
+    IdentityFile ~/.ssh/{{ .dev_key_name | default "id_dev" }}
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# Integration test marker
+# INTEGRATION_TEST_MARKER: SSH template processed 

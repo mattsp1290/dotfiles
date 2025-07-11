@@ -1,0 +1,87 @@
+# Core Homebrew Bundle - Essential Development Tools
+# This file contains packages that are fundamental for most development workflows
+# Install with: brew bundle install --file=os/macos/Brewfile
+
+tap "homebrew/bundle"
+tap "homebrew/cask-versions"
+
+# =============================================================================
+# CORE DEVELOPMENT TOOLS
+# =============================================================================
+
+# Version Control
+brew "git"                     # Distributed version control system
+brew "gh"                      # GitHub command-line tool
+brew "gitleaks"                # Audit git repos for secrets
+
+# Essential Shell Utilities
+brew "bash"                    # Modern Bash shell
+brew "coreutils"               # GNU File, Shell, and Text utilities
+brew "make"                    # Build automation tool
+brew "stow"                    # Symlink farm manager (for dotfiles)
+brew "direnv"                  # Load/unload environment variables based on $PWD
+
+# Modern CLI Tools (Enhanced replacements for standard tools)
+brew "bat"                     # Clone of cat with syntax highlighting
+brew "fzf"                     # Command-line fuzzy finder
+brew "lsd"                     # Modern ls with colors and icons
+brew "watch"                   # Execute programs periodically
+
+# Data Processing & Text Manipulation
+brew "jq"                      # Lightweight JSON processor
+brew "grep"                    # Text search utility
+
+# Network & File Transfer
+brew "wget"                    # Internet file retriever
+brew "httpie"                  # User-friendly cURL replacement
+
+# =============================================================================
+# PROGRAMMING LANGUAGES & RUNTIME MANAGEMENT
+# =============================================================================
+
+# Python Development
+brew "python@3.12"            # Python 3.12 (latest stable)
+brew "pyenv"                   # Python version management
+brew "pyenv-virtualenv"        # Virtual environment plugin for pyenv
+brew "poetry"                  # Python package management tool
+
+# Go Development
+brew "go"                      # Go programming language (latest)
+
+# Node.js Development
+brew "nodenv"                  # Node.js version management
+brew "node-build"              # Install NodeJS versions
+
+# Ruby Development (for Jekyll, gems, etc.)
+brew "rbenv"                   # Ruby version manager
+brew "ruby-build"              # Install various Ruby versions
+
+# =============================================================================
+# CONTAINERIZATION & VIRTUALIZATION
+# =============================================================================
+
+brew "docker", link: false    # Docker CLI (GUI app provides Docker Engine)
+brew "docker-compose"         # Multi-container Docker applications
+brew "colima"                 # Container runtime for macOS
+
+# =============================================================================
+# SECURITY TOOLS
+# =============================================================================
+
+brew "gnupg"                   # GNU Privacy Guard (GPG)
+brew "vault"                   # HashiCorp Vault for secrets management
+
+# =============================================================================
+# GUI APPLICATIONS (ESSENTIAL)
+# =============================================================================
+
+cask "docker"                  # Docker Desktop - container platform
+cask "1password-cli"           # 1Password command-line interface
+
+# =============================================================================
+# FONTS (ESSENTIAL FOR DEVELOPMENT)
+# =============================================================================
+
+tap "homebrew/cask-fonts"
+cask "font-fira-code"          # Programming font with ligatures
+cask "font-jetbrains-mono"     # JetBrains programming font 

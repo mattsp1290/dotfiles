@@ -1,0 +1,128 @@
+FROM ubuntu:22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Set up test environment metadata
+LABEL description="Hardened Ubuntu security testing environment"
+LABEL version="1.0.0"
+LABEL platform="security"
+
+# Install essential packages for security testing
+RUN apt-get update && apt-get install -y \
+    # Core utilities
+    curl \
+    wget \
+    git \
+    stow \
+    # Build tools
+    build-essential \
+    # Shell environments
+    bash \
+    zsh \
+    # Text editors
+    vim \
+    nano \
+    # Network tools
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    # Security tools
+    apparmor \
+    apparmor-utils \
+    fail2ban \
+    rkhunter \
+    chkrootkit \
+    lynis \
+    # Permission and audit tools
+    acl \
+    attr \
+    auditd \
+    # Network security
+    iptables \
+    netfilter-persistent \
+    # Cryptography tools
+    gnupg2 \
+    age \
+    # Monitoring tools
+    psmisc \
+    procps \
+    lsof \
+    netstat-nat \
+    # File integrity
+    aide \
+    tripwire \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create test user with restricted permissions
+RUN useradd -m -s /bin/bash testuser && \
+    echo "testuser:testuser" | chpasswd
+
+# Create security-focused test user
+RUN useradd -m -s /bin/bash secureuser && \
+    echo "secureuser:secureuser" | chpasswd && \
+    usermod -aG sudo secureuser
+
+# Set up test environment directories with proper permissions
+RUN mkdir -p /test-results /workspace && \
+    chmod 755 /test-results /workspace && \
+    chown -R testuser:testuser /test-results /workspace
+
+# Install additional security and testing tools
+RUN apt-get update && apt-get install -y \
+    # Code security scanners
+    git-secrets \
+    # Network analysis
+    nmap \
+    tcpdump \
+    wireshark-common \
+    # File analysis
+    file \
+    binutils \
+    # Text processing with security focus
+    jq \
+    yq \
+    # SSH tools
+    openssh-client \
+    sshpass \
+    # Performance monitoring
+    htop \
+    iotop \
+    strace \
+    ltrace \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configure AppArmor (if available)
+RUN if [ -f /etc/apparmor.d/usr.bin.stow ]; then \
+        aa-complain /usr/bin/stow; \
+    fi
+
+# Set up git-secrets
+RUN git secrets --register-aws --global && \
+    git secrets --install --global
+
+# Configure file permissions audit
+RUN echo "testuser ALL=(ALL) NOPASSWD: /usr/bin/find, /usr/bin/stat, /usr/bin/ls" >> /etc/sudoers
+
+# Set up git configuration for testing
+USER testuser
+RUN git config --global user.name "Security Test User" && \
+    git config --global user.email "security-test@example.com" && \
+    git config --global init.defaultBranch main
+
+# Install git-secrets for user
+RUN git secrets --register-aws && \
+    git secrets --install
+
+# Create test workspace
+WORKDIR /workspace
+
+# Set environment variables for security testing
+ENV DOTFILES_CI=true
+ENV TEST_PLATFORM=security
+ENV SECURITY_TEST=true
+ENV DEBIAN_FRONTEND=noninteractive
+ENV HOME=/home/testuser
+ENV USER=testuser
+
+# Default command runs security tests
+CMD ["/bin/bash", "-c", "tests/integration/security.sh"] 

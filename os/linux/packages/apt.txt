@@ -1,0 +1,159 @@
+# Core APT Package List - Essential Development Tools
+# This file contains packages that are fundamental for most development workflows
+# Install with: scripts/linux-packages.sh --core
+# 
+# Package Format: package_name  # Description
+# Use '#OPTIONAL' comment to mark optional packages within core list
+
+# =============================================================================
+# CORE DEVELOPMENT TOOLS
+# =============================================================================
+
+# Build Tools & Compilation
+build-essential                 # Essential compilation tools (gcc, make, etc.)
+cmake                          # Cross-platform build system
+pkg-config                     # Package configuration tool
+autotools-dev                  # Update infrastructure for config.{guess,sub} files
+autoconf                       # Tool for generating configure scripts
+automake                       # Tool for generating Makefile.in files
+libtool                        # Generic library support script
+
+# Version Control
+git                            # Distributed version control system
+git-lfs                        # Git Large File Storage
+
+# Essential Shell Utilities
+bash-completion                # Programmable completion for bash
+zsh                           # Z shell (enhanced shell)
+stow                          # Symlink farm manager (for dotfiles)
+direnv                        # Load/unload environment variables based on $PWD
+tree                          # Display directories as trees
+htop                          # Interactive process viewer
+neofetch                      # System information tool
+
+# Modern CLI Tools (Enhanced replacements for standard tools)
+bat                           # Clone of cat with syntax highlighting
+fzf                           # Command-line fuzzy finder
+fd-find                       # Modern replacement for find
+ripgrep                       # Fast text search tool (modern grep)
+exa                           # Modern replacement for ls #OPTIONAL
+
+# Data Processing & Text Manipulation
+jq                            # Lightweight JSON processor
+yq                            # YAML processor (jq for YAML) #OPTIONAL
+sed                           # Stream editor
+awk                           # Text processing tool
+
+# Network & File Transfer
+curl                          # Command line tool for transferring data
+wget                          # Internet file retriever
+httpie                        # User-friendly cURL replacement #OPTIONAL
+
+# Compression & Archives
+zip                           # Create and extract ZIP archives
+unzip                         # Extract ZIP archives
+p7zip-full                    # 7-Zip file archiver
+tar                           # Archive utility
+gzip                          # GNU compression utility
+
+# =============================================================================
+# PROGRAMMING LANGUAGES & RUNTIME MANAGEMENT
+# =============================================================================
+
+# Python Development
+python3                       # Python 3 interpreter
+python3-pip                   # Python package installer
+python3-venv                  # Python virtual environment support
+python3-dev                   # Python development headers
+python-is-python3             # Make 'python' command point to python3
+
+# Node.js Development
+nodejs                        # Node.js JavaScript runtime
+npm                           # Node package manager
+
+# Ruby Development (for Jekyll, gems, etc.)
+ruby                          # Ruby programming language
+ruby-dev                      # Ruby development headers
+rubygems                      # Ruby package manager
+
+# Go Development
+golang-go                     # Go programming language #OPTIONAL
+
+# =============================================================================
+# SYSTEM UTILITIES
+# =============================================================================
+
+# File System & Storage
+rsync                         # File synchronization tool
+ncdu                          # Disk usage analyzer
+duf                           # Modern disk usage utility #OPTIONAL
+
+# Process & System Monitoring
+lsof                          # List open files
+psmisc                        # Utilities for managing processes
+procps                        # Process monitoring utilities
+
+# Network Utilities
+net-tools                     # Network configuration tools
+dnsutils                      # DNS lookup utilities
+netcat-traditional            # TCP/IP swiss army knife
+
+# Text Editors
+vim                           # Vi IMproved text editor
+nano                          # Simple text editor
+
+# =============================================================================
+# DEVELOPMENT UTILITIES
+# =============================================================================
+
+# SSH & Remote Access
+openssh-client                # OpenSSH client
+openssh-server                # OpenSSH server #OPTIONAL
+
+# GPG & Security
+gnupg                         # GNU Privacy Guard
+gpg-agent                     # GPG agent for key management
+
+# Database Tools
+sqlite3                       # SQLite command line interface
+
+# Container Tools (if not using Docker Desktop)
+containerd                    # Container runtime #OPTIONAL
+runc                          # OCI container runtime #OPTIONAL
+
+# =============================================================================
+# FONTS (ESSENTIAL FOR DEVELOPMENT)
+# =============================================================================
+
+# Programming Fonts
+fonts-firacode                # Fira Code font with ligatures
+fonts-jetbrains-mono          # JetBrains Mono programming font #OPTIONAL
+fonts-hack                    # Hack programming font #OPTIONAL
+
+# =============================================================================
+# LIBRARIES & DEPENDENCIES
+# =============================================================================
+
+# SSL/TLS
+ca-certificates               # Common CA certificates
+openssl                       # SSL/TLS toolkit
+
+# Development Libraries
+libssl-dev                    # SSL development libraries
+libffi-dev                    # Foreign Function Interface library dev
+libxml2-dev                   # XML C parser development library
+libxslt1-dev                  # XSLT processing library development
+libyaml-dev                   # YAML library development files
+libreadline-dev               # GNU readline library development
+zlib1g-dev                    # Compression library development
+
+# Python Libraries
+python3-setuptools            # Python setuptools
+python3-wheel                 # Python wheel support
+
+# =============================================================================
+# SNAP PACKAGES (Universal)
+# =============================================================================
+
+# Note: These are managed separately via snap
+# See os/linux/packages/snap.txt for snap-specific packages 

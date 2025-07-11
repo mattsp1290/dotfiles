@@ -1,0 +1,103 @@
+FROM fedora:36
+
+ARG FEDORA_VERSION=36
+
+# Set up test environment metadata
+LABEL description="Fedora 36 dotfiles integration testing environment"
+LABEL version="1.0.0"
+LABEL platform="fedora-36"
+
+# Install essential packages for dotfiles testing
+RUN dnf update -y && dnf install -y \
+    # Core utilities
+    curl \
+    wget \
+    git \
+    stow \
+    # Build tools
+    gcc \
+    gcc-c++ \
+    make \
+    # Shell environments
+    bash \
+    zsh \
+    fish \
+    # Text editors for testing
+    vim \
+    nano \
+    # Network tools
+    ca-certificates \
+    # Testing utilities
+    time \
+    # Process management
+    psmisc \
+    procps-ng \
+    # File system tools
+    findutils \
+    # Archive tools
+    tar \
+    gzip \
+    unzip \
+    bzip2 \
+    xz \
+    # Fedora-specific tools
+    dnf-plugins-core \
+    && dnf clean all
+
+# Create test user (non-root for security testing)
+RUN useradd -m -s /bin/bash testuser && \
+    echo "testuser:testuser" | chpasswd && \
+    usermod -aG wheel testuser
+
+# Install sudo and additional tools
+RUN dnf install -y \
+    sudo \
+    # Version control
+    git-lfs \
+    subversion \
+    # Package managers
+    python3-pip \
+    nodejs \
+    npm \
+    # Development tools
+    python3-devel \
+    # Compression tools
+    zip \
+    p7zip \
+    # Text processing
+    jq \
+    # Networking
+    openssh-clients \
+    bind-utils \
+    # Performance monitoring
+    htop \
+    iotop \
+    # Fedora package tools
+    rpm-build \
+    rpmdevtools \
+    && dnf clean all
+
+# Set up test environment directories
+RUN mkdir -p /test-results /workspace && \
+    chown -R testuser:testuser /test-results /workspace
+
+# Enable wheel group for sudo
+RUN echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Set up git configuration for testing
+USER testuser
+RUN git config --global user.name "Test User" && \
+    git config --global user.email "test@example.com" && \
+    git config --global init.defaultBranch main
+
+# Create test workspace
+WORKDIR /workspace
+
+# Set environment variables for testing
+ENV DOTFILES_CI=true
+ENV TEST_PLATFORM=fedora-36
+ENV HOME=/home/testuser
+ENV USER=testuser
+
+# Default command runs fresh installation tests
+CMD ["/bin/bash", "-c", "tests/integration/fresh-install.sh"] 

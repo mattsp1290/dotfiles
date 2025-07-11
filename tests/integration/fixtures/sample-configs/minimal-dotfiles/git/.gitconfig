@@ -1,0 +1,64 @@
+# Minimal Git Configuration for Integration Testing
+
+[user]
+    name = Test User
+    email = test@example.com
+
+[core]
+    editor = vim
+    pager = less
+    excludesfile = ~/.gitignore_global
+    autocrlf = input
+    safecrlf = true
+
+[init]
+    defaultBranch = main
+
+[push]
+    default = simple
+    autoSetupRemote = true
+
+[pull]
+    rebase = false
+
+[color]
+    ui = auto
+    status = auto
+    diff = auto
+    branch = auto
+
+[color "diff"]
+    meta = yellow bold
+    frag = magenta bold
+    old = red bold
+    new = green bold
+
+[color "status"]
+    added = green
+    changed = yellow
+    untracked = red
+
+[alias]
+    st = status
+    co = checkout
+    br = branch
+    ci = commit
+    df = diff
+    lg = log --oneline --graph --all
+    last = log -1 HEAD
+    unstage = reset HEAD --
+    visual = !gitk
+
+[diff]
+    tool = vimdiff
+
+[merge]
+    tool = vimdiff
+
+[branch]
+    autosetupmerge = always
+    autosetuprebase = always
+
+# Test section for integration testing
+[test]
+    marker = "INTEGRATION_TEST_MARKER: Git config loaded" 

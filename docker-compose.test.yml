@@ -1,0 +1,163 @@
+version: '3.8'
+
+services:
+  # Ubuntu 20.04 LTS Testing Environment
+  ubuntu-20-04:
+    build:
+      context: .
+      dockerfile: tests/integration/docker/Dockerfile.ubuntu-20.04
+      args:
+        - UBUNTU_VERSION=20.04
+    environment:
+      - DOTFILES_CI=true
+      - TEST_PLATFORM=ubuntu-20.04
+      - DEBIAN_FRONTEND=noninteractive
+    volumes:
+      - .:/workspace:ro
+      - test-results:/test-results
+    working_dir: /workspace
+    command: /bin/bash -c "tests/integration/fresh-install.sh && tests/integration/upgrade.sh && tests/integration/rollback.sh"
+    networks:
+      - dotfiles-test
+
+  # Ubuntu 22.04 LTS Testing Environment  
+  ubuntu-22-04:
+    build:
+      context: .
+      dockerfile: tests/integration/docker/Dockerfile.ubuntu-22.04
+      args:
+        - UBUNTU_VERSION=22.04
+    environment:
+      - DOTFILES_CI=true
+      - TEST_PLATFORM=ubuntu-22.04
+      - DEBIAN_FRONTEND=noninteractive
+    volumes:
+      - .:/workspace:ro
+      - test-results:/test-results
+    working_dir: /workspace
+    command: /bin/bash -c "tests/integration/fresh-install.sh && tests/integration/upgrade.sh"
+    networks:
+      - dotfiles-test
+
+  # Debian 11 Testing Environment
+  debian-11:
+    build:
+      context: .
+      dockerfile: tests/integration/docker/Dockerfile.debian-11
+      args:
+        - DEBIAN_VERSION=11
+    environment:
+      - DOTFILES_CI=true
+      - TEST_PLATFORM=debian-11
+      - DEBIAN_FRONTEND=noninteractive
+    volumes:
+      - .:/workspace:ro
+      - test-results:/test-results
+    working_dir: /workspace
+    command: /bin/bash -c "tests/integration/fresh-install.sh"
+    networks:
+      - dotfiles-test
+
+  # Fedora 36 Testing Environment
+  fedora-36:
+    build:
+      context: .
+      dockerfile: tests/integration/docker/Dockerfile.fedora-36
+      args:
+        - FEDORA_VERSION=36
+    environment:
+      - DOTFILES_CI=true
+      - TEST_PLATFORM=fedora-36
+    volumes:
+      - .:/workspace:ro
+      - test-results:/test-results
+    working_dir: /workspace
+    command: /bin/bash -c "tests/integration/fresh-install.sh"
+    networks:
+      - dotfiles-test
+
+  # Arch Linux Testing Environment
+  arch:
+    build:
+      context: .
+      dockerfile: tests/integration/docker/Dockerfile.arch
+    environment:
+      - DOTFILES_CI=true
+      - TEST_PLATFORM=arch
+    volumes:
+      - .:/workspace:ro
+      - test-results:/test-results
+    working_dir: /workspace
+    command: /bin/bash -c "tests/integration/fresh-install.sh"
+    networks:
+      - dotfiles-test
+
+  # Security Testing Environment (hardened Ubuntu)
+  security-test:
+    build:
+      context: .
+      dockerfile: tests/integration/docker/Dockerfile.security
+    environment:
+      - DOTFILES_CI=true
+      - TEST_PLATFORM=security
+      - SECURITY_TEST=true
+      - DEBIAN_FRONTEND=noninteractive
+    volumes:
+      - .:/workspace:ro
+      - test-results:/test-results
+    working_dir: /workspace
+    command: /bin/bash -c "tests/integration/security.sh"
+    networks:
+      - dotfiles-test
+
+  # Performance Testing Environment
+  performance-test:
+    build:
+      context: .
+      dockerfile: tests/integration/docker/Dockerfile.performance
+    environment:
+      - DOTFILES_CI=true
+      - TEST_PLATFORM=performance
+      - PERFORMANCE_TEST=true
+      - DEBIAN_FRONTEND=noninteractive
+    volumes:
+      - .:/workspace:ro
+      - test-results:/test-results
+    working_dir: /workspace
+    command: /bin/bash -c "tests/integration/performance.sh"
+    networks:
+      - dotfiles-test
+
+  # Test result aggregator
+  test-aggregator:
+    image: alpine:3.18
+    environment:
+      - TEST_AGGREGATOR=true
+    volumes:
+      - test-results:/test-results
+      - ./tests/integration/reports:/reports
+    working_dir: /test-results
+    command: /bin/sh -c "
+      echo 'Aggregating test results...' &&
+      find . -name '*.json' -o -name '*.xml' -o -name '*.log' &&
+      echo 'Test aggregation completed' &&
+      sleep 30"
+    depends_on:
+      - ubuntu-20-04
+      - ubuntu-22-04
+      - debian-11
+      - fedora-36
+      - arch
+    networks:
+      - dotfiles-test
+
+volumes:
+  test-results:
+    driver: local
+
+networks:
+  dotfiles-test:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

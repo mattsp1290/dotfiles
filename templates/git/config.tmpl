@@ -1,0 +1,90 @@
+# =============================================================================
+# Git Local Configuration Template
+# =============================================================================
+# This file is processed by the secret injection system and placed at ~/.gitconfig.local
+# It contains personal Git configuration that should not be committed to the repository
+
+[user]
+    # Default Git identity (can be overridden by profile-specific configs)
+    name = ${GIT_DEFAULT_NAME}
+    email = ${GIT_DEFAULT_EMAIL}
+    # Default signing key
+    signingkey = ${GIT_DEFAULT_SIGNING_KEY}
+
+[commit]
+    # Default commit signing preference
+    gpgsign = ${GIT_COMMIT_SIGN_DEFAULT}
+
+[tag]
+    # Default tag signing preference
+    gpgsign = ${GIT_TAG_SIGN_DEFAULT}
+
+# =============================================================================
+# Credential Configuration
+# =============================================================================
+
+# GitHub Personal Access Token
+[credential "https://github.com"]
+    helper = store
+    username = ${GITHUB_USERNAME}
+
+# GitLab Personal Access Token
+[credential "https://gitlab.com"]
+    helper = store
+    username = ${GITLAB_USERNAME}
+
+# Work GitLab (if applicable)
+[credential "https://gitlab.work.com"]
+    helper = store
+    username = ${GITLAB_WORK_USERNAME}
+
+# =============================================================================
+# URL Rewrites for Token Authentication
+# =============================================================================
+
+# Personal GitHub (with token)
+[url "https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/"]
+    insteadOf = https://github.com/
+
+# Personal GitLab (with token)
+[url "https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@gitlab.com/"]
+    insteadOf = https://gitlab.com/
+
+# Work GitLab (with token)
+[url "https://oauth2:${GITLAB_WORK_TOKEN}@gitlab.work.com/"]
+    insteadOf = https://gitlab.work.com/
+
+# =============================================================================
+# Service-Specific Configuration
+# =============================================================================
+
+# GitHub CLI configuration
+[github]
+    user = ${GITHUB_USERNAME}
+
+# Hub configuration (legacy GitHub CLI)
+[hub]
+    user = ${GITHUB_USERNAME}
+
+# =============================================================================
+# Platform-Specific Credential Helpers
+# =============================================================================
+
+# macOS Keychain integration
+[credential]
+    helper = osxkeychain
+
+# Linux credential helper (uncomment if on Linux)
+# [credential]
+#     helper = cache --timeout=3600
+
+# Windows credential helper (uncomment if on Windows)
+# [credential]
+#     helper = manager-core
+
+# =============================================================================
+# Local Development Settings
+# =============================================================================
+
+# Local repository-specific overrides can go here
+# These will apply to all repositories unless overridden by profile-specific configs 

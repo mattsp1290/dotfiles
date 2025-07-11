@@ -1,0 +1,38 @@
+# GitHub SSH Configuration
+# Optimized settings for GitHub operations
+
+Host github.com
+    HostName github.com
+    User git
+    Port 22
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+    
+    # GitHub-specific optimizations
+    Compression yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 10
+    
+    # Connection multiplexing for faster subsequent connections
+    ControlMaster auto
+    ControlPath /tmp/ssh_mux_github_%r
+    ControlPersist 10m
+
+# GitHub alternative hostname (useful for multiple accounts)
+Host gh
+    HostName github.com
+    User git
+    Port 22
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+    PreferredAuthentications publickey
+
+# GitHub SSH fallback (port 443 for restrictive networks)
+Host github-443
+    HostName ssh.github.com
+    User git
+    Port 443
+    IdentityFile ~/.ssh/id_rsa
+    IdentitiesOnly yes
+    PreferredAuthentications publickey 

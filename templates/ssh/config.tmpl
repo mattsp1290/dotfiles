@@ -1,0 +1,47 @@
+# SSH Config Template
+# Process to ~/.ssh/config.d/secrets or include in ~/.ssh/config
+
+# GitHub
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+    # Optional: Use specific GitHub token for git operations
+    # SetEnv GIT_ASKPASS_TOKEN=${GITHUB_TOKEN}
+
+# GitLab
+Host gitlab.com
+    HostName gitlab.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+
+# Work Bastion/Jump Host
+Host work-bastion
+    HostName ${WORK_BASTION_HOST}
+    User ${WORK_SSH_USERNAME}
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519_work
+    # Optional: Use password from 1Password
+    # PreferredAuthentications password
+    # PasswordAuthentication yes
+
+# Work Internal Hosts (via bastion)
+Host *.work.internal
+    ProxyJump work-bastion
+    User ${WORK_SSH_USERNAME}
+    IdentityFile ~/.ssh/id_ed25519_work
+    StrictHostKeyChecking accept-new
+
+# Personal VPS/Cloud Servers
+Host personal-vps
+    HostName ${PERSONAL_VPS_IP}
+    User ${PERSONAL_VPS_USERNAME}
+    Port ${PERSONAL_VPS_SSH_PORT}
+    IdentityFile ~/.ssh/id_ed25519_personal
+
+# DigitalOcean Droplets (dynamic)
+Host *.droplet
+    User root
+    IdentityFile ~/.ssh/id_ed25519_do
+    StrictHostKeyChecking accept-new
+    # Note: Actual hostnames set via ~/.ssh/config.d/droplets 
