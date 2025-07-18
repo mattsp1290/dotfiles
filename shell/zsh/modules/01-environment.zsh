@@ -121,6 +121,10 @@ export COLORTERM="${COLORTERM:-truecolor}"
 export MANPAGER="less -R"
 export MANWIDTH=80
 
+# Set proper PAGER (override any editor/IDE settings that might break tools like gh)
+export PAGER="less -FRX"
+export LESS="-FRX"
+
 # Time zone (if not set by system)
 export TZ="${TZ:-America/New_York}"
 

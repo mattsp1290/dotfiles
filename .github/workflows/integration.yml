@@ -123,7 +123,7 @@ jobs:
           
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration-results-ubuntu-${{ matrix.ubuntu-version }}-${{ matrix.test-suite }}
           path: test-results/
@@ -196,7 +196,7 @@ jobs:
           
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration-results-macos-${{ matrix.test-suite }}
           path: test-results/
@@ -227,7 +227,7 @@ jobs:
           
       - name: Upload workflow results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: complete-workflow-results
           path: test-results/
@@ -246,7 +246,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Download all test results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: all-results/
           
@@ -272,7 +272,7 @@ jobs:
           echo "Comprehensive test report generated"
           
       - name: Upload final report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration-test-report
           path: final-report/

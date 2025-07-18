@@ -86,7 +86,7 @@ jobs:
             
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: unit-test-results-${{ matrix.os }}
           path: unit-tests-${{ matrix.os }}.json
@@ -130,7 +130,7 @@ jobs:
             
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: integration-test-results-${{ matrix.os }}
           path: integration-tests-${{ matrix.os }}.json
@@ -163,7 +163,7 @@ jobs:
             
       - name: Upload performance results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-test-results
           path: performance-tests.json
@@ -301,7 +301,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Download all test results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: test-results/
           
@@ -352,7 +352,7 @@ jobs:
           EOF
           
       - name: Upload combined results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-report
           path: combined-results/
