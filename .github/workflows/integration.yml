@@ -119,19 +119,19 @@ jobs:
           # Run appropriate test and tee output to logs
           case "${{ matrix.test-suite }}" in
             "fresh-install")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/fresh-install.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/fresh-install.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/fresh-install.sh 2>&1 | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/fresh-install.log
               ;;
             "upgrade")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/upgrade.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/upgrade.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/upgrade.sh 2>&1 | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/upgrade.log
               ;;
             "rollback")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/rollback.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/rollback.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/rollback.sh 2>&1 | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/rollback.log
               ;;
             "security")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/security.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/security.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/security.sh 2>&1 | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/security.log
               ;;
             "performance")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/performance.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/performance.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/performance.sh 2>&1 | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/performance.log
               ;;
           esac
           
@@ -220,19 +220,19 @@ jobs:
           # Run appropriate test and tee output to logs
           case "${{ matrix.test-suite }}" in
             "fresh-install")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/fresh-install.sh | tee test-results/macos-latest/fresh-install.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/fresh-install.sh 2>&1 | tee test-results/macos-latest/fresh-install.log
               ;;
             "upgrade")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/upgrade.sh | tee test-results/macos-latest/upgrade.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/upgrade.sh 2>&1 | tee test-results/macos-latest/upgrade.log
               ;;
             "rollback")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/rollback.sh | tee test-results/macos-latest/rollback.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/rollback.sh 2>&1 | tee test-results/macos-latest/rollback.log
               ;;
             "security")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/security.sh | tee test-results/macos-latest/security.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/security.sh 2>&1 | tee test-results/macos-latest/security.log
               ;;
             "performance")
-              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/performance.sh | tee test-results/macos-latest/performance.log
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/performance.sh 2>&1 | tee test-results/macos-latest/performance.log
               ;;
           esac
           
@@ -282,7 +282,7 @@ jobs:
           }
           
           chmod +x tests/integration/test-complete-workflow.sh
-          run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/test-complete-workflow.sh | tee test-results/complete-workflow/test-complete-workflow.log
+          run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/test-complete-workflow.sh 2>&1 | tee test-results/complete-workflow/test-complete-workflow.log
           
       - name: Upload workflow results
         if: always()
