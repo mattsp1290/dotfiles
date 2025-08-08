@@ -262,10 +262,27 @@ jobs:
           
       - name: Run complete workflow test
         run: |
+          set -euo pipefail
           echo "Running complete workflow integration test..."
           
+          # Ensure results directory exists
+          mkdir -p test-results/complete-workflow
+          
+          # Portable timeout shim
+          run_with_timeout() {
+            local seconds="$1"; shift
+            if command -v timeout >/dev/null 2>&1; then
+              timeout "$seconds" "$@"
+            elif command -v gtimeout >/dev/null 2>&1; then
+              gtimeout "$seconds" "$@"
+            else
+              echo "WARNING: timeout not available; running without timeout" >&2
+              "$@"
+            fi
+          }
+          
           chmod +x tests/integration/test-complete-workflow.sh
-          timeout ${{ env.TEST_TIMEOUT }} tests/integration/test-complete-workflow.sh
+          run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/test-complete-workflow.sh | tee test-results/complete-workflow/test-complete-workflow.log
           
       - name: Upload workflow results
         if: always()
