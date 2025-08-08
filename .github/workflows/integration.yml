@@ -94,6 +94,7 @@ jobs:
           
       - name: Run integration tests
         run: |
+          set -euo pipefail
           echo "Running ${{ matrix.test-suite }} tests on Ubuntu ${{ matrix.ubuntu-version }}"
           
           export DOTFILES_CI=true
@@ -102,22 +103,35 @@ jobs:
           # Create results directory
           mkdir -p test-results/ubuntu-${{ matrix.ubuntu-version }}
           
-          # Run appropriate test
+          # Portable timeout shim
+          run_with_timeout() {
+            local seconds="$1"; shift
+            if command -v timeout >/dev/null 2>&1; then
+              timeout "$seconds" "$@"
+            elif command -v gtimeout >/dev/null 2>&1; then
+              gtimeout "$seconds" "$@"
+            else
+              echo "WARNING: timeout not available; running without timeout" >&2
+              "$@"
+            fi
+          }
+          
+          # Run appropriate test and tee output to logs
           case "${{ matrix.test-suite }}" in
             "fresh-install")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/fresh-install.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/fresh-install.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/fresh-install.log
               ;;
             "upgrade")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/upgrade.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/upgrade.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/upgrade.log
               ;;
             "rollback")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/rollback.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/rollback.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/rollback.log
               ;;
             "security")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/security.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/security.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/security.log
               ;;
             "performance")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/performance.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/performance.sh | tee test-results/ubuntu-${{ matrix.ubuntu-version }}/performance.log
               ;;
           esac
           
@@ -154,6 +168,20 @@ jobs:
             brew install stow
           fi
           
+          # Ensure timeout is available (coreutils provides gtimeout on macOS)
+          if ! command -v timeout >/dev/null 2>&1; then
+            if ! command -v gtimeout >/dev/null 2>&1; then
+              brew install coreutils
+            fi
+            echo "Using gtimeout as timeout"
+            alias timeout='gtimeout'
+            # Persist alias for this step
+            echo "alias timeout='gtimeout'" >> "$HOME/.bashrc"
+            echo "alias timeout='gtimeout'" >> "$HOME/.zshrc"
+            source "$HOME/.zshrc" || true
+            source "$HOME/.bashrc" || true
+          fi
+          
           # Set up git configuration
           git config --global user.name "Test User"
           git config --global user.email "test@example.com"
@@ -167,6 +195,7 @@ jobs:
           
       - name: Run integration tests
         run: |
+          set -euo pipefail
           echo "Running ${{ matrix.test-suite }} tests on macOS"
           
           export DOTFILES_CI=true
@@ -175,22 +204,35 @@ jobs:
           # Create results directory
           mkdir -p test-results/macos-latest
           
-          # Run appropriate test
+          # Portable timeout shim
+          run_with_timeout() {
+            local seconds="$1"; shift
+            if command -v timeout >/dev/null 2>&1; then
+              timeout "$seconds" "$@"
+            elif command -v gtimeout >/dev/null 2>&1; then
+              gtimeout "$seconds" "$@"
+            else
+              echo "WARNING: timeout not available; running without timeout" >&2
+              "$@"
+            fi
+          }
+          
+          # Run appropriate test and tee output to logs
           case "${{ matrix.test-suite }}" in
             "fresh-install")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/fresh-install.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/fresh-install.sh | tee test-results/macos-latest/fresh-install.log
               ;;
             "upgrade")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/upgrade.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/upgrade.sh | tee test-results/macos-latest/upgrade.log
               ;;
             "rollback")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/rollback.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/rollback.sh | tee test-results/macos-latest/rollback.log
               ;;
             "security")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/security.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/security.sh | tee test-results/macos-latest/security.log
               ;;
             "performance")
-              timeout ${{ env.TEST_TIMEOUT }} tests/integration/performance.sh
+              run_with_timeout "${{ env.TEST_TIMEOUT }}" tests/integration/performance.sh | tee test-results/macos-latest/performance.log
               ;;
           esac
           
