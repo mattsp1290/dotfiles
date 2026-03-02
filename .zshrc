@@ -1,10 +1,12 @@
 # Path to your dotfiles.
 export DOTFILES=$HOME/git/.dotfiles
 
-# Add $HOME/git/bin to path
+export PATH="$HOME/.local/bin:$PATH"
 export PATH=$DOTFILES/bin:$PATH
 
-# Path to your oh-my-zsh installation.
+# START OMZ BLOCK
 export ZSH="$HOME/.oh-my-zsh"
-
-
+ZSH_THEME="robbyrussell"
+plugins=(git)
+source $ZSH/oh-my-zsh.sh
+# END OMZ BLOCK
