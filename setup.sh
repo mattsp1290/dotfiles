@@ -20,6 +20,51 @@ if test ! $(which brew); then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
+# Check for nvm and install if we don't have it
+if ! brew list nvm &> /dev/null && ! type nvm &> /dev/null; then
+  brew install nvm
+  mkdir -p "$HOME/.nvm"
+  export NVM_DIR="$HOME/.nvm"
+  . "$(brew --prefix nvm)/nvm.sh"
+  nvm install node
+fi
+
+# Check for pyenv and install if we don't have it
+if ! command -v pyenv > /dev/null 2>&1; then
+  brew install pyenv
+  eval "$(pyenv init -)"
+  pyenv install -s 3
+  pyenv global "$(pyenv install -l | grep -E '^\s+3\.[0-9]+\.[0-9]+$' | tail -1 | xargs)"
+fi
+
+# Check for pnpm and install if we don't have it
+if ! command -v pnpm > /dev/null 2>&1; then
+  corepack enable pnpm
+fi
+
+# Check for iTerm2 and install if we don't have it
+if ! brew list --cask iterm2 &> /dev/null && [ ! -d "/Applications/iTerm.app" ]; then
+  brew install --cask iterm2
+fi
+
+# Check for Ghostty and install if we don't have it
+if ! brew list --cask ghostty &> /dev/null && [ ! -d /Applications/Ghostty.app ]; then
+  brew install --cask ghostty
+fi
+
+# Check for cmux and install if we don't have it
+if ! brew list --cask cmux &> /dev/null && [ ! -d /Applications/cmux.app ]; then
+  brew tap manaflow-ai/cmux
+  brew install --cask cmux
+fi
+
+# Check for Powerline fonts and install if we don't have them
+if ! find "$HOME/Library/Fonts" -name "*Powerline*" -print -quit 2>/dev/null | grep -q .; then
+  git clone https://github.com/powerline/fonts.git --depth=1 /tmp/powerline-fonts
+  /tmp/powerline-fonts/install.sh
+  rm -rf /tmp/powerline-fonts
+fi
+
 # Removes .zshrc from $HOME (if it exists) and symlinks the .zshrc file from the .dotfiles
 if test -f $HOME/.zshrc; then
   cp $HOME/.zshrc $HOME/.zshrc.backup
@@ -27,6 +72,29 @@ if test -f $HOME/.zshrc; then
 fi
 
 ln -snf "$HOME/git/dotfiles/.zshrc" "$HOME/.zshrc"
+
+# Symlink Ghostty config (used by both Ghostty and cmux)
+mkdir -p "$HOME/.config"
+ln -snf "$HOME/git/dotfiles/.config/ghostty" "$HOME/.config/ghostty"
+
+# Import Smyck color scheme into iTerm2 if installed
+if [ -d "/Applications/iTerm.app" ]; then
+  if ! defaults read com.googlecode.iterm2 "Custom Color Presets" 2>/dev/null | grep -q 'Smyck'; then
+    open "$HOME/git/dotfiles/Smyck.itermcolors" 2>/dev/null || true
+  fi
+fi
+
+# Set iTerm2 font to Ubuntu Mono derivative Powerline
+if [ -d "/Applications/iTerm.app" ]; then
+  /usr/libexec/PlistBuddy -c "Set ':New Bookmarks:0:Normal Font' 'UbuntuMonoDerivativePowerline-Regular 16'" \
+    "$HOME/Library/Preferences/com.googlecode.iterm2.plist" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Set ':New Bookmarks:0:Non Ascii Font' 'UbuntuMonoDerivativePowerline-Regular 16'" \
+    "$HOME/Library/Preferences/com.googlecode.iterm2.plist" 2>/dev/null || true
+fi
+
+if test ! -f $HOME/.profile; then
+  touch $HOME/.profile
+fi
 
 # Install Claude Code if not already present
 if ! command -v claude > /dev/null 2>&1 && [ ! -f "$HOME/.local/bin/claude" ]; then
@@ -43,3 +111,5 @@ for dir in "$DOTFILES_CLAUDE"/*/; do
   dir_name=$(basename "$dir")
   ln -snf "$dir" "$HOME/.claude/$dir_name"
 done
+
+echo "Done!"
