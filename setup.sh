@@ -8,7 +8,7 @@ fi
 echo "Setting up your Mac..."
 
 # Check for Oh My Zsh and install if we don't have it
-if test ! $(which omz); then
+if [ ! -d "$HOME/.oh-my-zsh" ]; then
   /bin/sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/HEAD/tools/install.sh)"
 fi
 
@@ -39,6 +39,8 @@ fi
 
 # Check for pnpm and install if we don't have it
 if ! command -v pnpm > /dev/null 2>&1; then
+  export NVM_DIR="$HOME/.nvm"
+  [ -s "$(brew --prefix nvm)/nvm.sh" ] && . "$(brew --prefix nvm)/nvm.sh"
   corepack enable pnpm
 fi
 
