@@ -96,6 +96,17 @@ if test ! -f $HOME/.profile; then
   touch $HOME/.profile
 fi
 
+# Ensure reviews/ is in the global gitignore
+GITIGNORE_GLOBAL="$HOME/.gitignore_global"
+touch "$GITIGNORE_GLOBAL"
+if ! grep -qF 'reviews/' "$GITIGNORE_GLOBAL"; then
+  echo 'reviews/' >> "$GITIGNORE_GLOBAL"
+fi
+git config --global core.excludesFile "$GITIGNORE_GLOBAL"
+
+# Set vim as the default git editor
+git config --global core.editor "vim"
+
 # Install Claude Code if not already present
 if ! command -v claude > /dev/null 2>&1 && [ ! -f "$HOME/.local/bin/claude" ]; then
   curl -fsSL https://claude.ai/install.sh | bash

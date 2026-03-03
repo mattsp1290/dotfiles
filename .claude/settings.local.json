@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.cmux.dev)",
+      "WebFetch(domain:ghostty.org)",
+      "Bash(curl:*)",
+      "Bash(defaults read:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git:*)"
+    ]
+  }
+}
