@@ -41,7 +41,7 @@ fi
 if ! command -v pnpm > /dev/null 2>&1; then
   export NVM_DIR="$HOME/.nvm"
   [ -s "$(brew --prefix nvm)/nvm.sh" ] && . "$(brew --prefix nvm)/nvm.sh"
-  corepack enable pnpm
+  npm install -g pnpm
 fi
 
 # Check for iTerm2 and install if we don't have it
