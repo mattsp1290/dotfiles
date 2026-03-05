@@ -58,7 +58,7 @@ fi
 if ! brew list colima &> /dev/null && ! command -v docker > /dev/null 2>&1; then
   brew install docker docker-compose docker-buildx
   brew install colima
-  colima start
+  colima start --cpu 4 --memory 16 --vm-type vz --vz-rosetta
 fi
 
 # Ensure docker CLI plugins directory is configured (required for docker compose, buildx, etc.)
