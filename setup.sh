@@ -44,6 +44,29 @@ if ! command -v pnpm > /dev/null 2>&1; then
   npm install -g pnpm
 fi
 
+# Check for GitHub CLI and install if we don't have it
+if ! brew list gh &> /dev/null && ! command -v gh > /dev/null 2>&1; then
+  brew install gh
+fi
+
+# Check for Go and install if we don't have it
+if ! brew list go &> /dev/null && ! command -v go > /dev/null 2>&1; then
+  brew install go
+fi
+
+# Check for Colima and install if we don't have it
+if ! brew list colima &> /dev/null && ! command -v docker > /dev/null 2>&1; then
+  brew install docker docker-compose docker-buildx
+  brew install colima
+  colima start
+fi
+
+# Ensure docker CLI plugins directory is configured (required for docker compose, buildx, etc.)
+python3 scripts/ensure-docker-cli-plugins.py
+
+# Ensure go bin directory exists
+mkdir -p "$HOME/go/bin"
+
 # Check for iTerm2 and install if we don't have it
 if ! brew list --cask iterm2 &> /dev/null && [ ! -d "/Applications/iTerm.app" ]; then
   brew install --cask iterm2

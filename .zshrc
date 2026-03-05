@@ -3,6 +3,12 @@ export DOTFILES=$HOME/git/.dotfiles
 export PATH=$DOTFILES/bin:$PATH
 
 export PATH="$HOME/.local/bin:$PATH"
+export DOCKER_BUILDKIT=1
+
+# START GO BLOCK
+export GOPATH="$HOME/go"
+export PATH="$HOME/go/bin:$PATH"
+# END GO BLOCK
 
 # START NODE BLOCK
 export NVM_DIR="$HOME/.nvm"
