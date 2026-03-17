@@ -5,6 +5,11 @@ export PATH=$DOTFILES/bin:$PATH
 export PATH="$HOME/.local/bin:$PATH"
 export DOCKER_BUILDKIT=1
 
+# Point DOCKER_HOST at colima socket when colima is active
+if [ -S "$HOME/.colima/default/docker.sock" ]; then
+  export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
+fi
+
 # START GO BLOCK
 export GOPATH="$HOME/go"
 export PATH="$HOME/go/bin:$PATH"
