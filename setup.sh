@@ -54,6 +54,11 @@ if ! brew list go &> /dev/null && ! command -v go > /dev/null 2>&1; then
   brew install go
 fi
 
+# Check for Rust and install if we don't have it
+if ! command -v rustup > /dev/null 2>&1; then
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+fi
+
 # Check for Colima and install if we don't have it
 if ! brew list colima &> /dev/null && ! command -v docker > /dev/null 2>&1; then
   brew install docker docker-compose docker-buildx

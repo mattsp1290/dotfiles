@@ -11,6 +11,9 @@ if [ -S "$HOME/.colima/default/docker.sock" ]; then
   export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"
 fi
 
+# Load Rust/Cargo environment
+. "$HOME/.cargo/env"
+
 # START GO BLOCK
 export GOPATH="$HOME/go"
 export PATH="$HOME/go/bin:$PATH"
