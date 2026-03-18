@@ -61,6 +61,11 @@ if ! brew list colima &> /dev/null && ! command -v docker > /dev/null 2>&1; then
   colima start --cpu 4 --memory 16 --vm-type vz --vz-rosetta
 fi
 
+# Check for wget and install if we don't have it
+if ! brew list wget &> /dev/null && ! command -v wget > /dev/null 2>&1; then
+  brew install wget
+fi
+
 # Ensure docker CLI plugins directory is configured (required for docker compose, buildx, etc.)
 python3 scripts/ensure-docker-cli-plugins.py
 
