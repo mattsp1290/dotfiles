@@ -4,6 +4,7 @@ export PATH=$DOTFILES/bin:$PATH
 
 export PATH="$HOME/.local/bin:$PATH"
 export DOCKER_BUILDKIT=1
+export ENABLE_TOOL_SEARCH=true
 
 # Point DOCKER_HOST at colima socket when colima is active
 if [ -S "$HOME/.colima/default/docker.sock" ]; then
