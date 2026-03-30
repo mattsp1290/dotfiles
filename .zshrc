@@ -12,7 +12,7 @@ if [ -S "$HOME/.colima/default/docker.sock" ]; then
 fi
 
 # Load Rust/Cargo environment
-. "$HOME/.cargo/env"
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # START GO BLOCK
 export GOPATH="$HOME/go"
@@ -37,8 +37,15 @@ source $ZSH/oh-my-zsh.sh
 autoload -U history-search-end
 zle -N history-beginning-search-backward-end history-search-end
 zle -N history-beginning-search-forward-end history-search-end
+
+# Bind terminfo values (terminal-agnostic) plus both common escape sequences
+# to cover xterm normal mode (^[[A), application mode (^[OA), tmux, and SSH
+[[ -n "${terminfo[kcuu1]}" ]] && bindkey "${terminfo[kcuu1]}" history-beginning-search-backward-end
+[[ -n "${terminfo[kcud1]}" ]] && bindkey "${terminfo[kcud1]}" history-beginning-search-forward-end
 bindkey "^[[A" history-beginning-search-backward-end
+bindkey "^[OA" history-beginning-search-backward-end
 bindkey "^[[B" history-beginning-search-forward-end
+bindkey "^[OB" history-beginning-search-forward-end
 # END ZSH BLOCK
 
 source $HOME/.profile

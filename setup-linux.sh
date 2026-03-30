@@ -18,8 +18,13 @@ if ! command -v zsh > /dev/null 2>&1; then
 fi
 
 # Set zsh as default shell if not already
-if [ "$SHELL" != "$(which zsh)" ]; then
-  chsh -s "$(which zsh)"
+ZSH_PATH="$(command -v zsh)"
+if [ "$SHELL" != "$ZSH_PATH" ]; then
+  # Ensure zsh is listed in /etc/shells (required by chsh)
+  if ! grep -qxF "$ZSH_PATH" /etc/shells; then
+    echo "$ZSH_PATH" | sudo tee -a /etc/shells > /dev/null
+  fi
+  sudo chsh -s "$ZSH_PATH" "$USER"
 fi
 
 # Check for Oh My Zsh and install if we don't have it
