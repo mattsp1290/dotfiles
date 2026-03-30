@@ -13,6 +13,7 @@ Read the most recent code review from `./reviews/` and implement the fixes.
 
 1. **Reviews directory exists.** Check for `./reviews/` with review subdirectories. If none exist, stop and tell the user: "No reviews found in ./reviews/. Run `/review` first to generate a code review."
 2. **Find the most recent review.** List directories in `./reviews/` and pick the last one alphabetically (the date suffix makes alphabetical order = chronological order). Tell the user which review you're working from.
+3. **Note available research.** Check if `.claude/research/` exists. If it does, list the filenames — you will consult these during step 4 rather than doing live web searches.
 
 ## Steps
 
@@ -67,7 +68,10 @@ For each fix:
 - Apply the fix using Edit (preferred) or Write (for new files only)
 - Be careful to preserve patterns called out as positive in `03-positive-notes.md`
 - If two action items conflict with each other, ask the user which to prefer before proceeding
-- If a fix requires context you don't have, do a quick web search for best practices
+- If a fix requires context you don't have:
+  1. Check `.claude/research/` for a file whose tags match the topic
+  2. If found, read it and use the Key Rules and Common Pitfalls sections
+  3. Only fall back to a live web search if no cached research is relevant
 
 ### 5. Summarize
 

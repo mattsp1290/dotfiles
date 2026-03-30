@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, WebSearch, WebFetch, Agent
 
 # Code Review Skill
 
-Generate a thorough code review of the current branch compared to `main`, with web research on best practices relevant to the changes.
+Generate a thorough code review of the current branch compared to `main`, with research on best practices relevant to the changes.
 
 ## Prerequisites
 
@@ -20,25 +20,82 @@ If either check fails, do not proceed.
 
 ## Steps
 
-### 1. Gather the diff and changed files
+### 1. Clean up previous reviews for this branch
+
+- Run `git branch --show-current` to get the branch name.
+- Sanitize the branch name for use in paths: replace `/` with `-`.
+- If `./reviews/` exists, delete any directories matching `./reviews/{sanitized-branch-name}-*` using `rm -rf`.
+- Do NOT delete review directories for other branches.
+- If no matching directories exist, skip silently.
+
+### 2. Gather the diff and changed files
 
 - Run `git diff main...HEAD` to get the full diff.
 - Run `git diff main...HEAD --name-only` to get the list of changed files.
 - Read each changed file in full to understand the complete context (not just the diff hunks).
 - Run `git log main..HEAD --oneline` to understand the commit history.
 
-### 2. Research best practices
+### 3. Research best practices (cache-aware)
 
-Based on the specific changes found (languages, frameworks, patterns used), do web research on relevant best practices. For example:
-- If the changes involve React components, search for current React best practices
-- If there are security-sensitive changes (auth, input handling, etc.), search for OWASP guidelines
-- If there are infrastructure/config changes, search for relevant best practices
+#### 3a. Identify needed topics
 
-Do 2-4 targeted web searches based on what the actual changes involve. Do not do generic searches.
+Based on the diff and changed files, identify 2-5 topic phrases that need research. Consider:
 
-### 3. Write the review documents
+- Language-specific best practices (e.g., `typescript strict mode`, `python async`)
+- Framework patterns (e.g., `react hooks`, `nextjs server components`)
+- Security patterns (e.g., `owasp injection`, `shell script security`)
+- Infrastructure/config (e.g., `dockerfile security`, `github actions secrets`)
+- Data access (e.g., `postgres indexing`, `redis caching patterns`)
 
-Determine the branch name and today's date (`YYYY-MM-DD`). Create the output directory at `./reviews/{branch-name}-{YYYY-MM-DD}/`.
+#### 3b. Check the research cache
+
+1. Check if `.claude/research/` exists. If it does not, all topics are cache misses — skip to 3c.
+2. If it exists, list all `.md` files and read the front-matter of each to get the `tags` array.
+3. For each needed topic, determine if it is a cache hit or miss:
+   - A **cache hit** requires at least one tag from the file to match a keyword in the topic phrase (substring match in either direction).
+   - If ambiguous, treat as a **miss** — over-fetching is cheaper than under-fetching.
+4. Log the result: "Cache hit: {filename}" or "Cache miss: {topic}".
+
+#### 3c. Fetch missing topics
+
+For each cache miss:
+1. Do 1-2 targeted web searches for that topic.
+2. Synthesize findings into the research file format below.
+3. Save to `.claude/research/{descriptive-kebab-name}.md`.
+
+**Research file format:**
+
+```markdown
+---
+topic: Human Readable Topic Name
+tags: [keyword1, keyword2, keyword3]
+last-researched: YYYY-MM-DD
+sources:
+  - https://example.com/source1
+  - https://example.com/source2
+---
+
+# Topic Name
+
+## Key Rules
+- Bullet list of actionable best-practice rules
+
+## Common Pitfalls
+- Failure modes and anti-patterns to watch for
+
+## Relevant to Code Review
+- What to specifically look for when reviewing code
+```
+
+Keep each file under ~300 lines. Curated summaries, not raw dumps.
+
+#### 3d. Load all relevant research
+
+Read the full content of all relevant research files (both cache hits and newly written). Use this research context in step 4 when writing the review.
+
+### 4. Write the review documents
+
+Determine the branch name and today's date (`YYYY-MM-DD`). Sanitize the branch name (replace `/` with `-`). Create the output directory at `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/`.
 
 Write the following files. Each file should be written as actionable guidance for another Claude Code agent that will implement fixes. Be specific — reference exact file paths, line numbers, and code snippets.
 
@@ -61,7 +118,7 @@ For each issue:
 - File path and line number(s)
 - Description of the problem
 - Suggested fix with a code snippet
-- Reference to the best practice research if applicable
+- Reference to the research if applicable
 
 If no issues found, say so explicitly.
 
@@ -111,10 +168,11 @@ A prioritized checklist synthesizing items from `01-critical-and-important.md` a
 
 Each item should be self-contained enough that `/fix-review` can act on it without re-reading the other files (though it will).
 
-### 4. Finish
+### 5. Finish
 
 After writing all files, tell the user:
 - Where the review was written (the directory path)
 - The overall verdict
 - A count of items by priority
+- Which research topics were cache hits vs. freshly fetched
 - Suggest running `/fix-review` to address the findings
