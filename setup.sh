@@ -142,6 +142,11 @@ git config --global core.excludesFile "$GITIGNORE_GLOBAL"
 # Set vim as the default git editor
 git config --global core.editor "vim"
 
+# Install OpenCode if not already present
+if ! command -v opencode > /dev/null 2>&1 && [ ! -f "$HOME/.opencode/bin/opencode" ]; then
+  curl -fsSL https://opencode.ai/install | bash -s -- --no-modify-path
+fi
+
 # Install Claude Code if not already present
 if ! command -v claude > /dev/null 2>&1 && [ ! -f "$HOME/.local/bin/claude" ]; then
   curl -fsSL https://claude.ai/install.sh | bash

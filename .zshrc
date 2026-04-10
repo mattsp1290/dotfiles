@@ -48,4 +48,7 @@ bindkey "^[[B" history-beginning-search-forward-end
 bindkey "^[OB" history-beginning-search-forward-end
 # END ZSH BLOCK
 
+# opencode
+export PATH="$HOME/.opencode/bin:$PATH"
+
 source $HOME/.profile
