@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, WebSearch, WebFetch, Agent
 
 # Code Review Skill
 
-Generate a thorough code review of the current branch compared to `main`, with research on best practices relevant to the changes.
+Generate a thorough code review of the current branch compared to `main`, using two independent reviewers in parallel: Claude Opus (subagent) and ChatGPT (via OpenCode). Research on best practices is fetched once and shared by both reviewers.
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ If either check fails, do not proceed.
 
 ### 2. Gather the diff and changed files
 
-- Run `git diff main...HEAD` to get the full diff.
+- Run `git diff main...HEAD` to get the full diff. Save this to a shell variable or temp file — both reviewers will need it.
 - Run `git diff main...HEAD --name-only` to get the list of changed files.
 - Read each changed file in full to understand the complete context (not just the diff hunks).
 - Run `git log main..HEAD --oneline` to understand the commit history.
@@ -49,7 +49,7 @@ Based on the diff and changed files, identify 2-5 topic phrases that need resear
 
 #### 3b. Check the research cache
 
-1. Check if `.claude/research/` exists. If it does not, all topics are cache misses — skip to 3c.
+1. Check if `$HOME/.claude/research/` exists. If it does not, all topics are cache misses — skip to 3c.
 2. If it exists, list all `.md` files and read the front-matter of each to get the `tags` array.
 3. For each needed topic, determine if it is a cache hit or miss:
    - A **cache hit** requires at least one tag from the file to match a keyword in the topic phrase (substring match in either direction).
@@ -61,11 +61,11 @@ Based on the diff and changed files, identify 2-5 topic phrases that need resear
 For each cache miss:
 1. Do 1-2 targeted web searches for that topic.
 2. Synthesize findings into the research file format below.
-3. Save to `.claude/research/{descriptive-kebab-name}.md`.
+3. Save to `$HOME/.claude/research/{descriptive-kebab-name}.md`.
 
 **Research file format:**
 
-```markdown
+```
 ---
 topic: Human Readable Topic Name
 tags: [keyword1, keyword2, keyword3]
@@ -91,25 +91,68 @@ Keep each file under ~300 lines. Curated summaries, not raw dumps.
 
 #### 3d. Load all relevant research
 
-Read the full content of all relevant research files (both cache hits and newly written). Use this research context in step 4 when writing the review.
+Read the full content of all relevant research files (both cache hits and newly written). You will include this research context in the prompts for both reviewers in step 5.
 
-### 4. Write the review documents
+Also note the list of relevant research file paths — the ChatGPT reviewer will need these paths to read the files itself.
 
-Determine the branch name and today's date (`YYYY-MM-DD`). Sanitize the branch name (replace `/` with `-`). Create the output directory at `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/`.
+### 4. Create output directories
 
-Write the following files. Each file should be written as actionable guidance for another Claude Code agent that will implement fixes. Be specific — reference exact file paths, line numbers, and code snippets.
+Determine the branch name and today's date (`YYYY-MM-DD`). Sanitize the branch name (replace `/` with `-`). Create:
 
-#### `00-overview.md`
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/opus/`
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/chatgpt/`
 
-- Branch name, date, reviewer (Claude Code)
+### 5. Launch parallel reviews
+
+Launch BOTH reviews simultaneously in a single message with two tool calls. This is the critical parallelization step.
+
+#### 5a. Opus Review (Agent tool)
+
+Launch an Agent with `model: opus` containing:
+
+- The full diff
+- The full content of each changed file
+- The full content of all relevant research files
+- The output directory path (`./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/opus/`)
+- The review file format specification (section 5c below)
+
+The agent prompt must instruct it to write the 5 review files directly using the Write tool.
+
+#### 5b. ChatGPT Review (Bash tool → OpenCode)
+
+Run via the OpenCode wrapper script with `--permissions full` so ChatGPT can read files and write output:
+
+```bash
+bash $HOME/.claude/skills/opencode/opencode_run.sh \
+  --task-name "review" \
+  --model "openai/gpt-5.4" \
+  --permissions full \
+  "<CHATGPT_PROMPT>"
+```
+
+Use a Bash timeout of 600000 (10 minutes) since reviews can take time with tool use.
+
+The ChatGPT prompt must include:
+- The branch name and base branch (`main`)
+- Instructions to run `git diff main...HEAD` to gather the diff
+- Instructions to read each changed file listed by `git diff main...HEAD --name-only`
+- The list of relevant research file paths in `$HOME/.claude/research/` and instructions to read them
+- The output directory path (`./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/chatgpt/`)
+- The review file format specification (section 5c below)
+- This explicit instruction: "You MUST write all 5 review files to the output directory before finishing."
+
+#### 5c. Review file format (shared by both reviewers)
+
+Both reviewers must produce these 5 files in their respective output directories:
+
+**`00-overview.md`**
+- Branch name, date, reviewer name (either "Claude Opus" or "ChatGPT")
 - One-paragraph summary of what the changes do
 - Overall verdict: one of `APPROVE`, `REQUEST_CHANGES`, or `NEEDS_DISCUSSION`
 - Stats: files changed, lines added/removed, commits
 
-#### `01-critical-and-important.md`
-
+**`01-critical-and-important.md`**
 Issues that must or should be fixed before merging:
-
 - **Critical**: Security vulnerabilities, data loss risks, crashes, broken functionality
 - **Important**: Missing error handling, race conditions, logic errors, performance problems, missing validation at system boundaries
 
@@ -122,38 +165,20 @@ For each issue:
 
 If no issues found, say so explicitly.
 
-#### `02-suggestions.md`
-
+**`02-suggestions.md`**
 Nice-to-have improvements that don't block merging:
+- Code style and readability, naming improvements, simplification opportunities
+- Minor DRY violations, documentation suggestions (only where logic is non-obvious)
 
-- Code style and readability
-- Naming improvements
-- Simplification opportunities
-- Minor DRY violations
-- Documentation suggestions (only where logic is non-obvious)
+For each suggestion: file path, line number(s), what to change and why, suggested code snippet.
 
-For each suggestion:
-- File path and line number(s)
-- What to change and why
-- Suggested code snippet
+**`03-positive-notes.md`**
+Good patterns and practices found in the changes that should be preserved. Be specific — reference exact code.
 
-#### `03-positive-notes.md`
+**`04-action-items.md`**
+A prioritized checklist synthesizing items from `01-critical-and-important.md` and `02-suggestions.md`:
 
-Good patterns and practices found in the changes that should be preserved:
-
-- Well-structured code
-- Good error handling patterns
-- Effective use of language/framework features
-- Clear naming
-- Good test coverage
-
-Be specific — reference the exact code so `/fix-review` knows what NOT to change.
-
-#### `04-action-items.md`
-
-A prioritized checklist synthesizing items from `01-critical-and-important.md` and `02-suggestions.md`. Format:
-
-```markdown
+```
 ## Action Items
 
 ### Critical
@@ -166,13 +191,17 @@ A prioritized checklist synthesizing items from `01-critical-and-important.md` a
 - [ ] [File:line] Brief description of improvement
 ```
 
-Each item should be self-contained enough that `/fix-review` can act on it without re-reading the other files (though it will).
+Each item should be self-contained enough that `/fix-review` can act on it without re-reading the other files.
 
-### 5. Finish
+### 6. Verify and finish
 
-After writing all files, tell the user:
-- Where the review was written (the directory path)
-- The overall verdict
-- A count of items by priority
-- Which research topics were cache hits vs. freshly fetched
-- Suggest running `/fix-review` to address the findings
+After both reviews complete:
+
+1. Verify that both output directories contain the expected 5 files. If either is missing files, note which are missing.
+2. Read `00-overview.md` from each reviewer to get their verdicts.
+3. Tell the user:
+   - Where the reviews were written (both directory paths)
+   - Each reviewer's verdict (Opus and ChatGPT)
+   - A count of action items by priority from each reviewer
+   - Which research topics were cache hits vs. freshly fetched
+   - Suggest running `/fix-review` to address findings from both reviewers
