@@ -127,7 +127,8 @@ while IFS= read -r line; do
             ERROR_MSG=$(echo "$line" | jq -r '.error.data.message // .error.name // "unknown error"' 2>/dev/null)
             ;;
     esac
-done < <(timeout "$TIMEOUT" "${CMD[@]}" 2>/dev/null)
+# Use perl-based timeout for macOS compatibility (no coreutils `timeout`)
+done < <(perl -e 'alarm shift; exec @ARGV' "$TIMEOUT" "${CMD[@]}" 2>/dev/null)
 
 # --- Error handling ---
 if [[ -n "$ERROR_MSG" ]]; then
