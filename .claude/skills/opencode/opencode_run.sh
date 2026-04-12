@@ -12,6 +12,7 @@ TASK_NAME="default"
 SESSION_ID=""
 MODEL="openai/gpt-5.4"
 PERMISSIONS="readonly"
+TIMEOUT=300
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -19,6 +20,7 @@ while [[ $# -gt 0 ]]; do
         --session-id) SESSION_ID="$2"; shift 2 ;;
         --model) MODEL="$2"; shift 2 ;;
         --permissions) PERMISSIONS="$2"; shift 2 ;;
+        --timeout) TIMEOUT="$2"; shift 2 ;;
         --) shift; break ;;
         -*) echo "Error: unknown flag: $1" >&2; exit 1 ;;
         *) break ;;
@@ -28,9 +30,36 @@ done
 PROMPT="${*}"
 if [[ -z "$PROMPT" ]]; then
     echo "Error: no prompt provided" >&2
-    echo "Usage: opencode_run.sh [--task-name NAME] [--model MODEL] [--permissions full|readonly] PROMPT..." >&2
+    echo "Usage: opencode_run.sh [--task-name NAME] [--model MODEL] [--permissions full|readonly] [--timeout SECS] PROMPT..." >&2
     exit 1
 fi
+
+# --- Claude session UUID ---
+# Find the Claude Code parent process PID for a stable per-conversation key.
+# Walk PPID chain to find the 'claude' process.
+_pid=$$
+CLAUDE_PID=""
+while [[ "$_pid" -gt 1 ]]; do
+    _cmd=$(ps -o comm= -p "$_pid" 2>/dev/null)
+    if [[ "$_cmd" == "claude" ]]; then
+        CLAUDE_PID="$_pid"
+        break
+    fi
+    _pid=$(ps -o ppid= -p "$_pid" 2>/dev/null | tr -d ' ')
+done
+
+# Generate or retrieve a UUID for this Claude session.
+# Scoped to Claude PID so each conversation gets its own opencode sessions.
+# Falls back to $$ if not running under Claude (e.g., manual invocation).
+UUID_FILE="/tmp/claude-session-${CLAUDE_PID:-$$}.uuid"
+if [[ -f "$UUID_FILE" ]]; then
+    SESSION_UUID=$(cat "$UUID_FILE")
+else
+    SESSION_UUID=$(python3 -c "import uuid; print(uuid.uuid4())")
+    echo "$SESSION_UUID" > "$UUID_FILE"
+fi
+
+SESSION_KEY="${TASK_NAME}:${SESSION_UUID}"
 
 # --- Session ID resolution ---
 if [[ -z "$SESSION_ID" && -f "$SESSIONS_FILE" ]]; then
@@ -41,7 +70,7 @@ try:
     print(data.get(sys.argv[2], {}).get('session_id', ''))
 except Exception:
     print('')
-" "$SESSIONS_FILE" "$TASK_NAME" 2>/dev/null || echo "")
+" "$SESSIONS_FILE" "$SESSION_KEY" 2>/dev/null || echo "")
 fi
 
 # --- Build opencode command ---
@@ -51,7 +80,7 @@ if [[ -n "$SESSION_ID" ]]; then
     CMD+=(-s "$SESSION_ID")
 fi
 
-CMD+=(-m "$MODEL" --format json)
+CMD+=(-m "$MODEL" --format json --dir "$(pwd)")
 
 if [[ "$PERMISSIONS" == "full" ]]; then
     CMD+=(--dangerously-skip-permissions)
@@ -98,7 +127,7 @@ while IFS= read -r line; do
             ERROR_MSG=$(echo "$line" | jq -r '.error.data.message // .error.name // "unknown error"' 2>/dev/null)
             ;;
     esac
-done < <("${CMD[@]}" 2>/dev/null)
+done < <(timeout "$TIMEOUT" "${CMD[@]}" 2>/dev/null)
 
 # --- Error handling ---
 if [[ -n "$ERROR_MSG" ]]; then
@@ -113,7 +142,7 @@ fi
 
 # --- Persist session ID ---
 if [[ -n "$OUTPUT_SESSION_ID" ]]; then
-    python3 - "$SESSIONS_FILE" "$TASK_NAME" "$OUTPUT_SESSION_ID" "$MODEL" <<'PYEOF'
+    python3 - "$SESSIONS_FILE" "$SESSION_KEY" "$OUTPUT_SESSION_ID" "$MODEL" <<'PYEOF'
 import json, os, sys
 from datetime import datetime, timezone
 
