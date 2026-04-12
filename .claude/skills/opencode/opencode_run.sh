@@ -10,7 +10,7 @@ SESSIONS_FILE="$SCRIPT_DIR/../../opencode-sessions.json"
 #                        [--permissions full|readonly] PROMPT...
 TASK_NAME="default"
 SESSION_ID=""
-MODEL="openai/gpt-5.4"
+MODEL=""
 PERMISSIONS="readonly"
 TIMEOUT=300
 
@@ -30,7 +30,12 @@ done
 PROMPT="${*}"
 if [[ -z "$PROMPT" ]]; then
     echo "Error: no prompt provided" >&2
-    echo "Usage: opencode_run.sh [--task-name NAME] [--model MODEL] [--permissions full|readonly] [--timeout SECS] PROMPT..." >&2
+    echo "Usage: opencode_run.sh [--task-name NAME] --model MODEL [--permissions full|readonly] [--timeout SECS] PROMPT..." >&2
+    exit 1
+fi
+
+if [[ -z "$MODEL" ]]; then
+    echo "Error: --model is required (e.g. --model openai/gpt-5.4 or --model google/gemini-3-pro-preview)" >&2
     exit 1
 fi
 
@@ -96,6 +101,9 @@ COST=""
 TOKENS_IN=""
 TOKENS_OUT=""
 
+STDERR_TMP=$(mktemp -t opencode_run.XXXXXX)
+trap 'rm -f "$STDERR_TMP"' EXIT
+
 while IFS= read -r line; do
     [[ -z "$line" ]] && continue
 
@@ -128,7 +136,7 @@ while IFS= read -r line; do
             ;;
     esac
 # Use perl-based timeout for macOS compatibility (no coreutils `timeout`)
-done < <(perl -e 'alarm shift; exec @ARGV' "$TIMEOUT" "${CMD[@]}" 2>/dev/null)
+done < <(perl -e 'alarm shift; exec @ARGV' "$TIMEOUT" "${CMD[@]}" 2>"$STDERR_TMP")
 
 # --- Error handling ---
 if [[ -n "$ERROR_MSG" ]]; then
@@ -138,6 +146,10 @@ fi
 
 if [[ -z "$OUTPUT_TEXT" ]]; then
     echo "Error: no text output received from OpenCode" >&2
+    if [[ -s "$STDERR_TMP" ]]; then
+        echo "--- opencode stderr ---" >&2
+        cat "$STDERR_TMP" >&2
+    fi
     exit 1
 fi
 
