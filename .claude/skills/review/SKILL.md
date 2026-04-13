@@ -9,6 +9,31 @@ allowed-tools: Bash, Read, Write, Glob, Grep, WebSearch, WebFetch, Agent
 
 Generate a thorough code review of the current branch compared to `main`, using two independent reviewers in parallel: Claude Opus (subagent) and ChatGPT (via OpenCode). Research on best practices is fetched once and shared by both reviewers.
 
+Supports focused review passes via `--pass <focus>` to narrow the review to a specific concern area.
+
+## Arguments
+
+Parse `$ARGUMENTS` for optional flags:
+
+- `--pass <focus>`: Narrow the review to a specific focus area. Valid values:
+  - `correctness` — Logic bugs, edge cases, wrong return values, type mismatches, API contract violations, incorrect state mutations
+  - `tests` — Missing test coverage, tautological tests, brittle tests, missing edge/negative cases, test quality
+  - `security` — Injection vulnerabilities, unvalidated input, secrets handling, missing authorization, OWASP Top 10, path traversal, SSRF
+
+If `--pass` is absent, perform a full review (the default behavior covering all areas).
+
+If an unrecognized `--pass` value is provided, stop and tell the user: "Unknown pass: {value}. Valid passes are: correctness, tests, security."
+
+Store the parsed value as PASS (empty string = full review).
+
+**Pass-specific reviewer framing** (used in steps 5a and 5b):
+
+| Pass | Reviewer instruction |
+|---|---|
+| `correctness` | "REVIEW FOCUS: This is a focused 'correctness' pass. Focus exclusively on whether this code does what it claims to do. Ignore style, tests, and security — those are handled in separate passes. Only report issues directly relevant to correctness." |
+| `tests` | "REVIEW FOCUS: This is a focused 'tests' pass. Focus exclusively on test quality and coverage. Ignore style and production code correctness — those are handled in separate passes. Only report issues directly relevant to testing." |
+| `security` | "REVIEW FOCUS: This is a focused 'security' pass. Focus exclusively on security vulnerabilities. Assume an adversarial caller. Ignore style, tests, and general correctness — those are handled in separate passes. Only report issues directly relevant to security." |
+
 ## Prerequisites
 
 Before starting, validate:
@@ -39,7 +64,14 @@ If either check fails, do not proceed.
 
 #### 3a. Identify needed topics
 
-Based on the diff and changed files, identify 2-5 topic phrases that need research. Consider:
+Based on the diff and changed files, identify topic phrases that need research.
+
+**If PASS is set** (focused review), narrow research to 1-3 topics directly relevant to the pass:
+- `correctness`: error handling patterns, type system best practices, edge case patterns for the language/framework
+- `tests`: testing best practices, coverage patterns, test framework idioms for the language
+- `security`: OWASP Top 10, language-specific security vulnerabilities, input validation patterns
+
+**If PASS is empty** (full review), identify 2-5 topics. Consider:
 
 - Language-specific best practices (e.g., `typescript strict mode`, `python async`)
 - Framework patterns (e.g., `react hooks`, `nextjs server components`)
@@ -97,8 +129,13 @@ Also note the list of relevant research file paths — the ChatGPT reviewer will
 
 ### 4. Create output directories
 
-Determine the branch name and today's date (`YYYY-MM-DD`). Sanitize the branch name (replace `/` with `-`). Create:
+Determine the branch name and today's date (`YYYY-MM-DD`). Sanitize the branch name (replace `/` with `-`).
 
+**If PASS is set** (focused review):
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}-{PASS}/opus/`
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}-{PASS}/chatgpt/`
+
+**If PASS is empty** (full review):
 - `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/opus/`
 - `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/chatgpt/`
 
@@ -110,11 +147,13 @@ Launch BOTH reviews simultaneously in a single message with two tool calls. This
 
 Launch an Agent with `model: opus` containing:
 
+- **If PASS is set**: the pass-specific reviewer framing from the Arguments section (prepend it at the top of the agent prompt)
 - The full diff
 - The full content of each changed file
 - The full content of all relevant research files
-- The output directory path (`./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/opus/`)
+- The output directory path (pass-aware path from step 4)
 - The review file format specification (section 5c below)
+- **If PASS is set**: add this constraint: "For a focused pass, `01-critical-and-important.md` and `02-suggestions.md` must ONLY contain issues relevant to the '{PASS}' focus area. `00-overview.md` should note this is a focused '{PASS}' pass, not a full review."
 
 The agent prompt must instruct it to write the 5 review files directly using the Write tool.
 
@@ -130,16 +169,18 @@ bash $HOME/.claude/skills/opencode/opencode_run.sh \
   "<CHATGPT_PROMPT>"
 ```
 
-Use a Bash timeout of 600000 (10 minutes) since reviews can take time with tool use.
+Use `--timeout 600` on the wrapper script (10-minute perl alarm). Use a Bash tool timeout of 300000 (5 minutes). If the Bash tool backgrounds the command, the ChatGPT reviewer's output is still written to disk via tool use — the wrapper's stdout is informational only, not required for correctness.
 
 The ChatGPT prompt must include:
+- **If PASS is set**: the pass-specific reviewer framing from the Arguments section (prepend it at the top of the ChatGPT prompt)
 - The branch name and base branch (`main`)
 - Instructions to run `git diff main...HEAD` to gather the diff
 - Instructions to read each changed file listed by `git diff main...HEAD --name-only`
 - The list of relevant research file paths in `$HOME/.claude/research/` and instructions to read them
-- The output directory path (`./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/chatgpt/`)
+- The output directory path (pass-aware path from step 4)
 - The review file format specification (section 5c below)
 - This explicit instruction: "You MUST write all 5 review files to the output directory before finishing."
+- **If PASS is set**: add this constraint: "For a focused pass, `01-critical-and-important.md` and `02-suggestions.md` must ONLY contain issues relevant to the '{PASS}' focus area. `00-overview.md` should note this is a focused '{PASS}' pass, not a full review."
 
 #### 5c. Review file format (shared by both reviewers)
 
@@ -200,6 +241,8 @@ After both reviews complete:
 1. Verify that both output directories contain the expected 5 files. If either is missing files, note which are missing.
 2. Read `00-overview.md` from each reviewer to get their verdicts.
 3. Tell the user:
+   - **If PASS is set**: "Review pass: {PASS}"
+   - **If PASS is empty**: "Review type: full"
    - Where the reviews were written (both directory paths)
    - Each reviewer's verdict (Opus and ChatGPT)
    - A count of action items by priority from each reviewer

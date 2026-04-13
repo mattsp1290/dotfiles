@@ -35,3 +35,24 @@ When the user invokes `/opencode` with a task type:
 
 For direct model specification, trust the user's input. If the model fails, show the error and
 suggest checking `opencode models <provider>` for valid model names.
+
+## Calling OpenCode from within skills
+
+When a skill (e.g., `/review`, `/pr-ready`) needs to call OpenCode as part of its execution,
+call the wrapper script directly via Bash — do NOT invoke the `/opencode` skill via the Skill tool.
+The `/opencode` skill is designed for user-invoked delegation, not for skill-to-skill chaining.
+
+Direct invocation pattern:
+```bash
+bash $HOME/.claude/skills/opencode/opencode_run.sh \
+  --task-name "<name>" \
+  --model "openai/gpt-5.4" \
+  --timeout 120 \
+  "<prompt>"
+```
+
+**Timeout guidance**: Use the wrapper's `--timeout` flag for the actual process timeout.
+Keep the Bash tool timeout moderate (120000-300000ms). Very high Bash timeouts (600000ms)
+cause the Bash tool to auto-background the command, which breaks the NDJSON stream parsing
+in `opencode_run.sh` — output stays empty. For long-running OpenCode tasks (reviews with
+tool use), the files written to disk by the model matter more than stdout.

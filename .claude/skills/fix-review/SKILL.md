@@ -9,6 +9,18 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
 
 Read the most recent code review from `./reviews/` and implement the fixes. Supports both single-reviewer reviews and dual-reviewer reviews (Opus + ChatGPT).
 
+## Arguments
+
+Parse `$ARGUMENTS` for optional flags:
+
+- `--auto`: Run in fully automatic mode. When set:
+  - Skip the user prompt in Step 3 (select ALL items automatically)
+  - Handle conflicts automatically (prefer stricter severity; prefer Opus over ChatGPT when tied)
+  - **Security guardrail**: Flag (but do NOT auto-fix) changes to files involving auth, secrets, credentials, permissions, or config. Log these as "needs-manual" in the summary.
+  - After implementing fixes, output a structured summary (see Step 5)
+
+If `--auto` is absent, behavior is identical to the default interactive mode.
+
 ## Prerequisites
 
 1. **Reviews directory exists.** Check for `./reviews/` with review subdirectories. If none exist, stop and tell the user: "No reviews found in ./reviews/. Run `/review` first to generate a code review."
@@ -47,7 +59,9 @@ Read all markdown files directly from the review directory:
 For each action item (from both reviewers if dual format), check:
 - Does the referenced file still exist? If not, mark as "already resolved / file removed".
 - Has the referenced code changed since the review? If the specific lines don't match, note this and adapt.
-- Are there uncommitted changes? If so, warn the user that there are uncommitted changes that could be affected.
+- Are there uncommitted changes? If so:
+  - **If `--auto`**: log a warning ("Uncommitted changes detected, proceeding in auto mode") but continue. Prior passes in a `/pr-ready` pipeline may have left uncommitted changes.
+  - **Otherwise**: warn the user that there are uncommitted changes that could be affected.
 
 ### 3. Present the plan
 
@@ -71,7 +85,9 @@ Show the user a summary of what you plan to do, organized by priority:
 - Item description... (file removed / code already changed)
 ```
 
-Then ask the user which items to address:
+**If `--auto`**: Print the plan summary (same format above), then print: "**Auto mode**: proceeding with ALL items automatically." Proceed directly to Step 4 with all items selected. Do not ask the user.
+
+**Otherwise**, ask the user which items to address:
 - **All items** (Recommended) — fix everything
 - **Critical only** — only fix critical issues
 - **Critical + Important** — skip suggestions
@@ -84,9 +100,12 @@ Work through the selected items in priority order (critical first, then importan
 
 For each fix:
 - Read the current state of the file
+- **If `--auto`** and the file involves auth, secrets, credentials, permissions, or config (check the file path and content for patterns like `auth`, `secret`, `credential`, `password`, `token`, `apikey`, `permission`, `.env`): do NOT auto-fix. Mark the item as "needs-manual" and continue to the next item.
 - Apply the fix using Edit (preferred) or Write (for new files only)
 - Be careful to preserve patterns called out as positive in `03-positive-notes.md` from EITHER reviewer
-- If two action items conflict with each other (from the same or different reviewers), ask the user which to prefer before proceeding
+- If two action items conflict with each other (from the same or different reviewers):
+  - **If `--auto`**: prefer the stricter interpretation (Critical over Important; if same severity, prefer the Opus suggestion). Log the conflict and the choice made.
+  - **Otherwise**: ask the user which to prefer before proceeding
 - If a fix requires context you don't have:
   1. Check `$HOME/.claude/research/` for a file whose tags match the topic
   2. If found, read it and use the Key Rules and Common Pitfalls sections
@@ -99,4 +118,11 @@ After implementing all selected fixes, tell the user:
 - How many were flagged by both reviewers vs. one reviewer
 - Any items that were skipped and why
 - Any items that need manual attention
-- Suggest reviewing the changes with `git diff` and committing if satisfied
+
+**If `--auto`**: After the human-readable summary, output a structured block that the caller (e.g., `/pr-ready`) can parse:
+
+```
+<!-- auto-summary fixed:{N} skipped:{N} needs-manual:{N} -->
+```
+
+**Otherwise**: Suggest reviewing the changes with `git diff` and committing if satisfied.
