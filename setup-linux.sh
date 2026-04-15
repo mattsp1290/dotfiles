@@ -38,9 +38,11 @@ if [ ! -s "$HOME/.nvm/nvm.sh" ]; then
 fi
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-if ! command -v node > /dev/null 2>&1; then
+# Install node via nvm if nvm has no managed versions (system node doesn't count)
+if ! nvm ls --no-colors 2>/dev/null | grep -qE "v[0-9]+"; then
   nvm install node
 fi
+nvm use node
 
 # Check for pyenv and install if we don't have it
 if ! command -v pyenv > /dev/null 2>&1; then
@@ -68,8 +70,6 @@ fi
 
 # Check for pnpm and install if we don't have it
 if ! command -v pnpm > /dev/null 2>&1; then
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
   npm install -g pnpm
 fi
 
