@@ -6,8 +6,8 @@ SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 SESSIONS_FILE="$SCRIPT_DIR/../../opencode-sessions.json"
 
 # --- Argument parsing ---
-# Usage: opencode_run.sh [--task-name NAME] [--session-id ID] [--model MODEL]
-#                        [--permissions full|readonly] PROMPT...
+# Usage: opencode_run.sh [--task-name NAME] [--session-id ID] --model MODEL
+#                        [--permissions full|readonly] [--timeout SECS] PROMPT...
 TASK_NAME="default"
 SESSION_ID=""
 MODEL=""
