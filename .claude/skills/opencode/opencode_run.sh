@@ -85,7 +85,7 @@ if [[ -n "$SESSION_ID" ]]; then
     CMD+=(-s "$SESSION_ID")
 fi
 
-CMD+=(-m "$MODEL" --format json --dir "$(pwd)")
+CMD+=(-m "$MODEL" --format json --dir "$(pwd -P)")
 
 if [[ "$PERMISSIONS" == "full" ]]; then
     CMD+=(--dangerously-skip-permissions)
