@@ -56,3 +56,7 @@ Keep the Bash tool timeout moderate (120000-300000ms). Very high Bash timeouts (
 cause the Bash tool to auto-background the command, which breaks the NDJSON stream parsing
 in `opencode_run.sh` — output stays empty. For long-running OpenCode tasks (reviews with
 tool use), the files written to disk by the model matter more than stdout.
+
+## Sanctioned auto-delegation exception
+
+`/big-change` and `/new-project` auto-invoke a GPT review pass as a sanctioned, opt-out part of their defined workflow. They call `$HOME/.claude/skills/opencode/opencode_run.sh` directly for clean exit-code-based failure handling; this direct-wrapper invocation is the only auto-delegation path sanctioned by this rule. The general 'do not auto-delegate without an explicit user request' rule still applies to every other use of `/opencode` and inside every other skill. If the initial review wrapper call fails with a non-zero exit for any reason, these two skills are authorized to retry once with `openai/gpt-5.4-fast` in a fresh session before giving up; this is the only sanctioned model fallback.

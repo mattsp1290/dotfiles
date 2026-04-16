@@ -31,11 +31,20 @@ PROMPT="${*}"
 if [[ -z "$PROMPT" ]]; then
     echo "Error: no prompt provided" >&2
     echo "Usage: opencode_run.sh [--task-name NAME] --model MODEL [--permissions full|readonly] [--timeout SECS] PROMPT..." >&2
+    echo "  --permissions: full (allow edit/write/bash) or readonly (default; deny edit/write/bash)" >&2
     exit 1
 fi
 
 if [[ -z "$MODEL" ]]; then
     echo "Error: --model is required (e.g. --model openai/gpt-5.4 or --model google/gemini-3-pro-preview)" >&2
+    exit 1
+fi
+
+# --- Validate --permissions (Fix C) ---
+# Accept only the two documented values. A typo currently silently falls
+# through to the old code path as permissive — reject it loudly instead.
+if [[ "$PERMISSIONS" != "full" && "$PERMISSIONS" != "readonly" ]]; then
+    echo "Error: invalid --permissions value '$PERMISSIONS'; valid values are: full, readonly" >&2
     exit 1
 fi
 
@@ -87,8 +96,38 @@ fi
 
 CMD+=(-m "$MODEL" --format json --dir "$(pwd -P)")
 
+# --- Temp files + trap ---
+# Install the trap BEFORE creating any temp files so partial setup
+# failures still clean up. ${VAR:-} empty expansion makes `rm -f ""`
+# a harmless no-op when a file was never created.
+STDERR_TMP=""
+READONLY_CFG=""
+trap 'rm -f "${STDERR_TMP:-}" "${READONLY_CFG:-}"' EXIT
+
+STDERR_TMP=$(mktemp -t opencode_run.XXXXXX)
+
+# --- Permissions enforcement (Fix B) ---
+# OpenCode has no --readonly CLI flag; its permission model is configured
+# via a JSON config file. Inject a deny-everything config through
+# OPENCODE_CONFIG when the caller wants readonly (the default).
 if [[ "$PERMISSIONS" == "full" ]]; then
     CMD+=(--dangerously-skip-permissions)
+else
+    # Refuse to clobber an inherited OPENCODE_CONFIG; silently discarding
+    # the caller's config would be surprising. They can unset it or pass
+    # --permissions full if they know what they're doing.
+    if [[ -n "${OPENCODE_CONFIG:-}" ]]; then
+        echo "Error: opencode_run.sh readonly mode cannot be used when caller has OPENCODE_CONFIG set ($OPENCODE_CONFIG). Either unset OPENCODE_CONFIG or pass --permissions full." >&2
+        exit 1
+    fi
+    READONLY_CFG=$(mktemp -t opencode_readonly.XXXXXX) || { echo "Error: mktemp failed creating readonly config" >&2; exit 1; }
+    cat > "$READONLY_CFG" <<'JSON'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": { "edit": "deny", "write": "deny", "bash": "deny" }
+}
+JSON
+    export OPENCODE_CONFIG="$READONLY_CFG"
 fi
 
 CMD+=("$PROMPT")
@@ -101,38 +140,39 @@ COST=""
 TOKENS_IN=""
 TOKENS_OUT=""
 
-STDERR_TMP=$(mktemp -t opencode_run.XXXXXX)
-trap 'rm -f "$STDERR_TMP"' EXIT
-
 while IFS= read -r line; do
     [[ -z "$line" ]] && continue
 
-    TYPE=$(echo "$line" | jq -r '.type // empty' 2>/dev/null) || continue
+    # Use printf '%s\n' instead of echo: echo mangles long NDJSON lines
+    # with embedded \n / \" escapes enough that jq errors on "control
+    # characters from U+0000 through U+001F must be escaped", which
+    # silently drops every text event >~4 KB.
+    TYPE=$(printf '%s\n' "$line" | jq -r '.type // empty' 2>/dev/null) || continue
 
     case "$TYPE" in
         text)
-            CHUNK=$(echo "$line" | jq -r '.part.text // empty' 2>/dev/null)
+            CHUNK=$(printf '%s\n' "$line" | jq -r '.part.text // empty' 2>/dev/null)
             OUTPUT_TEXT+="$CHUNK"
             if [[ -z "$OUTPUT_SESSION_ID" ]]; then
-                OUTPUT_SESSION_ID=$(echo "$line" | jq -r '.sessionID // empty' 2>/dev/null)
+                OUTPUT_SESSION_ID=$(printf '%s\n' "$line" | jq -r '.sessionID // empty' 2>/dev/null)
             fi
             ;;
         step_start)
             if [[ -z "$OUTPUT_SESSION_ID" ]]; then
-                OUTPUT_SESSION_ID=$(echo "$line" | jq -r '.sessionID // empty' 2>/dev/null)
+                OUTPUT_SESSION_ID=$(printf '%s\n' "$line" | jq -r '.sessionID // empty' 2>/dev/null)
             fi
             ;;
         step_finish)
-            COST=$(echo "$line" | jq -r '.part.cost // empty' 2>/dev/null)
-            TOKENS_IN=$(echo "$line" | jq -r '.part.tokens.input // empty' 2>/dev/null)
-            TOKENS_OUT=$(echo "$line" | jq -r '.part.tokens.output // empty' 2>/dev/null)
+            COST=$(printf '%s\n' "$line" | jq -r '.part.cost // empty' 2>/dev/null)
+            TOKENS_IN=$(printf '%s\n' "$line" | jq -r '.part.tokens.input // empty' 2>/dev/null)
+            TOKENS_OUT=$(printf '%s\n' "$line" | jq -r '.part.tokens.output // empty' 2>/dev/null)
             ;;
         tool_call)
-            TOOL_NAME=$(echo "$line" | jq -r '.part.tool // empty' 2>/dev/null)
+            TOOL_NAME=$(printf '%s\n' "$line" | jq -r '.part.tool // empty' 2>/dev/null)
             [[ -n "$TOOL_NAME" ]] && echo "[opencode] tool use: $TOOL_NAME" >&2
             ;;
         error)
-            ERROR_MSG=$(echo "$line" | jq -r '.error.data.message // .error.name // "unknown error"' 2>/dev/null)
+            ERROR_MSG=$(printf '%s\n' "$line" | jq -r '.error.data.message // .error.name // "unknown error"' 2>/dev/null)
             ;;
     esac
 # Use perl-based timeout for macOS compatibility (no coreutils `timeout`)
