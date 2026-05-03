@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, WebSearch, WebFetch, Agent
 
 # Code Review Skill
 
-Generate a thorough code review of the current branch compared to `main`, using two independent reviewers in parallel: Claude Opus (subagent) and ChatGPT (via OpenCode). Research on best practices is fetched once and shared by both reviewers.
+Generate a thorough code review of the current branch compared to `main`, using two independent Claude Opus subagents in parallel. Research on best practices is fetched once and shared by both reviewers.
 
 Supports focused review passes via `--pass <focus>` to narrow the review to a specific concern area.
 
@@ -133,11 +133,11 @@ Determine the branch name and today's date (`YYYY-MM-DD`). Sanitize the branch n
 
 **If PASS is set** (focused review):
 - `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}-{PASS}/opus/`
-- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}-{PASS}/chatgpt/`
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}-{PASS}/opus2/`
 
 **If PASS is empty** (full review):
 - `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/opus/`
-- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/chatgpt/`
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/opus2/`
 
 ### 5. Launch parallel reviews
 
@@ -157,37 +157,27 @@ Launch an Agent with `model: opus` containing:
 
 The agent prompt must instruct it to write the 5 review files directly using the Write tool.
 
-#### 5b. ChatGPT Review (Bash tool → OpenCode)
+#### 5b. Opus 2 Review (Agent tool, second independent instance)
 
-Run via the OpenCode wrapper script with `--permissions full` so ChatGPT can read files and write output:
+Launch a second Agent with `model: opus` — same structure as 5a but with a different perspective framing and writing to the `opus2/` output directory:
 
-```bash
-bash $HOME/.claude/skills/opencode/opencode_run.sh \
-  --task-name "review" \
-  --model "openai/gpt-5.4" \
-  --permissions full \
-  "<CHATGPT_PROMPT>"
-```
-
-Use `--timeout 600` on the wrapper script (10-minute perl alarm). Use a Bash tool timeout of 300000 (5 minutes). If the Bash tool backgrounds the command, the ChatGPT reviewer's output is still written to disk via tool use — the wrapper's stdout is informational only, not required for correctness.
-
-The ChatGPT prompt must include:
-- **If PASS is set**: the pass-specific reviewer framing from the Arguments section (prepend it at the top of the ChatGPT prompt)
-- The branch name and base branch (`main`)
-- Instructions to run `git diff main...HEAD` to gather the diff
-- Instructions to read each changed file listed by `git diff main...HEAD --name-only`
-- The list of relevant research file paths in `$HOME/.claude/research/` and instructions to read them
-- The output directory path (pass-aware path from step 4)
+- **If PASS is set**: the pass-specific reviewer framing from the Arguments section (prepend it at the top of the agent prompt)
+- Add this framing at the top: "You are a second independent code reviewer. Do not mirror the first reviewer — bring your own judgment. Focus on aspects that are easy to overlook: subtle logic errors, missing edge cases, implicit assumptions, and long-term maintainability."
+- The full diff
+- The full content of each changed file
+- The full content of all relevant research files
+- The output directory path: the `opus2/` directory (pass-aware path from step 4)
 - The review file format specification (section 5c below)
-- This explicit instruction: "You MUST write all 5 review files to the output directory before finishing."
 - **If PASS is set**: add this constraint: "For a focused pass, `01-critical-and-important.md` and `02-suggestions.md` must ONLY contain issues relevant to the '{PASS}' focus area. `00-overview.md` should note this is a focused '{PASS}' pass, not a full review."
+
+The agent prompt must instruct it to write the 5 review files directly using the Write tool. The reviewer name in `00-overview.md` must be "Claude Opus (2nd reviewer)".
 
 #### 5c. Review file format (shared by both reviewers)
 
 Both reviewers must produce these 5 files in their respective output directories:
 
 **`00-overview.md`**
-- Branch name, date, reviewer name (either "Claude Opus" or "ChatGPT")
+- Branch name, date, reviewer name (either "Claude Opus" or "Claude Opus (2nd reviewer)")
 - One-paragraph summary of what the changes do
 - Overall verdict: one of `APPROVE`, `REQUEST_CHANGES`, or `NEEDS_DISCUSSION`
 - Stats: files changed, lines added/removed, commits
@@ -244,7 +234,7 @@ After both reviews complete:
    - **If PASS is set**: "Review pass: {PASS}"
    - **If PASS is empty**: "Review type: full"
    - Where the reviews were written (both directory paths)
-   - Each reviewer's verdict (Opus and ChatGPT)
+   - Each reviewer's verdict (Opus 1 and Opus 2)
    - A count of action items by priority from each reviewer
    - Which research topics were cache hits vs. freshly fetched
    - Suggest running `/fix-review` to address findings from both reviewers

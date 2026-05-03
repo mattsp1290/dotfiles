@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
 
 # Fix Review Skill
 
-Read the most recent code review from `./reviews/` and implement the fixes. Supports both single-reviewer reviews and dual-reviewer reviews (Opus + ChatGPT).
+Read the most recent code review from `./reviews/` and implement the fixes. Supports both single-reviewer reviews and dual-reviewer reviews (Opus 1 + Opus 2, or legacy Opus + ChatGPT).
 
 ## Arguments
 
@@ -15,7 +15,7 @@ Parse `$ARGUMENTS` for optional flags:
 
 - `--auto`: Run in fully automatic mode. When set:
   - Skip the user prompt in Step 3 (select ALL items automatically)
-  - Handle conflicts automatically (prefer stricter severity; prefer Opus over ChatGPT when tied)
+  - Handle conflicts automatically (prefer stricter severity; prefer Opus 1 over Opus 2 or ChatGPT when tied)
   - **Security guardrail**: Flag (but do NOT auto-fix) changes to files involving auth, secrets, credentials, permissions, or config. Log these as "needs-manual" in the summary.
   - After implementing fixes, output a structured summary (see Step 5)
 
@@ -25,23 +25,24 @@ If `--auto` is absent, behavior is identical to the default interactive mode.
 
 1. **Reviews directory exists.** Check for `./reviews/` with review subdirectories. If none exist, stop and tell the user: "No reviews found in ./reviews/. Run `/review` first to generate a code review."
 2. **Find the most recent review.** List directories in `./reviews/` and pick the last one alphabetically (the date suffix makes alphabetical order = chronological order). Tell the user which review you're working from.
-3. **Detect review structure.** Check if the most recent review directory contains `opus/` and `chatgpt/` subdirectories (dual-reviewer format) or contains review files directly (legacy single-reviewer format).
-   - **Dual-reviewer**: read from both `opus/` and `chatgpt/` subdirectories
-   - **Legacy single-reviewer**: read from the directory directly
+3. **Detect review structure.** Determine the format in this priority order:
+   - If the directory contains both `opus/` and `opus2/` subdirectories → **dual-reviewer (new format)**
+   - If the directory contains both `opus/` and `chatgpt/` subdirectories → **dual-reviewer (legacy format)**
+   - Otherwise → **single-reviewer (legacy format)**, read from the directory directly
 4. **Note available research.** Check if `$HOME/.claude/research/` exists. If it does, list the filenames — you will consult these during step 4 rather than doing live web searches.
 
 ## Steps
 
 ### 1. Read all review files
 
-#### Dual-reviewer format (opus/ + chatgpt/ subdirectories)
+#### Dual-reviewer format (opus/ + opus2/ or opus/ + chatgpt/)
 
 Read all markdown files from BOTH reviewer directories:
 
 **From `opus/`:**
 - `00-overview.md`, `01-critical-and-important.md`, `02-suggestions.md`, `03-positive-notes.md`, `04-action-items.md`
 
-**From `chatgpt/`:**
+**From `opus2/` (new format) or `chatgpt/` (legacy):**
 - `00-overview.md`, `01-critical-and-important.md`, `02-suggestions.md`, `03-positive-notes.md`, `04-action-items.md`
 
 When processing dual reviews:
@@ -70,16 +71,16 @@ Show the user a summary of what you plan to do, organized by priority:
 ```
 ## Fix Plan for {review-directory}
 
-### Reviewers: {list reviewers — e.g., "Opus + ChatGPT" or "Claude Code"}
+### Reviewers: {list reviewers — e.g., "Opus 1 + Opus 2" or "Claude Code"}
 
 ### Critical ({count}) {note if any flagged by both reviewers}
-- Item description... [Opus] / [ChatGPT] / [Both]
+- Item description... [Opus1] / [Opus2] / [Both]
 
 ### Important ({count})
-- Item description... [Opus] / [ChatGPT] / [Both]
+- Item description... [Opus1] / [Opus2] / [Both]
 
 ### Suggestions ({count})
-- Item description... [Opus] / [ChatGPT] / [Both]
+- Item description... [Opus1] / [Opus2] / [Both]
 
 ### Already Resolved ({count})
 - Item description... (file removed / code already changed)
@@ -104,7 +105,7 @@ For each fix:
 - Apply the fix using Edit (preferred) or Write (for new files only)
 - Be careful to preserve patterns called out as positive in `03-positive-notes.md` from EITHER reviewer
 - If two action items conflict with each other (from the same or different reviewers):
-  - **If `--auto`**: prefer the stricter interpretation (Critical over Important; if same severity, prefer the Opus suggestion). Log the conflict and the choice made.
+  - **If `--auto`**: prefer the stricter interpretation (Critical over Important; if same severity, prefer the Opus 1 suggestion). Log the conflict and the choice made.
   - **Otherwise**: ask the user which to prefer before proceeding
 - If a fix requires context you don't have:
   1. Check `$HOME/.claude/research/` for a file whose tags match the topic
