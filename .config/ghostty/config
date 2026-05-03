@@ -1,3 +1,9 @@
 theme = Smyck
 font-family = Ubuntu Mono derivative Powerline
 font-size = 16
+
+# Auto-install xterm-ghostty terminfo on remote hosts on first SSH,
+# and propagate COLORTERM=truecolor. Fixes Backspace / arrow keys /
+# colors when SSHing into Linux boxes that don't have ghostty's
+# terminfo entry installed.
+shell-integration-features = ssh-env,ssh-terminfo
