@@ -156,28 +156,18 @@ fi
 # Ensure reviews/ is in the global gitignore
 GITIGNORE_GLOBAL="$HOME/.gitignore_global"
 touch "$GITIGNORE_GLOBAL"
-if ! grep -qF 'reviews/' "$GITIGNORE_GLOBAL"; then
-  echo 'reviews/' >> "$GITIGNORE_GLOBAL"
-fi
+for pattern in 'reviews/' '.codex/reviews/' '.agents/reviews/'; do
+  if ! grep -qF "$pattern" "$GITIGNORE_GLOBAL"; then
+    echo "$pattern" >> "$GITIGNORE_GLOBAL"
+  fi
+done
 git config --global core.excludesFile "$GITIGNORE_GLOBAL"
 
 # Set vim as the default git editor
 git config --global core.editor "vim"
 
-# Install Claude Code if not already present
-if ! command -v claude > /dev/null 2>&1 && [ ! -f "$HOME/.local/bin/claude" ]; then
-  curl -fsSL https://claude.ai/install.sh | bash
-fi
-
-# Ensure $HOME/.claude directory exists (not a symlink, so Claude Code can manage its own files)
-mkdir -p "$HOME/.claude"
-
-# Symlink each subdirectory in dotfiles .claude into $HOME/.claude dynamically
-# This means adding new subdirectories to dotfiles/.claude will auto-link on next setup run
-DOTFILES_CLAUDE="$HOME/git/dotfiles/.claude"
-for dir in "$DOTFILES_CLAUDE"/*/; do
-  dir_name=$(basename "$dir")
-  ln -snf "$dir" "$HOME/.claude/$dir_name"
-done
+# Install and link AI coding agent tools
+. "$HOME/git/dotfiles/scripts/setup-agent-tools.sh"
+setup_agent_tools
 
 echo "Done! Log out and back in for shell and group changes to take effect."
