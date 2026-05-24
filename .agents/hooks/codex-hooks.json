@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'agent_root=${DOTFILES_AGENT_ROOT:-$HOME/git/dotfiles/.agents}; exec python3 \"$agent_root/hooks/codex-learning-style.py\"'"
+          }
+        ]
+      }
+    ]
+  }
+}

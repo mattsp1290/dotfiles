@@ -47,6 +47,21 @@ link_children() {
   done
 }
 
+link_file() {
+  source_path="$1"
+  target_path="$2"
+
+  [ -f "$source_path" ] || return 0
+
+  if [ -e "$target_path" ] && [ ! -L "$target_path" ]; then
+    echo "Skipping $target_path because it already exists and is not a symlink." >&2
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$target_path")"
+  ln -snf "$source_path" "$target_path"
+}
+
 link_claude_agent_config() {
   agent_root="${DOTFILES_AGENT_ROOT:-$HOME/git/dotfiles/.agents}"
 
@@ -61,6 +76,8 @@ link_codex_agent_config() {
   agent_root="${DOTFILES_AGENT_ROOT:-$HOME/git/dotfiles/.agents}"
 
   mkdir -p "$HOME/.codex"
+  link_file "$agent_root/hooks/codex-hooks.json" "$HOME/.codex/hooks.json"
+  link_children "$agent_root/commands" "$HOME/.codex/prompts"
   link_children "$agent_root/skills" "$HOME/.codex/skills"
   link_children "$agent_root/rules" "$HOME/.codex/rules"
 }

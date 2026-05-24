@@ -14,7 +14,10 @@
 `scripts/setup-agent-tools.sh` links this tree into tool-specific homes:
 
 - Claude Code: `~/.claude/{commands,hooks,rules,skills}`
-- Codex: `~/.codex/{rules,skills}`
+- Codex: `~/.codex/{hooks.json,prompts,rules,skills}`. Shared
+  `.agents/commands/*.md` files are linked into `~/.codex/prompts` so they can
+  be used as Codex custom slash prompts. `.agents/hooks/codex-hooks.json` is
+  linked to `~/.codex/hooks.json` for global Codex hook behavior.
 
 Claude keeps `settings.local.json` separate because it contains local permissions and hook trust state. Codex keeps `config.toml`, auth, and approval policy in `~/.codex`.
 
