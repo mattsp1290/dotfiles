@@ -23,8 +23,8 @@ If `--auto` is absent, behavior is identical to the default interactive mode.
 
 ## Prerequisites
 
-1. **Reviews directory exists.** Check for `./reviews/` with review subdirectories. If none exist, stop and tell the user: "No reviews found in ./reviews/. Run `/review` first to generate a code review."
-2. **Find the most recent review.** List directories in `./reviews/` and pick the last one alphabetically (the date suffix makes alphabetical order = chronological order). Tell the user which review you're working from.
+1. **Reviews directory exists.** Check for `./.agents/reviews/` first, then fall back to `./reviews/`. If neither exist with review subdirectories, stop and tell the user: "No reviews found. Run `/review` first to generate a code review."
+2. **Find the most recent review.** List directories in the reviews directory and pick the last one alphabetically (the date suffix makes alphabetical order = chronological order). Tell the user which review you're working from.
 3. **Detect review structure.** Determine the format in this priority order:
    - If the directory contains both `opus/` and `opus2/` subdirectories → **dual-reviewer (new format)**
    - If the directory contains both `opus/` and `chatgpt/` subdirectories → **dual-reviewer (legacy format)**

@@ -11,10 +11,10 @@ You are an expert at querying Datadog using the `pup` CLI. Understand what the u
 
 ## Running pup
 
-**Always** use the org flag with pup. Our options are prod or staging.
+**Always** set `DD_SITE` and omit `--org`. The site is `us3.datadoghq.com`.
 
 ```
-$HOME/git/pup/target/release/pup --org 'prod'
+DD_SITE=us3.datadoghq.com $HOME/git/pup/target/release/pup
 ```
 
 Agent mode is auto-detected inside Claude Code — confirmations are auto-approved and output defaults to JSON.
@@ -124,7 +124,7 @@ env:production                  # By environment
 
 | Status | Meaning | Action |
 |--------|---------|--------|
-| 401 | Auth failed | Run `$/git/pup/target/release/pup auth login --org 'prod'` |
+| 401 | Auth failed | Run `DD_SITE=us3.datadoghq.com $HOME/git/pup/target/release/pup auth login` |
 | 403 | Insufficient permissions | Check API/App key permissions |
 | 404 | Not found | Verify the resource ID or name |
 | 429 | Rate limited | Wait and retry |

@@ -10,7 +10,32 @@
       "Bash(defaults read:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "WebFetch(domain:opencode.ai)",
+      "Bash(ps -o pid,etime,command -p 99835)",
+      "Read(//private/tmp/**)",
+      "Skill(opencode)",
+      "Bash(sed -n 73,197p /Users/punk1290/.claude/plans/atomic-squishing-squid.md)",
+      "Bash(sed -n 198,276p /Users/punk1290/.claude/plans/atomic-squishing-squid.md)",
+      "Read(//tmp/**)",
+      "Bash(sed -n '1,150p' /Users/punk1290/.claude/plans/atomic-squishing-squid.md)",
+      "Bash(sed -n '151,$p' /Users/punk1290/.claude/plans/atomic-squishing-squid.md)",
+      "Bash(sed -n 1,151p /Users/punk1290/.claude/plans/atomic-squishing-squid.md)",
+      "Bash(sed -n 152,300p /Users/punk1290/.claude/plans/atomic-squishing-squid.md)",
+      "Bash(sed -n '301,$p' /Users/punk1290/.claude/plans/atomic-squishing-squid.md)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/pre-commit-tests.sh"
+          }
+        ]
+      }
     ]
   }
 }
