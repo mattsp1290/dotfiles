@@ -1,6 +1,6 @@
 ---
 name: learning-loop
-description: Collaborative learn-by-doing feature development — Claude implements on an isolated branch in a fresh /tmp clone (your repo is untouched until you apply), teaches at decision points with Insight and Decision-point markers, then guides you through reviewing and applying what you want.
+description: Collaborative learn-by-doing feature development — Claude implements on an isolated branch in a fresh /tmp clone (your working tree and branch history are untouched until you apply), teaches at decision points with Insight and Decision-point markers, then guides you through reviewing and applying what you want.
 user-invocable: true
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
@@ -9,7 +9,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 
 Build a feature together. Claude does all the mechanical work on an isolated `learning/*` branch in a fresh git clone under `/tmp/learning-session/` — nothing is visible in your repository until you explicitly fetch and merge. Along the way, `Insight:` notes surface non-obvious patterns and `Decision point:` prompts invite your input at meaningful technical forks.
 
-**What "isolated" means precisely:** a fresh clone shares no git objects with your repo. The `learning/*` branch and all its commits live entirely in `/tmp` until you run the apply step. Your working tree, current branch, and `git log` are completely untouched.
+**What "isolated" means precisely:** a fresh clone shares no git objects with your repo. The `learning/*` branch and all its commits live entirely in `/tmp` until you run the apply step. Your working tree and branch history are completely untouched. The one exception: the *review-before-apply* sub-step adds a temporary `learning-clone` remote to `.git/config`; cleanup removes it.
 
 ## Arguments
 $ARGUMENTS
@@ -42,8 +42,10 @@ SLUG=$(printf '%s' "$RAW_SLUG" \
 [[ -z "$SLUG" ]] && SLUG="task-$(date +%Y%m%d-%H%M%S)"
 
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-REPO_HASH=$(printf '%s' "$PROJECT_ROOT" | shasum | cut -c1-6)
+REPO_HASH=$(printf '%s' "$PROJECT_ROOT" | { shasum 2>/dev/null || sha1sum; } | cut -c1-6)
+[[ -z "$REPO_HASH" ]] && { echo "ERROR: no sha1 tool found"; exit 1; }
 BASE_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+BASE_SHA=$(git rev-parse HEAD 2>/dev/null || echo "")
 
 SESSION_ID="${REPO_HASH}-${SLUG}"
 CLONE_DIR="/tmp/learning-session/${SESSION_ID}"
@@ -64,6 +66,7 @@ if [[ $IN_GIT -eq 1 ]]; then
     # Session dir exists — check if branch is still in the clone
     if (cd "$CLONE_DIR" && git show-ref --verify --quiet "refs/heads/$BRANCH"); then
       echo "Resuming existing session: $CLONE_DIR"
+      echo "Note: the clone is a snapshot of the base at session start; any new commits on $BASE_BRANCH in the original repo are not reflected here."
       cd "$CLONE_DIR" && git checkout "$BRANCH"
     else
       echo "Session directory exists but branch is gone — starting fresh."
@@ -82,33 +85,34 @@ else
 fi
 ```
 
-Write the state file (sibling to the clone dir — never inside it, so it cannot be committed):
+Write the state file (sibling to the clone dir — never inside it, so `git add -A` cannot stage it):
 
 ```bash
 mkdir -p /tmp/learning-session
 cat > "$STATE_FILE" <<ENVEOF
 PROJECT_ROOT="$PROJECT_ROOT"
 BASE_BRANCH="$BASE_BRANCH"
+BASE_SHA="$BASE_SHA"
 SLUG="$SLUG"
 SESSION_ID="$SESSION_ID"
 CLONE_DIR="$CLONE_DIR"
 BRANCH="$BRANCH"
 IN_GIT="$IN_GIT"
 ENVEOF
+
+# Write to the active-session pointer — a fixed path requiring no substitution.
+# (Assumes one active learning session per machine at a time.)
+cp "$STATE_FILE" /tmp/learning-session/current.env
 ```
 
-**Print the session ID prominently** — the agent must use this exact path in every subsequent Bash block:
+**Every subsequent Bash block sources state with this exact literal command:**
+```bash
+source /tmp/learning-session/current.env && cd "$CLONE_DIR"
+```
 
-```
-SESSION: /tmp/learning-session/<SESSION_ID>.env
-```
+No substitution needed — `current.env` always points to the active session.
 
 **The clone at `$CLONE_DIR` is your entire workspace.** It is a full copy of the project. `cd` there and read, grep, glob, and edit files exclusively within `$CLONE_DIR`. Never read or touch `$PROJECT_ROOT` paths after this point.
-
-**At the top of every subsequent Bash block**, source state and set cwd:
-```bash
-source /tmp/learning-session/<SESSION_ID>.env && cd "$CLONE_DIR"
-```
 
 **Note:** the clone branches from the committed HEAD of `$BASE_BRANCH`. Any uncommitted changes in your working tree will not be present in the clone. If the task depends on uncommitted work, stash it in the original, then apply the stash in `$CLONE_DIR` before starting.
 
@@ -117,7 +121,7 @@ source /tmp/learning-session/<SESSION_ID>.env && cd "$CLONE_DIR"
 ## Step 1 — ORIENT
 
 ```bash
-source /tmp/learning-session/<SESSION_ID>.env && cd "$CLONE_DIR"
+source /tmp/learning-session/current.env && cd "$CLONE_DIR"
 ```
 
 Read the relevant codebase areas. Form a plan.
@@ -127,16 +131,16 @@ Present:
 2. The files you plan to touch, with a one-line reason for each
 3. An `Insight:` if there is a non-obvious architectural constraint or pattern shaping the whole implementation
 
-Ask **at most three clarifying questions** — only when the answer materially affects architecture, correctness, rollout risk, or the user's specific learning goal. Do not ask about preferences; make a reasonable assumption and state it. If no questions are needed, proceed directly.
+Ask **at most three clarifying questions** — only when the answer materially affects architecture, correctness, rollout risk, or the user's specific learning goal. Do not ask about preferences; make a reasonable assumption and state it. If you asked questions, wait for the reply, then begin Step 2. If you asked none, begin Step 2 immediately.
 
 ---
 
 ## Step 2 — Iteration loop: ASSESS → BUILD → VERIFY → COMMIT → SHOW
 
-Repeat until the objective is complete (or `-n` cap is reached). Track iteration number N (start at 1, increment each loop). Every Bash block in this loop starts with:
+Repeat until the objective is complete (or `-n` cap is reached). Track iteration number N (start at 1, increment each loop). After COMMIT, if N equals the cap, stop and go to Step 3. Every Bash block in this loop starts with:
 
 ```bash
-source /tmp/learning-session/<SESSION_ID>.env && cd "$CLONE_DIR"
+source /tmp/learning-session/current.env && cd "$CLONE_DIR"
 ```
 
 ### ASSESS
@@ -152,19 +156,21 @@ Identify the next focused, testable increment. State in one sentence what it ach
 Implement the increment. All file paths are under `$CLONE_DIR`.
 
 - Do all mechanical and boilerplate work yourself. Do not assign the user chores: renaming, updating imports, writing obvious tests, applying repetitive edits.
+- Match the idioms, error-handling style, and naming conventions of the surrounding code rather than importing patterns from another language.
 - `TODO(human):` — Reserve for a deliberate, high-signal design exercise requiring the user's judgment. When used, write a stub that **compiles and has a skipped/pending test** so VERIFY passes. Not more than one per iteration. If none is warranted, write none.
 
 ### VERIFY
 
 ```bash
-source /tmp/learning-session/<SESSION_ID>.env && cd "$CLONE_DIR"
+source /tmp/learning-session/current.env && cd "$CLONE_DIR"
 # Auto-detect and run:
 # Go (go.mod):             go test ./... && go build ./...
+# Nim (*.nimble):          nimble test
 # Node (package.json):     pnpm-lock.yaml→pnpm test, yarn.lock→yarn test, else npm test
 # Python (pyproject.toml): pytest
 # Rust (Cargo.toml):       cargo test && cargo build
 # Make (Makefile):         make test
-# None detected: report and ask the user what "verified" means here
+# None detected: ask the user what "verified" means for this change before proceeding
 ```
 
 On failure: one remediation pass inside BUILD, then re-verify. If still failing, surface the error, explain what you tried, and ask how to proceed rather than spinning.
@@ -174,7 +180,7 @@ On failure: one remediation pass inside BUILD, then re-verify. If still failing,
 After a passing VERIFY:
 
 ```bash
-source /tmp/learning-session/<SESSION_ID>.env && cd "$CLONE_DIR"
+source /tmp/learning-session/current.env && cd "$CLONE_DIR"
 git add -A
 git commit -m "learning-loop: $SLUG - increment $N"
 ```
@@ -196,52 +202,51 @@ When the objective is fully implemented:
 
 **Takeaways summary**: what was built, how it was verified, and one or two deeper patterns or tradeoffs worth remembering from this work.
 
-**Review changes** — fetch the branch from the clone and diff it against base:
+**Review changes** — add the clone as a temporary remote and fetch the branch. `BASE_SHA` (recorded at session start) is used as the diff base to ensure correctness even if the original repo is in detached-HEAD state or has advanced since the session started:
 
 ```bash
-source /tmp/learning-session/<SESSION_ID>.env
+source /tmp/learning-session/current.env
 cd "$PROJECT_ROOT"
 
-# Temporarily add the clone as a local remote to fetch from
 git remote add learning-clone "$CLONE_DIR" 2>/dev/null \
   || git remote set-url learning-clone "$CLONE_DIR"
 git fetch learning-clone "$BRANCH"
 
-git diff "$BASE_BRANCH"...FETCH_HEAD          # full diff (three-dot: only branch additions)
-git log "$BASE_BRANCH"..FETCH_HEAD --oneline  # commit list
+git diff "$BASE_SHA"...learning-clone/"$BRANCH"          # full diff (three-dot: only branch additions)
+git log "$BASE_SHA"..learning-clone/"$BRANCH" --oneline  # commit list
 ```
 
-**Apply options** — always run from `$PROJECT_ROOT`:
+**Apply options** — run the review/fetch block above first, then choose:
 
 ```bash
-source /tmp/learning-session/<SESSION_ID>.env
+source /tmp/learning-session/current.env
 cd "$PROJECT_ROOT"
-# (assumes learning-clone remote and FETCH_HEAD from the review step above)
+# (learning-clone remote and learning-clone/$BRANCH tracking ref from the review step)
 
 # Option A — merge (keeps all increment commits)
-git merge FETCH_HEAD
+git merge learning-clone/"$BRANCH"
 
 # Option B — squash into one commit
-git merge --squash FETCH_HEAD && git commit
+git merge --squash learning-clone/"$BRANCH" && git commit
 
 # Option C — cherry-pick specific commits
-#   First note the SHAs from the clone: cd "$CLONE_DIR" && git log --oneline "$BRANCH"
-#   Then from PROJECT_ROOT:
-git fetch learning-clone <sha>  # fetch the specific object
+#   Find SHAs: cd "$CLONE_DIR" && git log --oneline "$BRANCH"
+#   Objects are already present in origin after the fetch above — cherry-pick directly:
 git cherry-pick <sha>
 
 # Option D — grab specific files only
-git checkout FETCH_HEAD -- path/to/file.go
+git checkout learning-clone/"$BRANCH" -- path/to/file.go
 ```
 
 **Cleanup after applying:**
 
 ```bash
-source /tmp/learning-session/<SESSION_ID>.env
+source /tmp/learning-session/current.env
 cd "$PROJECT_ROOT"
 git remote remove learning-clone 2>/dev/null
 rm -rf "$CLONE_DIR"
 rm -f "$STATE_FILE"
+rm -f /tmp/learning-session/current.env
 ```
 
 ---
@@ -251,7 +256,7 @@ rm -f "$STATE_FILE"
 Review what changed, then apply via rsync:
 
 ```bash
-source /tmp/learning-session/<SESSION_ID>.env
+source /tmp/learning-session/current.env
 
 # Review
 diff -rq "$PROJECT_ROOT" "$CLONE_DIR"
@@ -271,15 +276,15 @@ When invoked as `/learning-loop --apply` or `/learning-loop --apply <slug>`:
 
 ```bash
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-REPO_HASH=$(printf '%s' "$PROJECT_ROOT" | shasum | cut -c1-6)
+REPO_HASH=$(printf '%s' "$PROJECT_ROOT" | { shasum 2>/dev/null || sha1sum; } | cut -c1-6)
 
 # List available sessions for this repo
 ls /tmp/learning-session/${REPO_HASH}-*.env 2>/dev/null | sed "s|.*${REPO_HASH}-||; s|\.env$||"
 ```
 
-If `<slug>` is provided, reconstruct `SESSION_ID="${REPO_HASH}-<slug>"`, then `source /tmp/learning-session/${SESSION_ID}.env` to recover `BASE_BRANCH` and `CLONE_DIR`. If the state file is missing, ask the user which branch to diff against.
+If `<slug>` is provided, reconstruct `SESSION_ID="${REPO_HASH}-<slug>"`, then `source /tmp/learning-session/${SESSION_ID}.env` to recover `BASE_SHA`, `BASE_BRANCH`, and `CLONE_DIR`. If the state file is missing, ask the user which commit/branch to diff against.
 
-Walk through the fetch, review, and apply options from Step 3. Offer cleanup after.
+Run the review/fetch block from Step 3 first, then walk through the apply options. Offer cleanup after.
 
 ---
 
@@ -289,19 +294,22 @@ When invoked as `/learning-loop --cleanup`:
 
 ```bash
 PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-REPO_HASH=$(printf '%s' "$PROJECT_ROOT" | shasum | cut -c1-6)
+REPO_HASH=$(printf '%s' "$PROJECT_ROOT" | { shasum 2>/dev/null || sha1sum; } | cut -c1-6)
+
+cd "$PROJECT_ROOT" 2>/dev/null  # ensure git remote remove runs in the right repo
 
 for env_file in /tmp/learning-session/${REPO_HASH}-*.env; do
   [[ -f "$env_file" ]] || continue
+  CLONE_DIR=""; SESSION_ID=""   # reset before sourcing to prevent stale-value bleed
   source "$env_file"
-  rm -rf "$CLONE_DIR" \
+  [[ -n "$CLONE_DIR" ]] && rm -rf "$CLONE_DIR" \
     && echo "Removed clone: $SESSION_ID" \
-    || echo "Clone already gone: $SESSION_ID"
+    || echo "Clone path missing or empty — skipping: $env_file"
   rm -f "$env_file" && echo "Removed state: $env_file"
 done
 
-# Also remove any dangling learning-clone remote if still present
 git remote remove learning-clone 2>/dev/null && echo "Removed learning-clone remote"
+rm -f /tmp/learning-session/current.env && echo "Cleared active-session pointer"
 ```
 
 Scoped to this repo's hash — never touches another project's sessions.
@@ -322,19 +330,20 @@ Scoped to this repo's hash — never touches another project's sessions.
 
 | Case | Handling |
 |---|---|
-| Session dir exists, branch present in clone | Resume silently |
+| Session dir exists, branch present in clone | Resume silently; note clone is a snapshot of the original base |
 | Session dir exists, branch gone from clone | Warn and restart (rm -rf + fresh clone) |
-| Not in a git repo | rsync mirror; VERIFY is collaborative; apply via rsync |
+| Not in a git repo | rsync mirror; no test suite auto-detected — ask the user what "verified" means for this change before proceeding |
 | Test suite not detected | Ask the user what "verified" means before VERIFY |
 | VERIFY still failing after one remediation pass | Surface error, explain attempts, ask how to proceed |
 | `Decision point:` ignored by user | Pick most defensible option, note the choice, proceed |
 | `-n` cap reached | Summarize remaining work, give apply instructions for what is done |
 | `TODO(human):` at VERIFY | Stub must compile; write skipped test; do not block VERIFY |
 | `--apply` with no matching session | List sessions: `ls /tmp/learning-session/${REPO_HASH}-*.env` |
-| Cherry-pick SHA from clone | `git fetch learning-clone <sha>` first, then cherry-pick |
+| Detached HEAD in original repo | BASE_SHA (not BASE_BRANCH) is used as diff base — safe |
 | Cross-repo same slug | Scoped by repo hash in SESSION_ID — no collision |
-| Uncommitted changes in working tree | Note: clone branches from committed HEAD; stash and apply to clone if needed |
+| Uncommitted changes in working tree | Clone branches from committed HEAD; stash and apply to clone if needed |
 | Dangling learning-clone remote after crash | `--cleanup` removes it; also safe to `git remote remove learning-clone` manually |
+| `current.env` left from prior session | Overwritten at Step 0; `--cleanup` removes it |
 
 ---
 
