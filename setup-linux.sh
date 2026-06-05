@@ -102,6 +102,24 @@ export PATH="/usr/local/go/bin:$PATH"
 GO_BLOCK
 fi
 
+# Check for Nim (via choosenim) and install if we don't have it
+if ! command -v nim > /dev/null 2>&1 && [ ! -f "$HOME/.nimble/bin/nim" ]; then
+  curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
+  export PATH="$HOME/.nimble/bin:$PATH"
+fi
+
+# Ensure nim async_backend config exists (required for nimlangserver build)
+mkdir -p "$HOME/.config/nim"
+if ! grep -qF 'async_backend' "$HOME/.config/nim/nim.cfg" 2>/dev/null; then
+  echo 'define:async_backend=asyncdispatch' >> "$HOME/.config/nim/nim.cfg"
+fi
+
+# Check for nimlangserver and install if we don't have it
+if ! command -v nimlangserver > /dev/null 2>&1 && [ ! -f "$HOME/.nimble/bin/nimlangserver" ]; then
+  mkdir -p /tmp/nim-ls-install
+  (cd /tmp/nim-ls-install && nimble install nimlangserver -y)
+fi
+
 # Check for Rust and install if we don't have it
 if ! command -v rustup > /dev/null 2>&1 && [ ! -f "$HOME/.cargo/bin/rustup" ]; then
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

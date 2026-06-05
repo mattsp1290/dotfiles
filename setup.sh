@@ -54,6 +54,24 @@ if ! brew list go &> /dev/null && ! command -v go > /dev/null 2>&1; then
   brew install go
 fi
 
+# Check for Nim and install if we don't have it
+if ! brew list nim &> /dev/null && ! command -v nim > /dev/null 2>&1; then
+  brew install nim
+fi
+
+# Ensure nimble bin directory and nim async_backend config exist
+mkdir -p "$HOME/.nimble/bin"
+mkdir -p "$HOME/.config/nim"
+if ! grep -qF 'async_backend' "$HOME/.config/nim/nim.cfg" 2>/dev/null; then
+  echo 'define:async_backend=asyncdispatch' >> "$HOME/.config/nim/nim.cfg"
+fi
+
+# Check for nimlangserver and install if we don't have it
+if ! command -v nimlangserver > /dev/null 2>&1 && [ ! -f "$HOME/.nimble/bin/nimlangserver" ]; then
+  mkdir -p /tmp/nim-ls-install
+  (cd /tmp/nim-ls-install && nimble install nimlangserver -y)
+fi
+
 # Check for Rust and install if we don't have it
 if ! command -v rustup > /dev/null 2>&1; then
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

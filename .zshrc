@@ -19,6 +19,10 @@ export GOPATH="$HOME/go"
 export PATH="$HOME/go/bin:$PATH"
 # END GO BLOCK
 
+# START NIM BLOCK
+export PATH="$HOME/.nimble/bin:$PATH"
+# END NIM BLOCK
+
 # START NODE BLOCK
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
