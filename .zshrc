@@ -59,7 +59,7 @@ export PYENV_ROOT="$HOME/.pyenv"
 _load_pyenv() {
   unfunction _load_pyenv pyenv 2>/dev/null
   command -v pyenv >/dev/null 2>&1 || return
-  eval "$(pyenv init - zsh)"
+  eval "$(pyenv init --no-rehash - zsh)"
 }
 
 pyenv() { _load_pyenv; pyenv "$@"; }

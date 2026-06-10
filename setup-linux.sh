@@ -34,7 +34,7 @@ fi
 
 # Check for nvm and install if we don't have it
 if [ ! -s "$HOME/.nvm/nvm.sh" ]; then
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | PROFILE=/dev/null bash
 fi
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
@@ -51,20 +51,25 @@ if ! command -v pyenv > /dev/null 2>&1; then
     libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
   curl https://pyenv.run | bash
   export PYENV_ROOT="$HOME/.pyenv"
-  export PATH="$PYENV_ROOT/bin:$PATH"
-  eval "$(pyenv init -)"
+  export PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
   pyenv install -s 3
   pyenv global "$(pyenv install -l | grep -E '^\s+3\.[0-9]+\.[0-9]+$' | tail -1 | xargs)"
 fi
 
-# Ensure pyenv init is in .profile (idempotent)
-if ! grep -qF 'PYENV_ROOT' "$HOME/.profile" 2>/dev/null; then
+# Ensure pyenv path setup is in .profile without eager shell integration.
+touch "$HOME/.profile"
+for profile_file in "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile"; do
+  [ -f "$profile_file" ] && sed -i '/eval "$(pyenv init -)"/d' "$profile_file"
+done
+if ! grep -qF '# BEGIN dotfiles pyenv path' "$HOME/.profile" 2>/dev/null; then
   cat >> "$HOME/.profile" << 'PYENV_BLOCK'
 
-# pyenv
+# BEGIN dotfiles pyenv path
 export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+[ -d "$PYENV_ROOT/bin" ] && case ":$PATH:" in *":$PYENV_ROOT/bin:"*) ;; *) PATH="$PYENV_ROOT/bin:$PATH" ;; esac
+[ -d "$PYENV_ROOT/shims" ] && case ":$PATH:" in *":$PYENV_ROOT/shims:"*) ;; *) PATH="$PYENV_ROOT/shims:$PATH" ;; esac
+export PATH
+# END dotfiles pyenv path
 PYENV_BLOCK
 fi
 
