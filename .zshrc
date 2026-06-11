@@ -84,10 +84,15 @@ _git_prompt_info() {
 PROMPT='%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ ) %{$fg[cyan]%}%c%{$reset_color%} $(_git_prompt_info)'
 
 _lazy_complete() {
-  unfunction _lazy_complete 2>/dev/null
+  # Hand Tab back to the real completion widget BEFORE tearing ourselves
+  # down — leaving ^I bound to a deleted function breaks every later Tab
+  # with "No such shell function `_lazy_complete'".
+  bindkey "^I" expand-or-complete
   autoload -Uz compinit
   compinit -C -d "${ZDOTDIR:-$HOME}/.zcompdump"
   zle expand-or-complete
+  zle -D _lazy_complete 2>/dev/null
+  unfunction _lazy_complete 2>/dev/null
 }
 
 zle -N _lazy_complete
