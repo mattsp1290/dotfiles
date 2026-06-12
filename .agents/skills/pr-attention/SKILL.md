@@ -115,5 +115,8 @@ For changes to this workflow, run:
 
 ```bash
 python3 -m unittest tests/test_github_pr_attention.py
+python3 -m unittest -v tests.test_github_pr_attention.AttentionReportE2ETests
 python3 -m py_compile scripts/github-pr-attention.py tests/test_github_pr_attention.py
 ```
+
+These tests do not require a real `GITHUB_TOKEN`; the E2E coverage runs the CLI against a local mock GitHub HTTP server with a fake token.
