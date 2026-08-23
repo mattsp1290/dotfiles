@@ -11,6 +11,21 @@
 - `bd show <id>` — Show bead details
 - `bd graph` — Show dependency graph
 
+## Embedded Dolt Mode And Concurrency
+
+Treat `bd` CLI output as authoritative for current issue state. In embedded Dolt
+mode, tracked files such as `.beads/issues.jsonl` can lag behind the live database;
+do not infer open/closed/ready status by reading those files directly.
+
+Run all `bd` commands serially. Do not put `bd` commands in parallel tool batches,
+and do not run parent-side `bd` commands while a subagent may still be claiming,
+closing, or pushing Beads state.
+
+If a serial `bd` command fails with an embedded-Dolt exclusive-lock error, wait
+briefly and retry serially a bounded number of times before treating it as a real
+concurrent-session conflict. Do not invent raw Dolt commands to work around the
+lock unless the repository documents that recovery path.
+
 ## Creating Beads
 
 ```bash

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bead Swarm"
+  short_description: "Run a Beads multi-agent work loop"
+  default_prompt: "Use $bead-swarm to work through ready Beads tasks with an autonomous multi-agent loop."

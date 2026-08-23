@@ -11,7 +11,17 @@ Run a Ralph-like autonomous development loop over Beads. The parent Codex agent 
 
 ## Codex Subagent Requirement
 
-This skill requires Codex multi-agent tools. Use Codex subagent tooling, such as `spawn_agent`, `wait_agent`, `send_input`, and `close_agent`, when those tools are available. Do not assume Claude-only `Agent` or `Skill` tools exist. If Codex subagent tools are not available, stop and report that `/bead-swarm` cannot run because the requested parent-orchestrator-worker topology is unavailable.
+This skill prefers Codex multi-agent tools. Use Codex subagent tooling, such as `spawn_agent`, `wait_agent`, `send_input`, and `close_agent`, when those tools are available. Do not assume Claude-only `Agent` or `Skill` tools exist.
+
+If Codex subagent tools are unavailable, quota-limited, or fail after the parent has established a valid work loop, the parent may continue in degraded mode only when the iteration can be made safe without parallel implementation:
+
+- Select at most one implementation bead for the degraded iteration.
+- Do not attempt worker parallelism.
+- Run the same validation, review gate, metadata, merge, and Beads closure protocol.
+- Use the fallback review path and clearly separate the review passes.
+- Record `execution_mode`, `review_mode`, `review_assurance`, and `degraded_reason` in iteration metadata, immutable history, and the parent summary.
+
+Stop instead of entering degraded mode when the selected work requires true parallel agents, independent reviewer subagents are required by the user, acceptance criteria are broad or unclear, or the parent cannot produce durable review artifacts.
 
 When invoking existing skills such as `review` or `fix-review`, use whatever Codex skill invocation mechanism is available in the session. If no skill invocation tool exists, read that skill's `SKILL.md` and perform its workflow directly.
 
@@ -73,7 +83,10 @@ fi
 
 ### 2. Acquire A Local Loop Lock
 
-Create an untracked repo-local lock before spawning an orchestrator:
+Create an untracked repo-local lock before spawning an orchestrator. In Codex,
+do not rely on a shell `trap` or shell PID for cleanup because the parent loop
+spans multiple tool calls. Record an opaque owner token in the parent notes and
+release the lock explicitly during parent final cleanup or recovery.
 
 ```bash
 LOCK_DIR="$(git rev-parse --git-dir)/bead-swarm.lock"
@@ -81,13 +94,25 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
   echo "Another bead-swarm session appears to be running: $LOCK_DIR" >&2
   exit 1
 fi
-printf '%s\n' "$$" > "$LOCK_DIR/pid"
-trap 'rm -rf "$LOCK_DIR"' EXIT
+OWNER_ID="$(uuidgen 2>/dev/null || openssl rand -hex 16 2>/dev/null || printf '%s-%s' "$(date -u +%s)" "$RANDOM")"
+BEAD_SWARM_LOCK_OWNER="codex:$(date -u +%Y%m%dT%H%M%SZ):$OWNER_ID"
+printf '%s\n' "$BEAD_SWARM_LOCK_OWNER" > "$LOCK_DIR/owner"
 ```
 
-If a stale lock exists and there are no `bead-swarm/iteration-*` branches and no running process matching its PID, remove it and retry once. Do not remove a lock while another autonomous session may still be active.
+At final completion, blocked stop, or recovery handoff, remove only the lock whose
+`owner` matches the owner token created by this parent. If the owner does not
+match, stop and report the competing owner.
 
-If a stale lock exists while the current branch is already `bead-swarm/iteration-*`, verify the PID is not running, remove only the stale lock, and continue to **Resume Existing Iteration**. A stale lock must not prevent recovery of an interrupted iteration branch.
+If a stale lock exists and there are no `bead-swarm/iteration-*` branches, no
+`bead-swarm/recovery-*` branches, and no remote autonomous branches, remove it
+only when the owner token is from this parent or you can prove the owning
+session is gone. An opaque owner token is not a PID; absence of a matching process
+is not enough proof by itself. Otherwise stop and ask for human confirmation.
+
+If a stale lock exists while the current branch is already `bead-swarm/iteration-*`,
+verify no matching owner process/session is running, remove only the stale lock,
+and continue to **Resume Existing Iteration**. A stale lock must not prevent
+recovery of an interrupted iteration branch.
 
 ### 3. Preflight Or Resume
 
@@ -95,7 +120,13 @@ Run these checks before each new orchestrator:
 
 - Inside a git repo.
 - `origin` exists unless `--no-push` is set.
-- `.agents/reviews/` is untracked and excluded in `.git/info/exclude`.
+- Review artifact policy is understood for this repo. Some repos keep review
+  artifacts untracked under `reviews/`; others commit durable artifacts under
+  `.agents/reviews/`. Follow the repo's existing convention and do not require
+  `.agents/reviews/` to be excluded when it is already tracked. Before running a
+  review workflow, know the exact artifact root it will write. If that root is
+  local-only, ensure it is ignored by the repo's tracked `.gitignore` or local
+  `.git/info/exclude`; if it is durable, include it in the path allowlist.
 - Any `.agents/bead-swarm/iteration.json` found on the main branch is advisory history only. Treat it as active metadata only when the current branch is `bead-swarm/iteration-*` and its `branch` field matches the current branch.
 - No concurrent autonomous branch exists locally or remotely:
   - `ralph/iteration-*`
@@ -111,9 +142,33 @@ For normal new iterations:
 - Local branch can fast-forward from `origin/BEAD_SWARM_MAIN_BRANCH` when that remote branch exists.
 - If `origin/BEAD_SWARM_MAIN_BRANCH` does not exist, continue only when the branch came from an explicit user main-branch override or `--no-push` is set.
 
+If the main branch is dirty, classify the dirty paths before doing anything else:
+
+- selected-bead or interrupted iteration work: enter **Resume Existing Iteration**
+  or recovery, do not start a new iteration;
+- referenced plan/setup docs that must be committed before implementation:
+  either commit them deliberately under their own bead/checkpoint or stop for
+  human confirmation;
+- unrelated user drift: stop and report exact paths;
+- legitimate work outside the selected ready beads: create or use a separate bead
+  and checkpoint it before continuing.
+
+This classification never weakens the clean-main invariant: a normal new
+iteration still starts only from a clean `BEAD_SWARM_MAIN_BRANCH`.
+
 ### Serialized Beads Operations
 
 All `bd` commands must run serially. Do not run `bd` commands through parallel tool wrappers, and do not let workers or reviewers run `bd` commands unless the orchestrator explicitly delegates one serialized operation and waits for it to finish. This avoids embedded-Dolt exclusive-lock failures.
+
+The parent must not run any `bd` command while an orchestrator may still be
+claiming, closing, or pushing Beads state. During heartbeat checks, inspect git
+state only; wait for the orchestrator's final summary before parent-side `bd`
+queries.
+
+If a serial `bd` command fails with an embedded-Dolt exclusive-lock error, wait a
+short bounded backoff and retry serially a few times before treating it as a real
+concurrent-session conflict. Do not work around the lock with raw Dolt commands
+unless the repository documents that recovery path.
 
 If `bd dolt pull` fails because embedded mode cannot infer a branch, record the exact failure. Continue only after serial `bd ready` and any required `bd show <id>` commands succeed. Do not invent raw Dolt commands or branch names unless the repository documents them.
 
@@ -122,6 +177,11 @@ If `bd dolt pull` fails because embedded mode cannot infer a branch, record the 
 - Prefer `bd ready --json --limit 20`.
 - If JSON is unavailable, use `bd ready --plain --limit 20` and inspect each candidate with `bd show <id>`.
 - If Beads is unavailable or uninitialized, stop. This skill is Beads-first, unlike `/ralph`.
+- Treat `bd` CLI output as authoritative. Do not infer current issue state from
+  tracked `.beads/*` files; embedded Dolt state can be newer than those files.
+- Do not select `issue_type: epic` as an implementation bead. Use epics only for
+  completion auditing: inspect children and acceptance criteria, close only when
+  actually satisfied, and use notes/defer/human flags for manual remainder.
 
 If there are no ready beads:
 
@@ -154,11 +214,15 @@ While the orchestrator is running, wait in bounded intervals. If it runs longer 
 - last validation or git command
 - blocker, or `none`
 
-Do not run parallel `bd` commands during heartbeat checks. Move to recovery only when branch state and lack of orchestrator response indicate a real stall.
+Do not run any `bd` commands during heartbeat checks. Move to recovery only when branch state and lack of orchestrator response indicate a real stall.
 
 Decide:
 
 - Clean on `BEAD_SWARM_MAIN_BRANCH` and ready beads remain: spawn the next orchestrator unless `--single` was set.
+- Clean on `BEAD_SWARM_MAIN_BRANCH` and `bd ready` returns only epics: inspect
+  child statuses and acceptance criteria. Do not select the epic for
+  implementation. Close it only if all criteria are proven; otherwise record why
+  it remains open and use defer/human-needed notes for manual remainder.
 - Clean on `BEAD_SWARM_MAIN_BRANCH` and no ready/open actionable beads remain: complete.
 - Clean on `BEAD_SWARM_MAIN_BRANCH` but only blocked work remains: stop as blocked with exact bead IDs and reasons.
 - Clean on an iteration branch because `--no-push` was set: stop intentionally and report the branch, pending beads, and next command.
@@ -231,7 +295,9 @@ git add -- <beads-state-paths>
 git commit -m "bead-swarm: iteration ${N} claim beads"
 ```
 
-Create branch-local metadata for resume before implementation starts. Use the file-editing tool available in the session to write `.agents/bead-swarm/iteration.json` with this shape:
+Create branch-local active metadata for resume before implementation starts. Use
+the file-editing tool available in the session to write
+`.agents/bead-swarm/iteration.json` with this shape:
 
 ```json
 {
@@ -239,7 +305,7 @@ Create branch-local metadata for resume before implementation starts. Use the fi
   "branch": "bead-swarm/iteration-1-example",
   "slug": "example",
   "main_branch": "main",
-  "main_branch_source": "explicit|iteration-metadata|.ralph|default",
+  "main_branch_source": "explicit-user-argument|iteration-metadata|.ralph|default",
   "selected_beads": ["repo-abc123"],
   "beads_done_pending_close": [],
   "beads_blocked": [],
@@ -253,6 +319,14 @@ Then commit the metadata file:
 git add -- .agents/bead-swarm/iteration.json
 git commit -m "bead-swarm: iteration ${N} metadata"
 ```
+
+Active `iteration.json` is for iteration branches only. Before a non-empty
+iteration branch is merged, replace it with immutable history metadata, for
+example `.agents/bead-swarm/history/iteration-${N}.json`, or update/remove the
+active file so main never shows stale `beads_done_pending_close` state. On the
+main branch, any remaining `.agents/bead-swarm/iteration.json` is advisory only
+and must not be treated as active unless its branch matches the current
+`bead-swarm/iteration-*` branch.
 
 Skip the claim-state commit when Beads state is external or there are no tracked claim changes. If branch creation or metadata commit fails after claims, immediately release the claimed beads before stopping:
 
@@ -301,6 +375,12 @@ Detection order:
 
 If no automated gate exists, perform a manual verification that is specific to the changed behavior and note the gap. Do not mark a bead complete on compile success alone when tests exist.
 
+After each validation gate, clean generated artifacts that are known outputs of
+the gate before inspecting or staging git state. For Nim projects, this commonly
+means untracked executables such as `tests/<compiled-test-name>` created by
+`nimble test`. Remove only untracked expected outputs from the project's test
+list or `.gitignore`; do not broadly delete every executable under `tests/`.
+
 Commit only after the integrated batch validates. Stage by reviewed path allowlist, not by `git add -A`:
 
 ```bash
@@ -315,7 +395,7 @@ Review the complete iteration diff against `BEAD_SWARM_MAIN_BRANCH`.
 
 Preferred path:
 
-1. Run the existing `review` skill workflow. It must produce two independent review trees under `.agents/reviews/<change-name>/`.
+1. Run the existing `review` skill workflow. It must produce two independently named reviewer directories under the repo's review-artifact convention, such as `./reviews/<change-name>/<reviewer-slug>/` or tracked `.agents/reviews/<change-name>/<reviewer-slug>/`, with reviewer slugs recorded when the review workflow supports a manifest. If the review skill's current output root differs from the repo's old convention, either update the ignore/allowlist before running it or explicitly pass/use the convention supported by that skill.
 2. Verify both reviewer directories contain the expected review files.
 3. Read both action-item files and verdicts.
 4. If either reviewer reports critical or important findings, run `fix-review --auto` or manually follow the `fix-review` skill workflow.
@@ -331,11 +411,15 @@ Preferred path:
 Fallback path when the `review` skill cannot run after a valid orchestrator exists:
 
 - Spawn two read-only reviewer subagents in parallel with the full diff, changed file list, relevant changed file contents, and instructions to return findings ordered by severity with file and line references plus `APPROVE`, `REQUEST_CHANGES`, or `NEEDS_DISCUSSION`.
-- If nested reviewer subagents are unavailable inside the orchestrator, perform two clearly separated manual review passes and record the degraded assurance in the summary.
-- Store fallback artifacts under stable paths such as `.agents/reviews/bead-swarm-iteration-${N}-${SLUG}/review-a.md` and `review-b.md`.
+- If nested reviewer subagents are unavailable inside the orchestrator, perform two clearly separated manual review passes and record the degraded assurance in the summary and immutable history.
+- Store fallback artifacts under stable paths that match the repo's convention,
+  such as `./reviews/bead-swarm-iteration-${N}-${SLUG}/{reviewer-slug}/04-action-items.md`
+  or `.agents/reviews/bead-swarm-iteration-${N}-${SLUG}/{reviewer-slug}/04-action-items.md`,
+  using the same agent-chosen reviewer slug convention as the review skill.
 - Each review artifact must contain a verdict line: `VERDICT: APPROVE`, `VERDICT: REQUEST_CHANGES`, or `VERDICT: NEEDS_DISCUSSION`.
 - Treat any `REQUEST_CHANGES`, `NEEDS_DISCUSSION`, critical, or important finding as blocking until fixed or explicitly justified.
 - After fixing review findings, re-run validation and either re-review or write a `fixes.md` artifact explaining which findings were fixed or why they were non-issues.
+- Never label a fallback or degraded review as normal approval unless a second independent review pass actually ran after the fixes. Use `findings_fixed_re_reviewed: false` when fixes were verified by validation and artifact review but not independently re-reviewed.
 
 If validation still fails after one focused remediation pass, stop without merging and leave the iteration branch for manual inspection. The orchestrator may ignore suggestions only when it records why they are non-blocking.
 
@@ -363,7 +447,44 @@ For every partial bead, choose one of these before merge:
   ```
 - Set it to `blocked` with a concrete blocker if more progress requires human or external input.
 
-Update `.agents/bead-swarm/iteration.json` with final pending/blocked/partial lists and commit that metadata by path allowlist before the end-of-iteration protocol.
+Update `.agents/bead-swarm/iteration.json` with final pending/blocked/partial
+lists, then finalize it into immutable history before merge. The final history
+record must include selected beads, done beads, blocked beads, partial beads,
+validation, review verdicts, review mode, degraded-execution status, review
+artifact paths, whether those artifacts are local-only, and the merge target. If
+review artifacts are local-only, embed enough verdict and blocker-summary data in
+the committed history record that the record is useful without the ignored files.
+Commit metadata by path allowlist before the end-of-iteration protocol.
+
+Use this stable history schema:
+
+```json
+{
+  "schema_version": "bead-swarm-history-v1",
+  "iteration": 1,
+  "branch": "bead-swarm/iteration-1-example",
+  "slug": "example",
+  "main_branch": "main",
+  "main_branch_source": "explicit-user-argument|iteration-metadata|.ralph|default",
+  "execution_mode": "orchestrator-subagent|parent-degraded",
+  "degraded_reason": null,
+  "selected_beads": ["repo-abc123"],
+  "beads_done": ["repo-abc123"],
+  "beads_blocked": [],
+  "beads_partial": [],
+  "merge_target": "main",
+  "validation": ["<command and result>"],
+  "review_mode": "review-skill|reviewer-subagents|manual-separated-passes",
+  "review_assurance": "normal|degraded",
+  "findings_fixed_re_reviewed": true,
+  "review_artifacts_local_only": true,
+  "review_blocker_summary": [],
+  "reviews": [
+    {"reviewer": "<slug>", "verdict": "APPROVE", "artifact": "<path>"}
+  ],
+  "status": "complete"
+}
+```
 
 If `--no-push` is set, stop here with a clean committed iteration branch. Leave completed beads open with notes such as:
 
@@ -400,11 +521,20 @@ After validation and review approval, finish the iteration like `/ralph`, substi
    fi
    ```
    Return the structured summary even for empty iterations. Do not close a selected bead on this empty-diff path. Use **Already-Satisfied Beads** when a bead should close because existing main-branch work already satisfies it.
-2. Push the iteration branch:
+2. Finalize metadata for merge:
+   - Write immutable final metadata to `.agents/bead-swarm/history/iteration-${N}.json`
+     or the repo's equivalent history path.
+   - Remove `.agents/bead-swarm/iteration.json` from the iteration branch, or
+     replace it with a clearly inactive/advisory pointer that cannot imply pending
+     bead closure on `BEAD_SWARM_MAIN_BRANCH`.
+   - Commit this metadata finalization by path allowlist.
+   - Re-run `git status --short` and clean untracked generated validation
+     artifacts before pushing.
+3. Push the iteration branch:
    ```bash
    git push -u origin "$BRANCH"
    ```
-3. Merge with bounded retry:
+4. Merge with bounded retry:
    - Check out `BEAD_SWARM_MAIN_BRANCH`.
    - Pull fast-forward from origin when `origin/BEAD_SWARM_MAIN_BRANCH` exists.
    - Record `PRE_MERGE_SHA=$(git rev-parse HEAD)` after the fast-forward pull.
@@ -414,12 +544,12 @@ After validation and review approval, finish the iteration like `/ralph`, substi
    - On conflict, `git merge --abort`, leave the iteration branch pushed, and stop for human resolution.
    - Push `BEAD_SWARM_MAIN_BRANCH`.
    - If push is rejected, discard only the local merge commit by resetting back to `origin/BEAD_SWARM_MAIN_BRANCH`, pull, and retry up to three times. Never force-push.
-4. After the merge commit is pushed, close completed beads:
+5. After the merge commit is pushed, close completed beads:
    ```bash
    bd close <id> -r "Implemented and validated in bead-swarm iteration ${N}; merged to ${BEAD_SWARM_MAIN_BRANCH}"
    ```
-5. Verify each close succeeded with `bd show <id>` or `bd list --json`. If any close fails, do not delete the iteration branch. Append failure notes where possible, report `BEAD_SWARM_ITERATION_STATUS: failed-bead-close`, and stop so the next session can repair Beads state without losing the code branch.
-6. If Beads closure changes tracked files, commit and push only those Beads paths on `BEAD_SWARM_MAIN_BRANCH`:
+6. Verify each close succeeded with `bd show <id>` or `bd list --json`. If any close fails, do not delete the iteration branch. Append failure notes where possible, report `BEAD_SWARM_ITERATION_STATUS: failed-bead-close`, and stop so the next session can repair Beads state without losing the code branch.
+7. If Beads closure changes tracked files, commit and push only those Beads paths on `BEAD_SWARM_MAIN_BRANCH`:
    ```bash
    git status --short
    git add -- <beads-state-paths>
@@ -427,20 +557,25 @@ After validation and review approval, finish the iteration like `/ralph`, substi
    git push origin "$BEAD_SWARM_MAIN_BRANCH"
    ```
    If this push fails, keep the iteration branch and local bead-status commit, report the exact failure, and stop. Do not report completion until Beads state is pushed or explicitly confirmed external.
-7. Cleanup after successful code push and bead-state push:
+8. Cleanup after successful code push and bead-state push:
    ```bash
    git branch -d "$BRANCH"
    git push origin --delete "$BRANCH"
    ```
-8. Return a structured summary to the parent:
+9. Return a structured summary to the parent:
    ```text
    BEAD_SWARM_ITERATION_STATUS: complete|complete-existing|complete-empty|blocked|dirty|failed|failed-bead-close|no-push
    ITERATION: <N>
    BRANCH: <branch>
+   EXECUTION_MODE: orchestrator-subagent|parent-degraded
+   DEGRADED_REASON: <none or reason>
    BEADS_DONE: <ids closed after merge>
    BEADS_PENDING: <ids left open and why>
    BEADS_BLOCKED: <ids and reasons>
    VALIDATION: <commands and pass/fail>
+   REVIEW_MODE: review-skill|reviewer-subagents|manual-separated-passes
+   REVIEW_ASSURANCE: normal|degraded
+   FINDINGS_FIXED_RE_REVIEWED: true|false
    REVIEWS: <verdicts and artifact paths>
    NEXT_READY_COUNT: <count if checked>
    ```
@@ -480,7 +615,14 @@ Complete only when all are true:
 - Git is clean.
 - Current branch is `BEAD_SWARM_MAIN_BRANCH`.
 - No unmerged `ralph/iteration-*`, `bead-swarm/iteration-*`, or `bead-swarm/recovery-*` branches remain.
-- `bd ready` returns no actionable work.
+- `bd ready` returns no actionable non-epic work.
+- Any ready epics have been audited against their children and acceptance criteria;
+  completed epics are closed, and epics with manual/deferred remainder have notes
+  and are deferred or marked human-needed rather than left as unexplained ready
+  work.
 - Any remaining open beads are blocked, deferred, hooked, or explicitly out of scope, and those reasons are recorded.
+- Generated validation artifacts are removed or ignored, and `git status` is clean.
+- The parent releases only its own `.git/bead-swarm.lock` owner token, or reports
+  why the lock is intentionally retained for recovery.
 
 Stop as blocked when a human decision, external credential, merge conflict, branch protection failure, unclear acceptance criteria, or unrelated dirty work prevents safe progress.
