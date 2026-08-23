@@ -84,15 +84,20 @@ _git_prompt_info() {
 PROMPT='%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ ) %{$fg[cyan]%}%c%{$reset_color%} $(_git_prompt_info)'
 
 _lazy_complete() {
-  # Hand Tab back to the real completion widget BEFORE tearing ourselves
-  # down — leaving ^I bound to a deleted function breaks every later Tab
-  # with "No such shell function `_lazy_complete'".
+  local compdump="${ZDOTDIR:-$HOME}/.zcompdump-${HOST}-${ZSH_VERSION}"
+
+  # Hand Tab back to the real completion widget before loading completion.
+  # Keep this widget defined; deleting the currently running ZLE widget can
+  # terminate some remote interactive sessions instead of only disabling lazy
+  # loading.
   bindkey "^I" expand-or-complete
   autoload -Uz compinit
-  compinit -C -d "${ZDOTDIR:-$HOME}/.zcompdump"
+  if [[ -r "$compdump" ]]; then
+    compinit -C -d "$compdump"
+  else
+    compinit -d "$compdump"
+  fi
   zle expand-or-complete
-  zle -D _lazy_complete 2>/dev/null
-  unfunction _lazy_complete 2>/dev/null
 }
 
 zle -N _lazy_complete
