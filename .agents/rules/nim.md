@@ -41,3 +41,15 @@ and gives the LSP the same `src/` search path nimble gives the build. Paths in
   - `nim check --hints:off src/<sub>/<file>.nim` should exit `0` (this is what
     the LSP effectively runs per-file).
   - `nimble build` should still produce the binary.
+
+## Generated Test Binaries
+
+`nimble test` tasks that compile and run `tests/<name>.nim` often leave executable
+binaries at `tests/<name>`. Treat those binaries as generated artifacts:
+
+- Add expected test binaries to `.gitignore` when adding tests to a Nimble test
+  list.
+- Remove untracked generated test binaries after validation if they appear in
+  `git status`.
+- Never stage or commit compiled test executables unless a project explicitly
+  documents them as checked-in fixtures.
