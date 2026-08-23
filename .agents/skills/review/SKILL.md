@@ -1,13 +1,13 @@
 ---
 name: review
-description: Generate a code review of the current branch compared to main using two independent Opus subagents
+description: Generate a code review of the current branch compared to main using two independently named reviewer subagents
 user-invocable: true
 allowed-tools: Bash, Read, Write, Glob, Grep, Agent
 ---
 
 # Code Review Skill
 
-Generate a thorough code review of the current branch compared to the base branch, using two independent Claude Opus subagents in parallel. Reviews are written to `./.agents/reviews/<change-name>/`.
+Generate a thorough code review of the current branch compared to the base branch, using two independent reviewer subagents in parallel. Reviews are written to `./reviews/<change-name>/<reviewer-slug>/`.
 
 ## Base Branch Resolution
 
@@ -36,52 +36,79 @@ If either check fails, do not proceed.
 
 ### 1. Gather the diff and context
 
-- Run `git branch --show-current` to get the branch name. Sanitize it for use in paths: replace `/` with `-`. This is the `<change-name>`.
+- Run `git branch --show-current` to get the branch name. Sanitize it for use in paths: replace `/` with `-`.
+- Run `date +%Y-%m-%d` to get the review date.
+- Build `<change-name>` as `<sanitized-branch>-<YYYY-MM-DD>`.
 - Run `git diff $BASE_BRANCH...HEAD` to get the full diff.
 - Run `git diff $BASE_BRANCH...HEAD --name-only` to get the list of changed files.
 - Read each changed file in full to understand the complete context (not just the diff hunks).
 - Run `git log $BASE_BRANCH..HEAD --oneline` to understand the commit history.
 
-### 2. Create output directories
+### 2. Name reviewers and create output directories
+
+Choose two distinct reviewer display names and slugs for this run. The names should describe complementary review stances suited to the change, not the underlying model/vendor and not ordinal labels.
+
+- Good names are stance-based and specific, such as a correctness-focused reviewer and an architecture-focused reviewer.
+- Do not use `opus`, `opus2`, `chatgpt`, `reviewer-1`, `reviewer-2`, or similar model/ordinal names.
+- Slugify each display name as lowercase hyphen-case (`[^a-z0-9-]` replaced with `-`, trimmed, no duplicate hyphens).
+- If the two slugs collide, rename one before continuing.
 
 ```
-./.agents/reviews/<change-name>/opus/
-./.agents/reviews/<change-name>/opus2/
+./reviews/<change-name>/<reviewer-slug-a>/
+./reviews/<change-name>/<reviewer-slug-b>/
+```
+
+Write `./reviews/<change-name>/manifest.json`:
+
+```json
+{
+  "schema_version": "review-v1",
+  "branch": "<branch>",
+  "base_ref": "<BASE_BRANCH>",
+  "head_sha": "<git rev-parse HEAD>",
+  "pass": null,
+  "reviewers": [
+    {"slug": "<reviewer-slug-a>", "display_name": "<agent-chosen display name>", "role": "<one-sentence stance>"},
+    {"slug": "<reviewer-slug-b>", "display_name": "<different agent-chosen display name>", "role": "<one-sentence stance>"}
+  ]
+}
 ```
 
 ### 3. Launch parallel reviews
 
 Launch BOTH reviews simultaneously in a single message with two Agent tool calls.
 
-#### 3a. Opus Review (first reviewer)
+#### 3a. First reviewer
 
 Launch an Agent with `model: opus` containing:
 
+- The assigned reviewer display name, role, and slug from `manifest.json`
 - The full diff
 - The full content of each changed file
-- The output directory path: `./.agents/reviews/<change-name>/opus/`
+- The output directory path: `./reviews/<change-name>/<reviewer-slug-a>/`
 - The review file format specification (section 3c below)
 
 The agent must write the 5 review files using the Write tool.
 
-#### 3b. Opus 2 Review (second independent reviewer)
+#### 3b. Second independent reviewer
 
 Launch a second Agent with `model: opus` — same structure as 3a but with a different framing:
 
 - Add this at the top: "You are a second independent code reviewer. Do not mirror the first reviewer — bring your own judgment. Focus on aspects that are easy to overlook: subtle logic errors, missing edge cases, implicit assumptions, and long-term maintainability."
+- The assigned reviewer display name, role, and slug from `manifest.json`
 - The full diff
 - The full content of each changed file
-- The output directory path: `./.agents/reviews/<change-name>/opus2/`
+- The output directory path: `./reviews/<change-name>/<reviewer-slug-b>/`
 - The review file format specification (section 3c below)
 
-The agent must write the 5 review files using the Write tool. The reviewer name in `00-overview.md` must be "Claude Opus (2nd reviewer)".
+The agent must write the 5 review files using the Write tool. The reviewer name in `00-overview.md` must match the assigned display name.
 
 #### 3c. Review file format (shared by both reviewers)
 
 Both reviewers must produce these 5 files in their respective output directories:
 
 **`00-overview.md`**
-- Branch name, date, reviewer name (either "Claude Opus" or "Claude Opus (2nd reviewer)")
+- Branch name, date, reviewer display name, reviewer slug, and reviewer role
 - One-paragraph summary of what the changes do
 - Overall verdict: one of `APPROVE`, `REQUEST_CHANGES`, or `NEEDS_DISCUSSION`
 - Stats: files changed, lines added/removed, commits
@@ -135,6 +162,6 @@ After both reviews complete:
 2. Read `00-overview.md` from each reviewer to get their verdicts.
 3. Tell the user:
    - Where the reviews were written (both directory paths)
-   - Each reviewer's verdict (Opus 1 and Opus 2)
+   - Each reviewer's display name and verdict
    - A count of action items by priority from each reviewer
    - Suggest running `/fix-review` to address findings from both reviewers

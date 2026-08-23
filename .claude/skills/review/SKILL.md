@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Write, Glob, Grep, WebSearch, WebFetch, Agent
 
 # Code Review Skill
 
-Generate a thorough code review of the current branch compared to `main`, using two independent Claude Opus subagents in parallel. Research on best practices is fetched once and shared by both reviewers.
+Generate a thorough code review of the current branch compared to `main`, using two independently named reviewer subagents in parallel. Research on best practices is fetched once and shared by both reviewers.
 
 Supports focused review passes via `--pass <focus>` to narrow the review to a specific concern area.
 
@@ -125,29 +125,53 @@ Keep each file under ~300 lines. Curated summaries, not raw dumps.
 
 Read the full content of all relevant research files (both cache hits and newly written). You will include this research context in the prompts for both reviewers in step 5.
 
-Also note the list of relevant research file paths — the ChatGPT reviewer will need these paths to read the files itself.
+Also note the list of relevant research file paths — reviewers may need these paths to read the files themselves.
 
-### 4. Create output directories
+### 4. Name reviewers and create output directories
 
 Determine the branch name and today's date (`YYYY-MM-DD`). Sanitize the branch name (replace `/` with `-`).
 
+Choose two distinct reviewer display names and slugs for this run. The names should describe complementary review stances suited to the change, not the underlying model/vendor and not ordinal labels.
+
+- Good names are stance-based and specific, such as a correctness-focused reviewer and an architecture-focused reviewer.
+- Do not use `opus`, `opus2`, `chatgpt`, `reviewer-1`, `reviewer-2`, or similar model/ordinal names.
+- Slugify each display name as lowercase hyphen-case (`[^a-z0-9-]` replaced with `-`, trimmed, no duplicate hyphens).
+- If the two slugs collide, rename one before continuing.
+
 **If PASS is set** (focused review):
-- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}-{PASS}/opus/`
-- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}-{PASS}/opus2/`
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}-{PASS}/{reviewer-slug-a}/`
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}-{PASS}/{reviewer-slug-b}/`
 
 **If PASS is empty** (full review):
-- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/opus/`
-- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/opus2/`
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/{reviewer-slug-a}/`
+- `./reviews/{sanitized-branch-name}-{YYYY-MM-DD}/{reviewer-slug-b}/`
+
+Write `manifest.json` in the review root:
+
+```json
+{
+  "schema_version": "review-v1",
+  "branch": "{branch-name}",
+  "base_ref": "main",
+  "head_sha": "{git rev-parse HEAD}",
+  "pass": "{PASS or null}",
+  "reviewers": [
+    {"slug": "{reviewer-slug-a}", "display_name": "{agent-chosen display name}", "role": "{one-sentence stance}"},
+    {"slug": "{reviewer-slug-b}", "display_name": "{different agent-chosen display name}", "role": "{one-sentence stance}"}
+  ]
+}
+```
 
 ### 5. Launch parallel reviews
 
 Launch BOTH reviews simultaneously in a single message with two tool calls. This is the critical parallelization step.
 
-#### 5a. Opus Review (Agent tool)
+#### 5a. First reviewer (Agent tool)
 
 Launch an Agent with `model: opus` containing:
 
 - **If PASS is set**: the pass-specific reviewer framing from the Arguments section (prepend it at the top of the agent prompt)
+- The assigned reviewer display name, role, and slug from `manifest.json`
 - The full diff
 - The full content of each changed file
 - The full content of all relevant research files
@@ -157,27 +181,28 @@ Launch an Agent with `model: opus` containing:
 
 The agent prompt must instruct it to write the 5 review files directly using the Write tool.
 
-#### 5b. Opus 2 Review (Agent tool, second independent instance)
+#### 5b. Second independent reviewer (Agent tool)
 
-Launch a second Agent with `model: opus` — same structure as 5a but with a different perspective framing and writing to the `opus2/` output directory:
+Launch a second Agent with `model: opus` — same structure as 5a but with a different perspective framing and writing to the second reviewer output directory:
 
 - **If PASS is set**: the pass-specific reviewer framing from the Arguments section (prepend it at the top of the agent prompt)
 - Add this framing at the top: "You are a second independent code reviewer. Do not mirror the first reviewer — bring your own judgment. Focus on aspects that are easy to overlook: subtle logic errors, missing edge cases, implicit assumptions, and long-term maintainability."
+- The assigned reviewer display name, role, and slug from `manifest.json`
 - The full diff
 - The full content of each changed file
 - The full content of all relevant research files
-- The output directory path: the `opus2/` directory (pass-aware path from step 4)
+- The output directory path: the second reviewer directory (pass-aware path from step 4)
 - The review file format specification (section 5c below)
 - **If PASS is set**: add this constraint: "For a focused pass, `01-critical-and-important.md` and `02-suggestions.md` must ONLY contain issues relevant to the '{PASS}' focus area. `00-overview.md` should note this is a focused '{PASS}' pass, not a full review."
 
-The agent prompt must instruct it to write the 5 review files directly using the Write tool. The reviewer name in `00-overview.md` must be "Claude Opus (2nd reviewer)".
+The agent prompt must instruct it to write the 5 review files directly using the Write tool. The reviewer name in `00-overview.md` must match the assigned display name.
 
 #### 5c. Review file format (shared by both reviewers)
 
 Both reviewers must produce these 5 files in their respective output directories:
 
 **`00-overview.md`**
-- Branch name, date, reviewer name (either "Claude Opus" or "Claude Opus (2nd reviewer)")
+- Branch name, date, reviewer display name, reviewer slug, and reviewer role
 - One-paragraph summary of what the changes do
 - Overall verdict: one of `APPROVE`, `REQUEST_CHANGES`, or `NEEDS_DISCUSSION`
 - Stats: files changed, lines added/removed, commits
@@ -234,7 +259,7 @@ After both reviews complete:
    - **If PASS is set**: "Review pass: {PASS}"
    - **If PASS is empty**: "Review type: full"
    - Where the reviews were written (both directory paths)
-   - Each reviewer's verdict (Opus 1 and Opus 2)
+   - Each reviewer's display name and verdict
    - A count of action items by priority from each reviewer
    - Which research topics were cache hits vs. freshly fetched
    - Suggest running `/fix-review` to address findings from both reviewers

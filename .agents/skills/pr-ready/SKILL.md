@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Glob, Grep, Skill, Agent
 
 # PR Ready Skill
 
-Automated multi-pass review pipeline that thoroughly prepares a branch for PR merge. Uses intelligent triage to determine which review passes are needed, then runs them sequentially — each with dual-reviewer feedback (Opus + ChatGPT) and automatic fixes — then verifies and pushes.
+Automated multi-pass review pipeline that thoroughly prepares a branch for PR merge. Uses intelligent triage to determine which review passes are needed, then runs them sequentially — each with feedback from two independently named reviewers and automatic fixes — then verifies and pushes.
 
 Estimated runtime: 5-45 minutes depending on triage results.
 
@@ -34,7 +34,7 @@ If any check fails, do not proceed.
 
 Skip this section if `--all-passes` or `--quick` was provided.
 
-Triage uses two layers: deterministic hard triggers (fast, reliable) and a triple-agent assessment (nuanced judgment). The goal is to skip passes that add no value for the specific PR, without missing real issues.
+Triage uses two layers: deterministic hard triggers (fast, reliable) and a dual-agent assessment (nuanced judgment). The goal is to skip passes that add no value for the specific PR, without missing real issues.
 
 ### Layer 1 — Deterministic Hard Triggers
 
@@ -55,11 +55,11 @@ Apply these rules to build a set of **forced passes** (these run regardless of a
 | All changed files are generated/lockfiles (`package-lock.json`, `go.sum`, `yarn.lock`, `Cargo.lock`, `*.pb.go`, `*_generated.*`) | **final full review only** |
 | Commit messages contain only `ralph: iteration` or `scaffold` or `init` | No forced passes (defer to agents) |
 
-### Layer 2 — Triple-Agent Assessment
+### Layer 2 — Dual-Agent Assessment
 
-Launch THREE agents **in parallel** (single message, three Agent tool calls) to independently assess which remaining (non-forced) passes are needed.
+Launch TWO agents **in parallel** (single message, two Agent tool calls) to independently assess which remaining (non-forced) passes are needed.
 
-All three agents receive the same context:
+Both agents receive the same context:
 - The output of `git diff main...HEAD --stat`
 - The output of `git log main..HEAD --oneline`
 - The list of changed files
@@ -71,7 +71,7 @@ All three agents receive the same context:
 Launch with `model: sonnet`:
 
 ```
-Analyze this PR to determine which review passes are needed. You are one of three triage agents — your role is fast pattern matching.
+Analyze this PR to determine which review passes are needed. You are one of two triage agents — your role is fast pattern matching.
 
 [Include: diff stats, commit messages, changed file list, forced passes from Layer 1]
 
@@ -100,7 +100,7 @@ CONFIDENCE: high/medium/low
 Launch with `model: opus`:
 
 ```
-Analyze this PR to determine which review passes are needed. You are one of three triage agents — your role is deep semantic judgment.
+Analyze this PR to determine which review passes are needed. You are one of two triage agents — your role is deep semantic judgment.
 
 [Include: diff stats, commit messages, changed file list, PLUS the full diff content, forced passes from Layer 1]
 
@@ -125,32 +125,13 @@ TRIAGE:
 CONFIDENCE: high/medium/low
 ```
 
-#### Agent 3 — GPT (independent perspective via OpenCode)
-
-Run via the OpenCode wrapper script with readonly permissions:
-
-```bash
-bash $HOME/.claude/skills/opencode/opencode_run.sh \
-  --task-name "pr-ready-triage" \
-  --model "openai/gpt-5.4" \
-  "<GPT_TRIAGE_PROMPT>"
-```
-
-The GPT prompt must include:
-- The full diff (inline in the prompt, since GPT has readonly permissions)
-- The changed file list and commit messages
-- The forced passes from Layer 1
-- The same output format as the other agents
-
-Use `--timeout 120` on the wrapper script. Use the default Bash tool timeout — GPT triage should complete in under 2 minutes.
-
 ### Merge Logic
 
-Combine the three agents' recommendations with the Layer 1 forced passes:
+Combine the two agents' recommendations with the Layer 1 forced passes:
 
 1. **Forced passes** from Layer 1 always run — non-negotiable.
-2. **2-of-3 majority**: For each non-forced pass, if 2 or more agents recommend it, include it.
-3. **Security exception**: If even 1 agent recommends the security pass, include it (err on the side of caution for security).
+2. **Conservative include**: For each non-forced pass, if either agent recommends it, include it.
+3. **Security exception**: If either agent recommends the security pass, include it (err on the side of caution for security).
 4. **Low confidence override**: If any agent reports `low` confidence, include all passes that agent recommended (trust the uncertainty signal).
 5. **Final full review** always runs — non-negotiable.
 
@@ -163,20 +144,20 @@ Show the user a concise summary before proceeding:
 
 Hard triggers: {list any forced passes and why}
 
-| Pass | Sonnet | Opus | GPT | Decision |
-|------|--------|------|-----|----------|
-| Baseline | yes/no | yes/no | yes/no | RUN / SKIP |
-| Correctness | yes/no | yes/no | yes/no | RUN / SKIP |
-| Tests | yes/no | yes/no | yes/no | RUN / SKIP |
-| Security | yes/no | yes/no | yes/no | RUN / SKIP |
-| Final | — | — | — | ALWAYS RUN |
+| Pass | Sonnet | Opus | Decision |
+|------|--------|------|----------|
+| Baseline | yes/no | yes/no | RUN / SKIP |
+| Correctness | yes/no | yes/no | RUN / SKIP |
+| Tests | yes/no | yes/no | RUN / SKIP |
+| Security | yes/no | yes/no | RUN / SKIP |
+| Final | — | — | ALWAYS RUN |
 
 Planned passes: {list}
 Estimated time: {rough estimate based on pass count}
 ```
 
 Auto-proceed after displaying. Do NOT ask for confirmation unless:
-- All three agents reported `low` confidence (ask: "Triage confidence is low across all agents. Run all passes to be safe?")
+- Both agents reported `low` confidence (ask: "Triage confidence is low across both agents. Run all passes to be safe?")
 - The triage would skip ALL focused passes (ask: "Triage suggests only a final full review. Proceed, or run all passes?")
 
 ## Pipeline
@@ -197,9 +178,9 @@ For each planned pass, follow this cycle:
    - Security: `Skill(skill: "review", args: "--pass security")`
    - Final: `Skill(skill: "review")`
 3. **Check for action items**:
-   - Read `04-action-items.md` from both the `opus/` and `chatgpt/` subdirectories of the most recent review in `./reviews/`
+   - Read `04-action-items.md` from each reviewer directory in the most recent review under `./reviews/`. Prefer reviewer directories listed in `manifest.json`; otherwise scan immediate subdirectories containing `04-action-items.md`.
    - Count lines matching `- [ ]` (unchecked items)
-   - If zero items in both files: print "Pass {N} ({pass-name}): no action items found. Skipping fixes." and proceed to next pass.
+   - If zero unchecked items are found across all reviewer action-item files: print "Pass {N} ({pass-name}): no action items found. Skipping fixes." and proceed to next pass.
 4. **Fix**: Invoke `Skill(skill: "fix-review", args: "--auto")`
    - For the security pass: note that `/fix-review --auto` will flag security-sensitive files as "needs-manual". Report any such items to the user.
 5. **Check for changes**: Run `git diff HEAD`. If empty, print "Pass {N} ({pass-name}): fix-review made no changes. Skipping commit." and proceed to next pass.

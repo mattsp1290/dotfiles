@@ -56,13 +56,13 @@ Each phase has explicit entry/exit criteria. If a phase's exit criteria are not 
 **Entry:** Phase 1 complete and `--skip-review` not set.
 
 **Actions:**
-1. Invoke the `review` skill via the Skill tool — equivalent to running `/review`. `/review` writes a dual-reviewer artifact tree to `./reviews/<sanitized-branch>-<YYYY-MM-DD>/{opus,chatgpt}/`.
+1. Invoke the `review` skill via the Skill tool — equivalent to running `/review`. `/review` writes a two-reviewer artifact tree to `./reviews/<sanitized-branch>-<YYYY-MM-DD>/<reviewer-slug>/`, with reviewer slugs chosen by the review agent and recorded in `manifest.json`.
 2. After `/review` returns, locate the freshest review directory: `ls -1d ./reviews/${BRANCH//\//-}-* 2>/dev/null | sort | tail -n1`.
-3. Verify both `opus/04-action-items.md` and `chatgpt/04-action-items.md` exist and are non-empty.
+3. Verify there are at least two reviewer directories containing non-empty `04-action-items.md` files. Prefer the reviewer list in `manifest.json` when present; otherwise scan immediate subdirectories.
 
 **Skip:** if `--skip-review` was passed, locate the freshest existing review directory using the same `ls` command. If none exists, abort: "/ship --skip-review needs an existing review under ./reviews/. Run without the flag, or run /review first."
 
-**Exit:** review artifact directory exists with both reviewers' action-items files.
+**Exit:** review artifact directory exists with at least two reviewers' action-items files.
 
 ### Phase 3 — Fix (delegated to /fix-review)
 

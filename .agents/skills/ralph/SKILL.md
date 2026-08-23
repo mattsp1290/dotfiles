@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent
 
 # /ralph -- Autonomous development loop with per-iteration review + merge
 
-Work autonomously using the Ralph iteration protocol. Each iteration is a short-lived branch off `$RALPH_MAIN_BRANCH`, gated by `/review` and `/fix-review`, optionally augmented by a Gemini UI/UX pass via `/opencode`, then merged back with `--no-ff`.
+Work autonomously using the Ralph iteration protocol. Each iteration is a short-lived branch off `$RALPH_MAIN_BRANCH`, gated by `/review` and `/fix-review`, then merged back with `--no-ff`.
 
 ## Arguments
 $ARGUMENTS
@@ -18,8 +18,60 @@ Parse arguments:
 - **No arguments** → **Autopilot** mode: work through the entire task graph
 - `--goal "<description>"` → **Goal** mode: work toward the stated goal
 - `--single` → **Single Task** mode: work on the next Beads task only
+- `--epic <id>` → **Epic mode**: work only through that epic's descendants, then stop
 - `-n <number>` / `--max-iterations <number>` → hard cap on iterations
-- `--ui` → force the Gemini UI/UX pass for this session (required in goal mode; overrides label detection in other modes)
+
+`--epic`, `--goal`, and `--single` are mutually exclusive. Treat a missing `--epic` value or an unknown/non-epic ID as a hard preflight failure.
+
+### Epic selection guard
+
+In Epic mode, build the allowed task set before selecting or claiming work. Recompute it after every task closes so newly unblocked descendants become eligible. Never fall back to repository-wide `bd ready` output when the filtered set is empty.
+
+```bash
+EPIC_ID="<value passed to --epic>"
+
+EPIC_TYPE=$(bd show "$EPIC_ID" --json | jq -er '.[0].issue_type') || {
+  echo "Cannot load epic $EPIC_ID." >&2
+  exit 1
+}
+[[ "$EPIC_TYPE" == "epic" ]] || {
+  echo "$EPIC_ID is not an epic." >&2
+  exit 1
+}
+
+collect_epic_descendants() {
+  local child
+  EPIC_DESCENDANTS=()
+  while IFS= read -r child; do
+    [[ -n "$child" ]] && EPIC_DESCENDANTS+=("$child")
+  done < <(bd list --all --limit 0 --json | jq -r --arg root "$EPIC_ID" '
+    def descendants($issues; $parent):
+      [$issues[] | select(.parent == $parent) | .id] as $children
+      | $children + [$children[] as $child | descendants($issues; $child)[]];
+    descendants(.; $root)[]
+  ')
+}
+
+select_epic_task() {
+  collect_epic_descendants
+  local allowed_json
+  allowed_json=$(printf '%s\n' "${EPIC_DESCENDANTS[@]}" | jq -Rsc 'split("\n") | map(select(length > 0))')
+  bd ready --json | jq --argjson allowed "$allowed_json" \
+    '[.[] | select(.id as $id | $allowed | index($id))] | sort_by(.priority, .created_at) | .[0] // empty'
+}
+
+assert_epic_task() {
+  local candidate="$1" allowed
+  collect_epic_descendants
+  for allowed in "${EPIC_DESCENDANTS[@]}"; do
+    [[ "$candidate" == "$allowed" ]] && return 0
+  done
+  echo "Refusing out-of-epic task $candidate; allowed root is $EPIC_ID." >&2
+  exit 1
+}
+```
+
+Call `assert_epic_task "$TASK_ID"` immediately before every claim, status update, or close. If `select_epic_task` returns empty, inspect every descendant's status. Stop successfully only when all descendants are closed (then close the epic if its acceptance criteria require it); otherwise halt and report the blocked/in-progress descendants. Do not select unrelated ready work.
 
 ### Authorization notice
 
@@ -106,15 +158,15 @@ if [[ -n "$LOCAL_LEFTOVER" || -n "$REMOTE_LEFTOVER" ]]; then
   exit 1
 fi
 
-# 6. .agents/reviews/ must not be tracked in git
-if git ls-files .agents/reviews/ 2>/dev/null | grep -q .; then
-  echo ".agents/reviews/ is tracked in git. Run:" >&2
-  echo "  git rm -r --cached .agents/reviews/ && echo .agents/reviews/ >> .gitignore && git commit -m 'gitignore .agents/reviews/'" >&2
+# 6. reviews/ must not be tracked in git
+if git ls-files reviews/ 2>/dev/null | grep -q .; then
+  echo "reviews/ is tracked in git. Run:" >&2
+  echo "  git rm -r --cached reviews/ && echo reviews/ >> .gitignore && git commit -m 'gitignore reviews/'" >&2
   exit 1
 fi
 
-# 7. Idempotently exclude .agents/reviews/ for this session
-grep -qxF '.agents/reviews/' .git/info/exclude || echo '.agents/reviews/' >> .git/info/exclude
+# 7. Idempotently exclude reviews/ for this session
+grep -qxF 'reviews/' .git/info/exclude || echo 'reviews/' >> .git/info/exclude
 ```
 
 ---
@@ -137,7 +189,7 @@ N=$(( ${N:-0} + 1 ))
 ### Slug
 
 Source in priority order:
-1. **Autopilot / single-task mode**: title of the current Beads task (`bd show "$TASK_ID" --json | jq -r .title`)
+1. **Autopilot / single-task / epic mode**: title of the current Beads task (`bd show "$TASK_ID" --json | jq -r '.[0].title'`)
 2. **Goal mode**: the `--goal` argument
 3. **Fallback**: `iter-$(date +%Y%m%d-%H%M%S)`
 
@@ -180,6 +232,7 @@ This is the existing ralph inner loop. Run it until the objective is locally com
 ### Objective source
 
 - **Autopilot**: `bv --robot-triage` then process tasks in priority order. After each task: `bd update <id> --status closed`, check for newly unblocked tasks, continue. One iteration = one task (or one task cluster).
+- **Epic mode**: use only `select_epic_task`; assert membership before claiming or mutating the task, close one descendant per iteration, recompute the allowed/ready set, and stop when every descendant is closed. Never use `bv --robot-triage` or an unfiltered ready task in this mode.
 - **Goal mode**: work toward the stated goal, breaking it into logical sub-steps.
 - **Single Task**: work the one highest-priority ready beads task.
 
@@ -219,7 +272,7 @@ fi
 
 ## Step 5 — `/review`
 
-Invoke the `/review` skill. It diffs `$RALPH_MAIN_BRANCH...HEAD` on the current branch and writes two independent Opus reviews into `./.agents/reviews/{sanitized-branch}/{opus,opus2}/`. No arguments required.
+Invoke the `/review` skill. It diffs `$RALPH_MAIN_BRANCH...HEAD` on the current branch and writes two independently named reviewer directories into `./reviews/{sanitized-branch}-{YYYY-MM-DD}/{reviewer-slug}/`, with reviewer slugs chosen by the review agent and recorded in `manifest.json`. No arguments required.
 
 The `/review` skill also reads `.ralph` to determine the base branch — pass it the same config if needed.
 
@@ -229,7 +282,7 @@ Review artifacts are excluded by `.git/info/exclude` from Step 1.
 
 ## Step 6 — `/fix-review`
 
-Invoke the `/fix-review` skill. It reads `./.agents/reviews/{branch}/{opus,opus2}/04-action-items.md` and applies prioritized fixes via Edit.
+Invoke the `/fix-review` skill. It reads the reviewer directories from the latest `./reviews/{branch}-{date}/` artifact, preferring `manifest.json`, and applies prioritized fixes via Edit.
 
 Then re-run the auto-detected test suite:
 
@@ -244,46 +297,6 @@ fi
 ```
 
 If tests fail after `/fix-review`: one inner ASSESS/EXECUTE/VERIFY remediation pass. Still failing → **abort this iteration** without merging. Leave the iteration branch in place (local + origin once Step 8 runs, or local only if Step 8 hasn't happened yet) for manual inspection, and halt the session. Local `$RALPH_MAIN_BRANCH` is still clean.
-
----
-
-## Step 7 — UI/UX pass via Gemini (conditional on `TASK_HAS_UI_LABEL == 1`)
-
-Run Gemini via the opencode wrapper and persist its output:
-
-```bash
-REVIEW_DIR="./.agents/reviews/$(echo "$BRANCH" | tr '/' '-')"
-mkdir -p "$REVIEW_DIR"
-
-bash "$HOME/.claude/skills/opencode/opencode_run.sh" \
-  --task-name "ralph-ui-${N}" \
-  --model "google/gemini-3-pro-preview" \
-  --permissions full \
-  "$(cat <<'PROMPT'
-You are reviewing the UI/UX changes on the current git branch vs the base branch.
-Focus exclusively on: visual hierarchy, accessibility (ARIA, contrast, keyboard nav),
-responsive layout, interaction affordances, and design system consistency.
-
-Run `git diff $RALPH_MAIN_BRANCH...HEAD` to see the changes. Produce a markdown report with three sections:
-- Critical UI/UX issues (must fix)
-- Suggested improvements
-- Positive patterns worth preserving
-
-Output the report to stdout. Do not modify files.
-PROMPT
-)" > "$REVIEW_DIR/gemini-ui.md"
-```
-
-Then Claude (ralph) reads `$REVIEW_DIR/gemini-ui.md` and applies the "Critical" fixes (and any obviously correct "Suggested" ones) using Edit/Write. Keeping Claude in the loop for the actual edits avoids handing write access to Gemini-via-opencode and keeps `/fix-review` untouched.
-
-Run tests again. If anything changed and tests pass, commit:
-
-```bash
-git add -A
-git commit -m "ralph: iteration ${N} - gemini ui fixes"
-```
-
-`gemini-ui.md` lives under `.agents/reviews/` and is already excluded from git by Step 1.
 
 ---
 
@@ -369,7 +382,6 @@ With `--no-ff` preserving the iteration branch, `$RALPH_MAIN_BRANCH` ends up wit
 
 1. N work-loop checkpoint commits (one per successful VERIFY)
 2. `ralph: iteration N - review fixes` (only if `/fix-review` changed anything)
-3. `ralph: iteration N - gemini ui fixes` (only if the Gemini pass ran and applied changes)
 4. Merge commit: `ralph: iteration N merge - slug` ← this is the anchor Step 2 parses for `N`
 
 ---
@@ -384,12 +396,13 @@ With `--no-ff` preserving the iteration branch, `$RALPH_MAIN_BRANCH` ends up wit
 | Dirty worktree anywhere | Preflight abort |
 | `$RALPH_MAIN_BRANCH` diverged from remote | Preflight abort (only if remote branch exists) |
 | Unmerged `ralph/iteration-*` branch (local OR remote) | Preflight abort |
-| `.agents/reviews/` already tracked in git | Preflight abort with remediation |
+| `reviews/` already tracked in git | Preflight abort with remediation |
 | Merge conflict against `$RALPH_MAIN_BRANCH` | `merge --abort`, halt, leave branch |
 | Push rejected (any cause) | reset to safe state, bounded retry, then halt |
 | Beads not initialized | Fall back: no UI label detection, timestamp slug |
+| `--epic` ID missing, unknown, or not an epic | Preflight abort before task selection |
+| Epic has no ready descendants but open descendants remain | Halt and report their statuses; never fall back to global work |
 | Empty iteration (no net diff vs merge-base) | Delete branch, skip review/merge, loop |
-| UI label but no UI files changed | Gemini pass still runs, applies nothing, no-op commit |
 | `/review` / `/fix-review` produce no action items | `/fix-review` no-ops gracefully |
 | Concurrent `/ralph` sessions in the same repo | Undefined, explicitly unsupported |
 

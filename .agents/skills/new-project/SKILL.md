@@ -2,7 +2,7 @@
 name: new-project
 description: Interactive planner that walks through questions and produces a project task plan in docs/prompts/
 user-invocable: true
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent
 ---
 
 # /new-project -- Interactive New Project Planner
@@ -75,7 +75,7 @@ Run a GPT review pass on this plan? (Y/n)
 ```
 
 - Blank or `Y`/`y`/`yes` → proceed to step 1 below.
-- `n`/`no`/`skip`/`stop`/`done`/`good enough`/`exit` (case-insensitive) → print `Review loop exited by user. Plan file is saved and ready.` and return to the "Final Output" section. Do **not** create any state file, opencode-sessions entry, or temp prompt file.
+- `n`/`no`/`skip`/`stop`/`done`/`good enough`/`exit` (case-insensitive) → print `Review loop exited by user. Plan file is saved and ready.` and return to the "Final Output" section. Do **not** create any state file or temp prompt file.
 
 ### Loop state
 
@@ -93,7 +93,7 @@ The loop spans multiple `Bash` invocations and user turns. Each `Bash` call is a
   "phase": "awaiting_first_gpt",
   "pending_concerns": [],
   "pending_concern_index": 0,
-  "last_raw_gpt_response": "",
+  "last_raw_response": "",
   "accepted_edits": [],
   "declined_suggestions": [],
   "user_extra_concerns": []
@@ -109,40 +109,14 @@ The loop spans multiple `Bash` invocations and user turns. Each `Bash` call is a
    ```bash
    FRESH_KEY="plan-review-<kebab>-$(date +%Y%m%d%H%M%S)-$$-$(printf '%04d' $RANDOM)"
    ```
-3. Check for pre-existing `/tmp/plan-review-state-<FRESH_KEY>.json` or `/tmp/opencode-review-prompt-<FRESH_KEY>.txt`. On (extremely unlikely) collision, regenerate the random suffix up to 3 times; after 3 collisions, print the corrupt-state abort message and give up.
+3. Check for pre-existing `/tmp/plan-review-state-<FRESH_KEY>.json`. On (extremely unlikely) collision, regenerate the random suffix up to 3 times; after 3 collisions, print the corrupt-state abort message and give up.
 4. Initialize the state file with the schema above.
-5. Write the **first-turn review prompt** (template at bottom of this phase) to `/tmp/opencode-review-prompt-<FRESH_KEY>.txt`. Inline the full current contents of `docs/prompts/<kebab>.md` verbatim at the designated slot.
-6. Invoke the wrapper via `Bash` with an explicit 270000 ms timeout parameter on the Bash tool call itself:
-   ```bash
-   bash "$HOME/.claude/skills/opencode/opencode_run.sh" \
-     --task-name "<FRESH_KEY>" \
-     --model "openai/gpt-5.4" \
-     --timeout 240 \
-     "$(cat /tmp/opencode-review-prompt-<FRESH_KEY>.txt)"
-   ```
-7. **Detect failure via exit code**:
-   - Exit 0 → the response text is in stdout. Proceed to step 8.
-   - Non-zero → retry **once** with `--model openai/gpt-5.4-fast` and a **fresh** `FRESH_KEY` (regenerate, re-initialize state, re-write the prompt file, re-invoke). The retry prompt must carry the full accumulated decision history from before the failure (since the new session has no prior context). Orphan the old state/prompt files in `/tmp`; no cleanup. Retries **do not consume rounds** — `ROUND` counts successful GPT turns, not attempts.
-   - If the retry also fails non-zero, print:
-     - `GPT review skipped due to opencode error. Plan file is saved and ready. Error: <stderr>` if `ROUND == 1` and `accepted_edits` is empty.
-     - `GPT review aborted after partial review (round <ROUND>). Accepted edits are still applied to the plan file; declined items and user-extra concerns are preserved in /tmp/plan-review-state-<FRESH_KEY>.json. Error: <stderr>` otherwise.
-     Then exit the phase. Never delete or modify the plan file on failure; edits already applied via the `Edit` tool stay applied.
-8. Show the response verbatim to the user and print `[Round <ROUND>/3]`. Save the raw text to `last_raw_gpt_response` in the state file.
-9. **Classify the response**:
-   - Strip whitespace. Take the first non-empty line. Lowercase it. Strip trailing `.?!:,` and whitespace.
-   - **APPROVED** if the result equals `approved`. If there is additional content after `APPROVED`, surface it to the user as `[GPT notes]` before the signoff gate, but do not record it in state.
-   - Else, scan for a **contiguous numbered list**: the first line matching `^[\t ]{0,2}[0-9]+[.)]\s+\S` begins the block; numbering must be contiguous `1.`, `2.`, `3.`, ... Gaps, duplicates, or out-of-order numbering invalidate the block. Each item's body extends from its own top-level numbered line to the next top-level numbered line (blank lines, indented continuations, and sub-bullets are part of the item). Must have at least one item. Save the parsed list to `pending_concerns` with `origin: "gpt"`.
-   - Else, print the **malformed-response prompt**:
-     ```
-     GPT's response didn't match the expected format. How should we proceed?
-     (a) Treat as APPROVED and go to signoff gate
-     (b) I'll paste the concerns as a numbered list (1., 2., 3., ...)
-     (c) Skip the review loop
-     ```
-     - `(a)`: treat as APPROVED. `pending_concerns` stays empty.
-     - `(b)`: collect a multi-line paste. Each input line is first checked against whole-loop exit phrases (below); on match, exit the loop. Then checked against the literal terminator `END`; on match, stop collecting. Otherwise append to the paste buffer. Parse the buffer with the same contiguous numbered-list rules. On parse failure, re-prompt with this same malformed-response prompt. Successful parses set `origin: "malformed_paste"`.
-     - `(c)`: print `User skipped the review loop after malformed response. Plan file is saved and ready.` and exit the phase.
-     A malformed round that resolves via `(a)` or successful `(b)` **still counts as round `<ROUND>`'s GPT turn** for the 3-round cap. `(c)` does not increment anything.
+5. Write the **first-turn review prompt** (template at bottom of this phase) to `/tmp/review-prompt-<FRESH_KEY>.txt`. Inline the full current contents of `docs/prompts/<kebab>.md` verbatim at the designated slot. Do not overwrite the JSON state file with prompt text.
+6. Spawn two read-only subagents in parallel using the prompt file contents. Each subagent must return exactly `APPROVED` or a numbered concern list matching the template, with no file edits.
+7. Reconcile their responses into a single concern list. If both return `APPROVED`, proceed to the signoff gate. If either returns concerns, store the merged concerns in `pending_concerns` with source labels and set `phase: "processing_concerns"`.
+8. Show the reconciled response verbatim to the user and print `[Round <ROUND>/3]`. Save the raw reconciled text to `last_raw_response` in the state file.
+9. If either response is malformed, either (a) interpret it conservatively as concerns when the intent is clear, (b) ask the user to paste a corrected response in the expected format, or (c) exit the review loop and report that the plan file is saved but review did not complete.
+     A malformed round that resolves via `(a)` or successful `(b)` **still counts as round `<ROUND>`'s review turn** for the 3-round cap. `(c)` does not increment anything.
 10. **Edit proposal loop**. For each concern from `pending_concern_index` forward:
     - Propose one concrete edit. For concerns that need multiple disjoint edits, propose them as one bundled unit (one `y/n` for the whole bundle). For concerns already satisfied by earlier edits or genuinely out of scope, propose a **no-op** ("no change — already satisfied by <prior edit> / out of scope because <reason>").
     - Ask `Apply this edit? (y/n/skip-rest)`.
@@ -150,15 +124,15 @@ The loop spans multiple `Bash` invocations and user turns. Each `Bash` call is a
       - `n`: ask `Why decline this suggestion?`, append `{suggestion, reason}` to `declined_suggestions`, advance the index, persist state.
       - `skip-rest`: mark all remaining concerns declined with reason `user skip-rest`, advance to step 11.
     - **Whole-loop exit precedence** applies to every prompt that takes user input (the y/n/skip-rest question, the decline reason, the signoff gate, the user-extra-concerns paste, the malformed-response paste). If the input (lowercased, trimmed) equals `done`, `good enough`, `exit`, `stop`, or `skip`, save state and print `Review loop exited by user. Plan file is saved and ready.` then exit. A literal `n` at y/n/skip-rest is **not** an exit (it's a decline). Case-insensitive match. If the user genuinely wants a decline reason of `stop`, they type `reason: stop` — strip a leading `reason: ` before the exit-phrase check.
-11. **Round-cap gate**: immediately before any potential next GPT invocation, if `ROUND >= 3`, do not run another turn — print `Review loop hit the 3-round cap. To re-review, re-run /big-change (or /new-project) on the same plan and opt into the loop again; a fresh review session will be created.` and exit the phase. This check fires from three call sites: after step 10 finishes, after the user answers `more` at the signoff gate, and after a malformed `(b)` paste.
-12. **Continuation round**: increment `ROUND`, persist state, write the **continuation-turn prompt** (template below) to the same `/tmp/opencode-review-prompt-<FRESH_KEY>.txt` (overwriting the prior round). Include the full current contents of `docs/prompts/<kebab>.md` inlined AND the full accumulated `accepted_edits`, `declined_suggestions`, and `user_extra_concerns` across the whole loop. Invoke the wrapper again with the same `FRESH_KEY`; the wrapper's per-PID UUID cache resolves to the same OpenCode session automatically. Go back to step 7.
+11. **Round-cap gate**: immediately before any potential next review round, if `ROUND >= 3`, do not run another turn — print `Review loop hit the 3-round cap. To re-review, re-run /big-change (or /new-project) on the same plan and opt into the loop again; a fresh review session will be created.` and exit the phase. This check fires from three call sites: after step 10 finishes, after the user answers `more` at the signoff gate, and after a malformed `(b)` paste.
+12. **Continuation round**: increment `ROUND`, persist state, write the **continuation-turn prompt** (template below) to the same `/tmp/review-prompt-<FRESH_KEY>.txt` (overwriting the prior round). Include the full current contents of `docs/prompts/<kebab>.md` inlined AND the full accumulated `accepted_edits`, `declined_suggestions`, and `user_extra_concerns` across the whole loop. Then repeat steps 6-9 for the next review round.
 
 ### Signoff gate (APPROVED path only)
 
 Print exactly:
 
 ```
-GPT approved on round <ROUND>. Anything else you want to add, or are we done? (done/more)
+Approved on round <ROUND>. Anything else you want to add, or are we done? (done/more)
 ```
 
 - `done` (or any whole-loop exit phrase) → print `GPT review converged on round <ROUND>. Plan file is final.` and exit successfully.
@@ -168,7 +142,7 @@ GPT approved on round <ROUND>. Anything else you want to add, or are we done? (d
 
 Substitute the phrase **new project** for the `[big change | new project]` marker below — this is a render-time substitution specific to this skill.
 
-**First-turn template** (write to `/tmp/opencode-review-prompt-<FRESH_KEY>.txt`):
+**First-turn template** (write to `/tmp/review-prompt-<FRESH_KEY>.txt`):
 
 ```
 You are critiquing a planning document. Your tools are denied by the enclosing
@@ -288,7 +262,9 @@ Analyze this project and create a comprehensive **Beads task graph** using the `
 ---
 
 <critical_constraint>
-Your ONLY output is a bash shell script. Do NOT use `bd add` — the correct command to create a bead is `bd create`. Use `bd dep add` for dependencies. Do not implement anything yourself.
+Your ONLY output is a bash shell script containing `bd create` and `bd dep add` commands. Do NOT use `bd add` — the correct command to create a bead is `bd create`. Use `bd dep add` for dependencies between task beads. Do not implement anything yourself.
+
+The script MUST create a single parent **epic** first (`bd create -t epic`) and parent **every** task bead to it via `--parent "$EPIC"`, so the whole project is one trackable rollup. The epic is an organizational rollup only — never make it a blocking dependency (do NOT `bd dep add` to or from the epic; `bd dep add` is for real ordering edges between task beads, and a blocking edge on an epic both excludes it wrongly and inverts `bd dep tree`). Membership is the `--parent` relationship, nothing else.
 </critical_constraint>
 
 ## Output Format
@@ -296,9 +272,9 @@ Your ONLY output is a bash shell script. Do NOT use `bd add` — the correct com
 Generate a shell script that creates the full task graph. The script should:
 
 1. **Initialize Beads** (if not already initialized)
-2. **Create all beads** with appropriate priorities
-3. **Establish dependencies** between beads
-4. **Add labels** for phase grouping
+2. **Create one parent epic** (`bd create -t epic`) representing the whole project, capturing its ID into `$EPIC`
+3. **Create all task beads** with appropriate priorities, each parented to the epic via `--parent "$EPIC"`
+4. **Establish dependencies** between task beads (ordering edges only — never to or from the epic)
 
 ### Example Output
 
@@ -317,31 +293,40 @@ fi
 echo "Creating project beads..."
 
 # ========================================
+# Parent epic — every task below is parented to it (--parent "$EPIC").
+# The epic is an organizational rollup: it is NEVER given a blocking dep
+# (no `bd dep add` to or from it) and is never dispatched as work itself.
+# ========================================
+
+EPIC=$(bd create "Epic: {PROJECT_NAME}" -t epic -p 0 --silent)
+bd update "$EPIC" --status in_progress   # rollup, not dispatchable work — keep it out of `bd ready`
+
+# ========================================
 # Phase 1: Project Setup & Infrastructure
 # ========================================
 
-SETUP_VITE=$(bd create "Initialize project with Vite + React + TypeScript" -p 0 --label setup --silent)
+SETUP_VITE=$(bd create "Initialize project with Vite + React + TypeScript" -p 0 --parent "$EPIC" --silent)
 
-SETUP_LINT=$(bd create "Configure ESLint, Prettier, and TypeScript strict mode" -p 1 --label setup --silent)
+SETUP_LINT=$(bd create "Configure ESLint, Prettier, and TypeScript strict mode" -p 1 --parent "$EPIC" --silent)
 bd dep add $SETUP_LINT $SETUP_VITE
 
-SETUP_TAILWIND=$(bd create "Set up Tailwind CSS with design system tokens" -p 1 --label setup --silent)
+SETUP_TAILWIND=$(bd create "Set up Tailwind CSS with design system tokens" -p 1 --parent "$EPIC" --silent)
 bd dep add $SETUP_TAILWIND $SETUP_VITE
 
-SETUP_TESTING=$(bd create "Configure testing framework (Vitest + Testing Library)" -p 1 --label setup --silent)
+SETUP_TESTING=$(bd create "Configure testing framework (Vitest + Testing Library)" -p 1 --parent "$EPIC" --silent)
 bd dep add $SETUP_TESTING $SETUP_LINT
 
 # ========================================
 # Phase 2: Core Architecture
 # ========================================
 
-API_CLIENT=$(bd create "Implement API client with error handling and retries" -p 0 --label core --silent)
+API_CLIENT=$(bd create "Implement API client with error handling and retries" -p 0 --parent "$EPIC" --silent)
 bd dep add $API_CLIENT $SETUP_VITE
 
-STATE_MGMT=$(bd create "Set up global state management (Zustand/Jotai)" -p 0 --label core --silent)
+STATE_MGMT=$(bd create "Set up global state management (Zustand/Jotai)" -p 0 --parent "$EPIC" --silent)
 bd dep add $STATE_MGMT $SETUP_VITE
 
-AUTH_CONTEXT=$(bd create "Create authentication context and hooks" -p 0 --label core --silent)
+AUTH_CONTEXT=$(bd create "Create authentication context and hooks" -p 0 --parent "$EPIC" --silent)
 bd dep add $AUTH_CONTEXT $STATE_MGMT
 bd dep add $AUTH_CONTEXT $API_CLIENT
 
@@ -349,12 +334,21 @@ bd dep add $AUTH_CONTEXT $API_CLIENT
 
 echo ""
 echo "Bead graph created! View with:"
-echo "  bd ready              # List unblocked tasks"
+echo "  bd show $EPIC          # The parent epic and its rollup"
+echo "  bd children $EPIC      # All task beads under the epic"
+echo "  bd ready              # List unblocked tasks (the epic itself is not work)"
 ```
 
 ---
 
 ## Bead Creation Guidelines
+
+### Epic / Hierarchy (REQUIRED)
+- Create exactly **one parent epic** for the whole project: `EPIC=$(bd create "Epic: <project summary>" -t epic -p 0 --silent)`.
+- Parent **every** task bead to it: add `--parent "$EPIC"` to every `bd create`.
+- The epic is a **rollup, not work**: never `bd dep add` to or from it. Membership is `--parent`; `bd dep add` is reserved for real ordering edges *between task beads*. A blocking edge on an epic wrongly keeps it out of (or drops it into) `bd ready` and inverts `bd dep tree`.
+- **Keep the epic out of `bd ready`** by marking it active right after creation: `bd update "$EPIC" --status in_progress`. `bd ready` excludes `in_progress`/`blocked`/`deferred`/`hooked`. Do **not** rely on `--exclude-type epic` — that flag is ineffective on some `bd`/`bn` builds, whereas status-based exclusion works everywhere.
+- For very large projects you MAY use phase sub-epics (each `--parent "$EPIC"`, each with its own children), but a single top-level epic is the default and is sufficient for most projects.
 
 ### Priority Levels
 - `-p 0` = Critical (blocking other work)
@@ -362,22 +356,12 @@ echo "  bd ready              # List unblocked tasks"
 - `-p 2` = Medium (standard work)
 - `-p 3` = Low (nice to have)
 
-### Labels (Phase Grouping)
-Use `--label` to group beads by phase:
-- `setup` - Project initialization
-- `core` - Core architecture
-- `auth` - Authentication/authorization
-- `ui` - UI components
-- `feature-{name}` - Feature-specific work
-- `testing` - Test coverage
-- `docs` - Documentation
-- `deploy` - Deployment/CI
-
 ### Dependency Rules
 1. Never create cycles
 2. Every bead should have a clear dependency chain back to setup tasks
 3. Use `bd dep add CHILD PARENT` (child depends on parent completing first)
 4. Parallel work should share a common ancestor, not depend on each other
+5. `bd dep add` is for ordering edges **between task beads only** — never use it to attach a task to the epic (that is `--parent`), and never add a blocking edge to or from the epic
 
 ### Task Granularity
 - Each bead should be completable in **under 750 lines of code**
@@ -416,7 +400,8 @@ Place any important context in `prompts/docs/` for agents to reference. This inc
 After generating the script:
 
 1. **Run it**: `chmod +x setup-beads.sh && ./setup-beads.sh`
-2. **Check ready work**: `bd ready` should show initial setup tasks
+2. **Check the rollup**: `bd children "$EPIC"` should list every task bead, and `bd dep tree` should show them under the epic with no orphan (un-parented) tasks
+3. **Check ready work**: `bd ready` should show initial setup tasks and **not** the epic. Epics are rollups, never dispatched as work — mark the epic `in_progress` right after creating it so status-based exclusion keeps it out of `bd ready` on every build.
 
 ---
 
@@ -424,6 +409,7 @@ After generating the script:
 
 Ensure your task graph includes:
 
+- [ ] A single parent epic (`-t epic`); every task bead parented to it via `--parent "$EPIC"`, with no orphan tasks and no blocking dep to/from the epic
 - [ ] All setup and configuration tasks
 - [ ] Core architecture and shared utilities
 - [ ] Feature implementation tasks (broken into small units)

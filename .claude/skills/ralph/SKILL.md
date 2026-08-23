@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent
 
 # /ralph -- Autonomous development loop with per-iteration review + merge
 
-Work autonomously using the Ralph iteration protocol. Each iteration is a short-lived branch off `main`, gated by `/review` and `/fix-review`, optionally augmented by a Gemini UI/UX pass via `/opencode`, then merged back to `main` with `--no-ff`.
+Work autonomously using the Ralph iteration protocol. Each iteration is a short-lived branch off `main`, gated by `/review` and `/fix-review`, then merged back to `main` with `--no-ff`.
 
 ## Arguments
 $ARGUMENTS
@@ -19,7 +19,6 @@ Parse arguments:
 - `--goal "<description>"` → **Goal** mode: work toward the stated goal
 - `--single` → **Single Task** mode: work on the next Beads task only
 - `-n <number>` / `--max-iterations <number>` → hard cap on iterations
-- `--ui` → force the Gemini UI/UX pass for this session (required in goal mode; overrides label detection in other modes)
 
 ### Authorization notice
 
@@ -189,7 +188,7 @@ fi
 
 ## Step 5 — `/review`
 
-Invoke the `/review` skill. It diffs `main...HEAD` on the current branch and writes Opus + ChatGPT reviews into `./reviews/{sanitized-branch}-{YYYY-MM-DD}/{opus,chatgpt}/`. No arguments required.
+Invoke the `/review` skill. It diffs `main...HEAD` on the current branch and writes two independently named reviewer directories into `./reviews/{sanitized-branch}-{YYYY-MM-DD}/{reviewer-slug}/`, with reviewer slugs chosen by the review agent and recorded in `manifest.json`. No arguments required.
 
 Review artifacts are excluded by `.git/info/exclude` from Step 1.
 
@@ -197,7 +196,7 @@ Review artifacts are excluded by `.git/info/exclude` from Step 1.
 
 ## Step 6 — `/fix-review`
 
-Invoke the `/fix-review` skill. It reads `./reviews/{branch}-{date}/{opus,chatgpt}/04-action-items.md` and applies prioritized fixes via Edit.
+Invoke the `/fix-review` skill. It reads the reviewer directories from the latest `./reviews/{branch}-{date}/` artifact, preferring `manifest.json`, and applies prioritized fixes via Edit.
 
 Then re-run the auto-detected test suite:
 
@@ -213,45 +212,6 @@ fi
 
 If tests fail after `/fix-review`: one inner ASSESS/EXECUTE/VERIFY remediation pass. Still failing → **abort this iteration** without merging. Leave the iteration branch in place (local + origin once Step 8 runs, or local only if Step 8 hasn't happened yet) for manual inspection, and halt the session. Local `main` is still clean.
 
----
-
-## Step 7 — UI/UX pass via Gemini (conditional on `TASK_HAS_UI_LABEL == 1`)
-
-Run Gemini via the opencode wrapper and persist its output:
-
-```bash
-REVIEW_DIR="./reviews/$(echo "$BRANCH" | tr '/' '-')-$(date +%F)"
-mkdir -p "$REVIEW_DIR"
-
-bash "$HOME/.claude/skills/opencode/opencode_run.sh" \
-  --task-name "ralph-ui-${N}" \
-  --model "google/gemini-3-pro-preview" \
-  --permissions full \
-  "$(cat <<'PROMPT'
-You are reviewing the UI/UX changes on the current git branch vs main.
-Focus exclusively on: visual hierarchy, accessibility (ARIA, contrast, keyboard nav),
-responsive layout, interaction affordances, and design system consistency.
-
-Run `git diff main...HEAD` to see the changes. Produce a markdown report with three sections:
-- Critical UI/UX issues (must fix)
-- Suggested improvements
-- Positive patterns worth preserving
-
-Output the report to stdout. Do not modify files.
-PROMPT
-)" > "$REVIEW_DIR/gemini-ui.md"
-```
-
-Then Claude (ralph) reads `$REVIEW_DIR/gemini-ui.md` and applies the "Critical" fixes (and any obviously correct "Suggested" ones) using Edit/Write. Keeping Claude in the loop for the actual edits avoids handing write access to Gemini-via-opencode and keeps `/fix-review` untouched.
-
-Run tests again. If anything changed and tests pass, commit:
-
-```bash
-git add -A
-git commit -m "ralph: iteration ${N} - gemini ui fixes"
-```
-
-`gemini-ui.md` lives under `reviews/` and is already excluded from git by Step 1.
 
 ---
 
@@ -326,7 +286,6 @@ With `--no-ff` preserving the iteration branch, `main` ends up with:
 
 1. N work-loop checkpoint commits (one per successful VERIFY)
 2. `ralph: iteration N - review fixes` (only if `/fix-review` changed anything)
-3. `ralph: iteration N - gemini ui fixes` (only if the Gemini pass ran and applied changes)
 4. Merge commit: `ralph: iteration N merge - slug` ← this is the anchor Step 2 parses for `N`
 
 ---
@@ -345,7 +304,6 @@ With `--no-ff` preserving the iteration branch, `main` ends up with:
 | Push rejected (any cause) | `reset --hard origin/main`, bounded retry, then halt |
 | Beads not initialized | Fall back: no UI label detection, timestamp slug |
 | Empty iteration (no net diff vs merge-base) | Delete branch, skip review/merge, loop |
-| UI label but no UI files changed | Gemini pass still runs, applies nothing, no-op commit |
 | `/review` / `/fix-review` produce no action items | `/fix-review` no-ops gracefully |
 | Concurrent `/ralph` sessions in the same repo | Undefined, explicitly unsupported |
 

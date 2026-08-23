@@ -25,9 +25,7 @@ Prefer the existing skills over ad-hoc review:
    against source before acting on it (see [[plan-grounding]]).
 3. `/fix-review` (or `/fix-review --auto`) — apply the agreed findings.
 4. Re-verify after fixes (see [[verification]]) before commit.
-
-For a second non-Claude perspective when the user asks, route through
-`/opencode review` (see [[opencode-routing]]).
+5. Start back at 1. if both agents did not agree on approval
 
 ## Reconciliation discipline
 
