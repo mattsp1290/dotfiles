@@ -40,11 +40,11 @@ Conclusion: tracked `.zshrc` is no longer the primary Linux startup problem.
 
 ## Reproduced Linux Problem
 
-The reported SSH target `10.0.0.106` is this host:
+The reported SSH target `192.0.2.10` is this host:
 
 ```text
-wlo1 UP 10.0.0.106/24
-ip route get 10.0.0.106 -> local 10.0.0.106 dev lo
+wlo1 UP 192.0.2.10/24
+ip route get 192.0.2.10 -> local 192.0.2.10 dev lo
 ```
 
 The user-facing delay was reproduced with bash login startup:
@@ -396,12 +396,12 @@ bash -lic 'command -v node; node --version; nvm current'
 Confirm SSH-to-self no longer waits on pyenv:
 
 ```sh
-for i in 1 2 3; do /usr/bin/time -p ssh infra-admin@10.0.0.106 'bash -lic exit'; done
-for i in 1 2 3; do /usr/bin/time -p ssh infra-admin@10.0.0.106 'zsh -lic exit'; done
-ssh -tt infra-admin@10.0.0.106 'bash -lic exit'
+for i in 1 2 3; do /usr/bin/time -p ssh remote-admin@192.0.2.10 'bash -lic exit'; done
+for i in 1 2 3; do /usr/bin/time -p ssh remote-admin@192.0.2.10 'zsh -lic exit'; done
+ssh -tt remote-admin@192.0.2.10 'bash -lic exit'
 ```
 
-If Ghostty still prints `Setting up xterm-ghostty terminfo on 10.0.0.106...` on every SSH, verify terminfo separately:
+If Ghostty still prints `Setting up xterm-ghostty terminfo on 192.0.2.10...` on every SSH, verify terminfo separately:
 
 ```sh
 infocmp xterm-ghostty >/dev/null
