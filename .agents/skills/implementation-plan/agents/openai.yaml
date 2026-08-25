@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implementation Plan"
+  short_description: "Create a reviewed implementation-ready plan"
+  default_prompt: "Use $implementation-plan to create an implementation-ready plan for this change."

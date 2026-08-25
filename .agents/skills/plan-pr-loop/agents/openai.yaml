@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan PR Loop"
+  short_description: "Run implementation plans through reviewed PRs"
+  default_prompt: "Use $plan-pr-loop to implement the plan at <path> as sequential human-reviewed pull requests."

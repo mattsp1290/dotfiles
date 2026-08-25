@@ -1,0 +1,26 @@
+{
+  "forbidden_argv_sequences": [
+    ["pr", "merge"],
+    ["repo", "create"]
+  ],
+  "max_occurrences": [
+    {"sequence": ["pr", "comment"], "max": 3}
+  ],
+  "exact_records": [
+    {
+      "sequences": [["issues", "1", "comments"], ["--method", "POST"]],
+      "count": 1
+    },
+    {
+      "sequences": [["pulls", "1", "requested_reviewers"], ["--method", "POST"]],
+      "count": 1
+    }
+  ],
+  "required_argv_sequences": [
+    ["issues", "1", "comments"],
+    ["pulls", "1", "reviews"],
+    ["pulls", "1", "comments"],
+    ["pulls", "1", "requested_reviewers"],
+    ["pr", "view"]
+  ]
+}

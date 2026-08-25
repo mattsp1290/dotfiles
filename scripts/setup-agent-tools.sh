@@ -72,6 +72,13 @@ link_claude_agent_config() {
   link_children "$agent_root/skills" "$HOME/.claude/skills"
 }
 
+link_shared_agent_config() {
+  agent_root="${DOTFILES_AGENT_ROOT:-$HOME/git/dotfiles/.agents}"
+
+  mkdir -p "$HOME/.agents"
+  link_children "$agent_root/skills" "$HOME/.agents/skills"
+}
+
 link_codex_agent_config() {
   agent_root="${DOTFILES_AGENT_ROOT:-$HOME/git/dotfiles/.agents}"
 
@@ -85,6 +92,7 @@ link_codex_agent_config() {
 setup_agent_tools() {
   install_claude_code
   install_codex
+  link_shared_agent_config
   link_claude_agent_config
   link_codex_agent_config
 }

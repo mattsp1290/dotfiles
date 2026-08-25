@@ -1,0 +1,8 @@
+{
+  "authenticatedLogin": "fixture-user",
+  "next_comment_id": 1000,
+  "next_pr_number": 1,
+  "prs": [],
+  "repositoryUrl": "https://example.invalid/owner/repo",
+  "viewerPermission": "WRITE"
+}

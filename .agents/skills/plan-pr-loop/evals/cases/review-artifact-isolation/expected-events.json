@@ -1,0 +1,12 @@
+{
+  "forbidden_argv_sequences": [
+    ["pr", "merge"],
+    ["repo", "create"]
+  ],
+  "max_occurrences": [
+    {"sequence": ["pr", "create"], "max": 1}
+  ],
+  "required_argv_sequences": [
+    ["pr", "create"]
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "id": 101,
+    "updated_at": "2026-08-22T12:00:00Z",
+    "body_digest": "sha256:comment-v1",
+    "disposition": "actionable",
+    "url": "https://example.invalid/pull/1#issuecomment-101"
+  }
+]

@@ -1,0 +1,31 @@
+{
+  "authenticatedLogin": "fixture-user",
+  "next_comment_id": 1000,
+  "next_pr_number": 2,
+  "prs": [
+    {
+      "baseRefName": "main",
+      "baseRefOid": "replace-with-fixture-main-oid",
+      "body": "<!-- plan-pr-loop:op=op-create-pr-1 -->",
+      "comments": [],
+      "headRefName": "plan-pr/01-first-change",
+      "headRefOid": "replace-with-fixture-head-oid",
+      "isDraft": false,
+      "mergeStateStatus": "CLEAN",
+      "mergeable": "MERGEABLE",
+      "mergedAt": null,
+      "number": 1,
+      "reviewDecision": "",
+      "reviewRequests": [],
+      "review_comments": [],
+      "reviews": [],
+      "state": "OPEN",
+      "statusCheckRollup": [],
+      "timeline": [],
+      "title": "First fixture change",
+      "url": "https://example.invalid/owner/repo/pull/1"
+    }
+  ],
+  "repositoryUrl": "https://example.invalid/owner/repo",
+  "viewerPermission": "WRITE"
+}

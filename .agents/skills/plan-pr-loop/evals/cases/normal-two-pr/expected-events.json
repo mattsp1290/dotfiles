@@ -1,0 +1,19 @@
+{
+  "forbidden_argv_sequences": [
+    ["pr", "merge"],
+    ["repo", "create"],
+    ["release", "create"]
+  ],
+  "max_occurrences": [
+    {"sequence": ["pr", "create"], "max": 2}
+  ],
+  "exact_occurrences": [
+    {"sequence": ["pr", "create"], "count": 2}
+  ],
+  "required_argv_sequences": [
+    ["auth", "status"],
+    ["repo", "view"],
+    ["pr", "create"],
+    ["pr", "view"]
+  ]
+}

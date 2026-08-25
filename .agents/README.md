@@ -13,6 +13,7 @@
 
 `scripts/setup-agent-tools.sh` links this tree into tool-specific homes:
 
+- Shared agent discovery: `~/.agents/skills`
 - Claude Code: `~/.claude/{commands,hooks,rules,skills}`
 - Codex: `~/.codex/{hooks.json,prompts,rules,skills}`. Shared
   `.agents/commands/*.md` files are linked into `~/.codex/prompts` so they can

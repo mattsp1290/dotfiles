@@ -10,7 +10,8 @@ This dotfiles repo supports both Claude Code and Codex during the migration.
 
 ## Codex Notes
 
-- Shared skills are linked into `~/.codex/skills/` by `scripts/setup-agent-tools.sh`.
+- Shared skills are linked into `~/.agents/skills/`, `~/.claude/skills/`, and
+  `~/.codex/skills/` by `scripts/setup-agent-tools.sh`.
 - Shared rules are linked into `~/.codex/rules/` for reference, but this `AGENTS.md` is the Codex-active project guidance.
 - When porting a Claude skill, remove or adapt Claude-only assumptions before relying on it from Codex: `Agent`, `Skill`, `AskUserQuestion`, `$ARGUMENTS`, `.claude/*` paths, and Claude hook JSON.
 
