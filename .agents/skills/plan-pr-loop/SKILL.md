@@ -1,6 +1,6 @@
 ---
 name: plan-pr-loop
-description: Execute a ready multi-file implementation plan as sequential, human-reviewable GitHub pull requests using the plan's compatibility and feature-flag decisions, dual review, Critical-and-Important fixes, thermo-nuclear quality review, human feedback handling, merge waits, and resumable state. Use when a goal invokes `$plan-pr-loop` with an implementation-plan directory; do not use for one-off implementation or non-GitHub repositories.
+description: Execute a ready multi-file implementation plan as sequential, human-reviewable GitHub pull requests using plan-scoped, worktree-safe resumable state, dual review and fixes, and human merge waits. Use when a goal invokes `$plan-pr-loop` with an implementation-plan directory; do not use for one-off implementation or non-GitHub repositories.
 ---
 
 # Plan PR Loop
@@ -36,11 +36,12 @@ The only provider exception is an explicitly requested forward evaluation from t
 1. Derive the target repository from the canonical plan directory, not the invocation directory.
 2. Require the plan to be a direct child of `<repo>/.agents/plans/`, remain inside that repository after symlink resolution, contain `00-overview.md`, numbered implementation files, and a highest-numbered `*-execution-handoff.md`, and be `Status: Ready` with no blocking decision. Require and validate the overview's user-confirmed `application_context`; do not solicit replacement answers during execution.
 3. Compute a stable plan ID from repository identity plus repository-relative plan path. Compute a separate digest over the ordered plan files.
-4. Resolve the shared Git directory with `git rev-parse --git-common-dir`.
-5. Resolve `scripts/pr_loop_state.py` relative to this skill directory. Use it to initialize or validate the repository owner lock, acquire the single-executor lease, and bind its fencing token before any worktree, ref, state, Git-metadata, or remote mutation.
-6. Reconcile recorded state with current Git, remote, and PR evidence. Never trust the recorded phase alone.
+4. Resolve and canonicalize both `git rev-parse --git-common-dir` and `git rev-parse --git-dir`. Create a random checkout-incarnation ID on the checkout's first claim; afterward load the existing ID from its private Git-directory claim. The main checkout and each linked worktree have distinct private Git directories.
+5. Resolve `scripts/pr_loop_state.py` relative to this skill directory. Use the canonical plan lock at `<git-common-dir>/plan-pr-loop/runs/<stable-plan-id>/lock`, its sibling `state.json`, and the checkout-private claim. Initialize or validate both lifetime claims, acquire this plan's single-executor lease, and bind its fencing token before any worktree, ref, state, Git-metadata, or remote mutation. Different stable plans may run concurrently only when they own different checkout incarnations.
+6. If the legacy singleton lock exists, follow the compatibility protocol in the lifecycle reference. Never start a new plan-scoped run while that lock has a legacy owner.
+7. Reconcile recorded state with current checkout, Git, remote, and PR evidence. Never trust the recorded phase alone.
 
-Release the executor lease before yielding. Keep the repository owner lock until complete or a deliberate, safely reconciled abort.
+Release the executor lease before yielding. Keep both the plan lock and checkout claim across human-review waits. Release them only after helper-verified completion; use the evidence-gated recovery rules for an abandoned claim or changed checkout incarnation.
 
 ## Preflight and queue
 
@@ -48,10 +49,10 @@ Before the first branch:
 
 - Read applicable `AGENTS.md`, contributor guidance, CI, PR templates, and build metadata.
 - Inspect `git status --porcelain=v1 --untracked-files=all`. Permit only fingerprint-matching files in the exact input-plan directory and known workflow artifacts; stop on every unrelated tracked or untracked path.
-- Resolve the base as the installed `$review` skill does. Require local base and `origin/<base>` to exist and target the same PR base.
+- Resolve the base name as the installed `$review` skill does. Fetch `origin/<base>`, capture its exact OID, and use that immutable OID for branches, diffs, reviews, and validation. Never check out, fast-forward, or otherwise update the local base branch; it may be checked out in another worktree. Use the remote-tracking ref only to capture a new OID and test freshness.
 - For an ordinary run, run `$preflight --pr` and require `PREFLIGHT_RESULT=READY`. For the narrow eval-only provider exception, use the preflight adapter in the lifecycle reference; never bypass hooks.
 - Require `$review`, `$fix-review`, and `$thermo-nuclear-code-quality-review` to be installed and readable before the first push.
-- Reject tracked `reviews/`; add only `reviews/` to `.git/info/exclude` for local artifacts.
+- Reject tracked `reviews/`. Keep review artifacts worktree-local and exclude them from every staging allowlist; do not mutate shared `.git/info/exclude`.
 - Inventory every observable plan requirement with the canonical source ID and persist it with `record-requirements`.
 - Build the complete dependency-ordered PR queue before implementation. Append the conditional DevEx retrospective requirement and final queue entry defined in [references/devex-retrospective.md](references/devex-retrospective.md). Give every queue entry its canonical immutable ID, persist it with `record-queue`, and verify complete requirement coverage before leaving preflight.
 
@@ -63,7 +64,7 @@ Never start entry N+1 until GitHub reports entry N merged and the updated base p
 
 For the current entry:
 
-1. Fast-forward the base safely, create a fresh `plan-pr/<sequence>-<slug>` branch, persist the entry ID/base OID/branch before edits, and state the PR contract.
+1. Fetch the base, capture its immutable OID, and create a fresh `plan-pr/<first-16-stable-plan-id>/<sequence>-<slug>` branch directly from that OID without switching or updating the local base branch. Reject an existing branch unless state proves it belongs to this exact plan and queue entry. Persist the entry ID/base OID/branch before edits, and state the PR contract.
 2. Implement only the contract. Add related tests. Classify validation commands before execution; run automatically only local, reversible, non-secret checks.
 3. Stage explicit paths only. Commit, capture the real SHA, and make the requested initial normal push. No PR exists yet.
 4. Refresh the base. Reconcile without rewriting published history. Require the reviewed diff to use the immutable current base OID.
@@ -82,7 +83,7 @@ While the PR is open, collect a complete read-only PR/feedback snapshot every fi
 
 - If actionable feedback exists, reconcile human commits, implement the bounded fix, validate, commit, recheck PR state, push normally, reply with the real SHA/evidence, and re-request review through crash-safe outbox operations. Keep the normal fresh internal-review gate while the PR remains open. If the human merges the exact pushed fix before that gate or re-request finishes, use the narrowly evidenced merged-feedback exception in the GitHub-feedback reference.
 - If the PR base changed, rerun validation, `$review`, `$fix-review`, and the thermo-nuclear review/fix gate against the new immutable base OID, then re-request human review.
-- If the PR merged, take one final feedback snapshot, fast-forward the base, verify the merged slice, record terminal evidence with `record-coverage`, revise only unstarted queue entries, and continue.
+- If the PR merged, take one final feedback snapshot, fetch and capture the new `origin/<base>` OID without moving the local base branch, verify the merged slice against that OID, record terminal evidence with `record-coverage`, revise only unstarted queue entries, and continue.
 - If the PR closed unmerged, branches diverged, a remote operation is ambiguous, or merge won a push race, stop for human disposition without overwriting work.
 
 ## Completion

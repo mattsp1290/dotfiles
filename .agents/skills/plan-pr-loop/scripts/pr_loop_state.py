@@ -26,6 +26,7 @@ from pr_loop_lease import (
     command_lock_init,
     command_lock_release,
     command_lock_update_plan,
+    expected_state_path,
     require_lock_args,
     verify_live_lease_locked,
 )
@@ -45,6 +46,7 @@ from pr_loop_model import (
     output,
     require,
     require_current_review_gate,
+    require_plan_branch,
     require_devex_retrospective,
     utc_now,
     validate_application_context,
@@ -475,6 +477,13 @@ def command_record_pr(args: argparse.Namespace, payload: dict[str, Any]) -> dict
     queue_by_id = {entry["entry_id"]: entry for entry in state["queue"]}
     require(entry_id in queue_by_id, "record-pr entry_id is not present in queue")
     previous_record = state["prs"].get(entry_id, {})
+    if "branch" in patch:
+        require_plan_branch(state["plan"]["stable_id"], patch["branch"], queue_by_id[entry_id]["sequence"])
+        require(
+            previous_record.get("branch") in {None, patch["branch"]},
+            "persisted feature branch cannot change",
+            3,
+        )
     if any(
         key in patch and previous_record.get(key) is not None and previous_record.get(key) != patch.get(key)
         for key in ("reviewed_base_sha", "local_head_sha", "remote_head_sha")
@@ -720,6 +729,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--plan-digest")
     parser.add_argument("--goal-id")
     parser.add_argument("--executor-id")
+    parser.add_argument("--git-common-dir")
+    parser.add_argument("--git-dir")
+    parser.add_argument("--checkout-incarnation")
     return parser
 
 
@@ -739,28 +751,28 @@ def main() -> int:
             with exclusive_file_lock(lock_path / ".mutex", create_parent=False):
                 verify_live_lease_locked(lock_path, args)
                 owner = read_json(lock_path / "owner.json")
-                expected_state_path = (lock_path.parent / "runs" / owner["stable_plan_id"] / "state.json").resolve()
-                require(state_path == expected_state_path, "state path is not bound to this repository lock", 3)
+                bound_state_path = expected_state_path(lock_path, owner)
+                require(state_path == bound_state_path, "state path is not bound to this plan lock", 3)
                 with exclusive_file_lock(state_path.with_name(f".{state_path.name}.mutation.lock")):
                     if args.command == "init":
                         plan = payload.get("plan", {})
                         repository = payload.get("repository", {})
-                        require(plan.get("stable_id") == owner["stable_plan_id"], "init plan does not match owner lock", 3)
+                        require(plan.get("stable_id") == owner["stable_plan_id"], "init plan does not match plan lock", 3)
                         require(
                             repository.get("repository_id") == owner["repository_id"],
-                            "init repository does not match owner lock",
+                            "init repository does not match plan lock",
                             3,
                         )
                     else:
                         bound_state = read_json(state_path)
                         require(
                             bound_state.get("plan", {}).get("stable_id") == owner["stable_plan_id"],
-                            "state plan does not match owner lock",
+                            "state plan does not match plan lock",
                             3,
                         )
                         require(
                             bound_state.get("repository", {}).get("repository_id") == owner["repository_id"],
-                            "state repository does not match owner lock",
+                            "state repository does not match plan lock",
                             3,
                         )
                     result = spec.handler(args, payload)

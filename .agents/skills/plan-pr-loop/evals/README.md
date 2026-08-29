@@ -28,6 +28,8 @@ export PLAN_PR_LOOP_FAKE_GH_TRACE="$eval_root/fake-gh-trace.jsonl"
 export PATH="$eval_root/bin:$PATH"
 ```
 
+For a seeded feedback/resume PR, replace every `replace-with-*` value in the copied fake state after the fixture repository exists. Its `headRefName` must use `plan-pr/<first-16-stable-plan-id>/<sequence>-<slug>` computed from that fixture's canonical local origin and `.agents/plans/example-plan` path.
+
 Verify isolation:
 
 ```bash
@@ -56,7 +58,7 @@ This is the actual model boundary. Record evidence that:
 - the active-user, backward-compatibility, and feature-flag answers were loaded from the implementation plan's valid user-confirmed context block and persisted before mutation without being asked again;
 - the goal yielded while the PR was open and later continued automatically;
 - no second queue entry began before the fake PR changed to `MERGED`;
-- state revisions, lock ownership, executor leases, outboxes, and artifact recovery matched observed Git/fake-GitHub state.
+- state revisions, plan-lock ownership, checkout-incarnation ownership, independent per-plan executor leases/fences, outboxes, and artifact recovery matched observed Git/fake-GitHub state.
 
 To drive later states, edit only the disposable `fake-gh-state.json`. Model a human comment with a new ID even when `user.login` equals `authenticatedLogin`. To model merge, set `state` to `MERGED`, set `mergedAt`, and set the local bare remote/base to contain the intended head before the next continuation.
 

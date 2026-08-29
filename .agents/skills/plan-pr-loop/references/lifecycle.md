@@ -8,15 +8,25 @@ Anchor below `git rev-parse --git-common-dir`:
 
 ```text
 <git-common-dir>/plan-pr-loop/
-├── lock/
-│   ├── owner.json
-│   ├── fence.json
-│   └── executor/lease.json
+├── lock/                         # permanent v2 guard, or one unfinished legacy run
+├── .coordination.mutex           # short initialization/release transactions only
 └── runs/<stable-plan-id>/
+    ├── lock/
+    │   ├── owner.json
+    │   ├── fence.json
+    │   └── executor/lease.json
     ├── state.json
     ├── review-backups/
     └── reviews/
 ```
+
+Each checkout also has a lifetime claim at `<git-dir>/plan-pr-loop-checkout/owner.json`, where `git-dir` is the canonical result of `git rev-parse --git-dir`, not the `.git` path guessed from the worktree. The claim contains a random checkout-incarnation ID mirrored in the plan owner and executor lease. A main checkout and each linked worktree therefore have separate claims even though they share the coordination root and refs.
+
+The plan lock excludes a second executor for the same stable plan. The checkout claim excludes a second plan from the same checkout, including while the first plan waits for human review. Different plans in different checkout incarnations have independent locks, fencing counters, state, monitors, and review archives and may execute concurrently. Hold `.coordination.mutex` only while initializing, adopting, or releasing lifetime claims; never use it as a repository-wide executor lease.
+
+### Legacy singleton compatibility
+
+The old layout used `<git-common-dir>/plan-pr-loop/lock` as the active plan lock. New plan-scoped initialization requires that path to contain the v2 guard. If it contains a legacy owner, every different or new plan stops. The owning legacy plan may resume in place only after its executor has yielded and explicit reconciliation evidence binds it to the current checkout incarnation. It keeps its existing state path and fence counter. When that run reaches helper-verified completion, `lock-release` atomically replaces its owner with the v2 guard while holding the legacy mutex, so older loaded helpers fail closed. Never move live legacy state or reset its fence. An incomplete legacy lock or a missing/mismatched checkout claim requires human recovery evidence.
 
 ## Canonical identities
 
@@ -28,17 +38,19 @@ Compute identifiers byte-for-byte as follows. SHA-256 inputs are UTF-8 and use t
 4. Repository ID is the lowercase hex SHA-256 of `plan-pr-loop-repo-v1\0<normalized-origin>`.
 5. Express the canonical plan directory as a repository-relative POSIX path. Stable plan ID is the lowercase hex SHA-256 of `plan-pr-loop-plan-v1\0<repository-id>\0<relative-plan-path>`. It deliberately excludes file contents.
 6. Order numbered Markdown plan files by integer prefix, rejecting duplicate prefixes. Begin the plan-content hash with `plan-pr-loop-content-v1\0`; for each file, append `<repo-relative-posix-path>\0<lowercase-sha256-of-raw-file-bytes>\0`. The resulting lowercase hex digest is the plan digest.
+7. Canonicalize `git rev-parse --git-dir` for the invoking checkout. The checkout incarnation is a freshly generated random identifier stored in that private Git directory on first claim and copied into the plan owner. Reuse the stored value only when both records match. Do not derive an incarnation from a path that can be removed and recreated.
+8. Feature branches use `plan-pr/<first-16-characters-of-stable-plan-id>/<sequence>-<slug>`. The helper rejects persisted branch metadata outside this namespace. An existing namespaced ref is resumable only when the current run state binds it to the same queue entry.
 
 Store both the stable ID and ordered content digest. An edited plan therefore finds the same run and requires reconciliation rather than silently starting another run.
 
 ## Helper protocol
 
-Run `python3 scripts/pr_loop_state.py <command>`. This is the stable entry point; its sibling modules separate pure model/validation rules, atomic state storage, leases, and feedback/outbox handling. Lock commands use `--lock`. Every mutating state command uses both `--state` and `--lock` plus the exact owner token, executor ID, and live fencing token; the helper verifies `lease.json` while holding the repository mutex before it performs the state CAS. Pass structured command data with `--input-json` or stdin.
+Run `python3 scripts/pr_loop_state.py <command>`. This is the stable entry point; its sibling modules separate pure model/validation rules, atomic state storage, leases, and feedback/outbox handling. Every lock and state mutation command receives the canonical `--git-common-dir`, canonical worktree `--git-dir`, and exact `--checkout-incarnation`. Lock commands also use the canonical `--lock`. Every mutating state command uses `--state`, owner token, executor ID, and live fencing token; the helper validates the plan-lock path, state path, checkout claim, and `lease.json` before it performs the state CAS. Pass structured command data with `--input-json` or stdin.
 
 Required lock commands:
 
-- `lock-init`: atomically claim or verify the repository owner lock.
-- `lock-release`: remove the owner lock only after the exact owner proves no executor lease remains and the bound run state is complete. Retain it for recovery or abort disposition.
+- `lock-init`: under the short coordination mutex, atomically claim or verify the canonical plan lock and checkout incarnation. It also creates/verifies the permanent legacy guard, or adopts the matching yielded legacy owner with explicit evidence.
+- `lock-release`: remove a v2 plan lock and its exact checkout claim only after the owner proves no executor lease remains and the bound run state is complete. For a completed legacy run, convert the singleton owner to the permanent guard and release its checkout claim. Retain active claims for recovery or abort disposition.
 - `lock-update-plan`: after explicit plan-change reconciliation, update the owner digest while holding the exact executor lease.
 - `lease-acquire`: atomically acquire the single executor and return the next fencing token.
 - `lease-release`: require exact owner, executor, and fencing token.
@@ -53,18 +65,18 @@ Required state commands:
 - `outbox-begin`, `outbox-authorize`, `outbox-resolve`
 - `approval-check`, `approval-record`
 
-Every mutating state command uses expected revision, expected phase when applicable, the current fencing token, `--lock`, `--owner-token`, and `--executor-id`. Exit codes: `0` success, `2` input/schema, `3` CAS/owner/lease/fencing conflict, `4` illegal transition, `5` I/O, `64` unknown command. Treat nonzero as a stop; never infer partial success.
+Every mutating state command uses expected revision, expected phase when applicable, the current fencing token, `--lock`, `--owner-token`, `--executor-id`, `--git-common-dir`, `--git-dir`, and `--checkout-incarnation`. Exit codes: `0` success, `2` input/schema, `3` CAS/owner/lease/checkout/fencing conflict, `4` illegal transition, `5` I/O, `64` unknown command. Treat nonzero as a stop; never infer partial success.
 
 Lock arguments:
 
 | Command | Required arguments |
 |---|---|
-| `lock-init` | `--lock`, `--owner-token`, `--repository-id`, `--stable-plan-id`, `--plan-digest`; add `--goal-id` when available. |
-| `lease-acquire` | `--lock`, `--owner-token`, `--executor-id`. |
-| `lease-release` | `--lock`, `--owner-token`, `--executor-id`, `--fencing-token`. |
-| `lease-takeover` | `--lock`, `--owner-token`, new `--executor-id`; JSON includes `takeover_evidence_digest` and, for an intact old lease, `prior_executor_id`. |
-| `lock-update-plan` | Same exact lease identity plus `--plan-digest`. |
-| `lock-release` | `--lock`, `--state`, `--owner-token`; call only after lease release and helper-verified completion. Retain the owner lock for abort/recovery disposition. |
+| `lock-init` | Canonical coordination arguments plus `--lock`, `--owner-token`, `--repository-id`, `--stable-plan-id`, `--plan-digest`; add `--goal-id` when available. Legacy checkout adoption also passes `legacy_checkout_adoption_evidence_digest`. |
+| `lease-acquire` | Canonical coordination arguments plus `--lock`, `--owner-token`, `--executor-id`. |
+| `lease-release` | Canonical coordination arguments plus `--lock`, `--owner-token`, `--executor-id`, `--fencing-token`. |
+| `lease-takeover` | Canonical coordination arguments plus `--lock`, `--owner-token`, new `--executor-id`; JSON includes `takeover_evidence_digest` and, for an intact old lease, `prior_executor_id`. |
+| `lock-update-plan` | Same exact checkout and lease identity plus `--plan-digest`. |
+| `lock-release` | Canonical coordination arguments plus `--lock`, `--state`, `--owner-token`; call only after lease release and helper-verified completion. Retain active claims for abort/recovery disposition. |
 
 State input contracts:
 
@@ -114,9 +126,9 @@ Record the reason for every transition. Git and GitHub remain authoritative.
 
 On every continuation:
 
-1. Verify lock owner; acquire a fresh executor lease; bind its fencing token by state revision.
+1. Verify the plan owner and checkout-incarnation claim; acquire a fresh executor lease for that plan; bind its fencing token by state revision. A moved worktree remains the same checkout only when its private Git directory and incarnation marker still match. A missing or mismatched marker is recovery-required, never an automatic resume.
 2. Re-read and digest the plan. Stop on changed content until its effect on queued/current work is resolved. Return through `preflight`, obtain and digest explicit human reconciliation for implementation-impacting changes, and update requirements as needed. If `application_context` changed, require a newly user-confirmed block produced during plan revision; never ask the initial context questions here. Then use `record-plan` and `lock-update-plan`; never create a new run for edited contents.
-3. Inspect branch, worktree, local/remote heads, target base OID, PR state, pending outbox, and review artifact restoration state.
+3. Inspect the checkout-bound branch, worktree, local/remote heads, captured target-base OID, current `origin/<base>` OID, PR state, pending outbox, and review artifact restoration state.
 4. Fast-forward only linear human commits. Stop on divergence.
 5. Continue exactly one safe phase. If remote success is ambiguous, reconcile or enter `human-required`; do not retry blindly.
 6. Release the executor lease before yielding.
@@ -127,7 +139,7 @@ Never reclaim a lease based only on age. Prove no continuation owns it and inspe
 
 Load the current installed `$review` skill and preserve its base resolution, prerequisites, review stances, `review-v1` manifest, five-file reviewer contract, and final verification. Adapt only unsupported launcher primitives:
 
-1. Fetch the target base. Require the local named base and `origin/<base>` to resolve to the same immutable OID.
+1. Fetch the target base and capture the exact `origin/<base>` OID. Do not read the review range through that mutable ref again; use the captured OID throughout the pass. Do not require, check out, or update the local named base.
 2. Isolate live `reviews/`: move existing untracked contents into the run backup after recording recovery state; create an empty live directory.
 3. Choose two distinct stance-based reviewer names/slugs. Write the manifest before launch. Include standard `review-v1` fields plus `base_oid` and the reviewed `<base-oid>...HEAD` range.
 4. Launch two independent supported Codex subagents in parallel. Give each its stance, repository root, immutable base OID, HEAD, changed paths, output directory, and the installed `$review` five-file format. Tell the second not to mirror the first.
@@ -152,7 +164,7 @@ The only terminal exception is when a human merges the exact already-pushed feed
 
 ## Base freshness
 
-Bind every internal review artifact to an immutable base OID. Fetch immediately before review and PR creation. If the base moved, reconcile through documented repository policy without force/rebase of published history, rerun validation, and repeat `$review`, `$fix-review`, and the thermo-nuclear gate. While a PR is open, compare every `baseRefOid` snapshot to the reviewed OID and repeat the full gate after movement.
+Bind every internal review artifact to an immutable base OID value, never a remote-tracking ref name. Fetch immediately before initial implementation, review, PR creation, feedback handling, post-merge verification, DevEx work, and final acceptance; capture `origin/<base>` after each fetch. If the captured current OID differs from the recorded OID, reconcile through documented repository policy without force/rebase of published history, rerun validation, and repeat `$review`, `$fix-review`, and the thermo-nuclear gate. While a PR is open, compare every `baseRefOid` snapshot to the reviewed OID and repeat the full gate after movement. Never check out, fast-forward, or update the local base branch.
 
 ## Remote outbox
 
@@ -168,4 +180,4 @@ Call `outbox-authorize` immediately before every PR-create, reply, or review-req
 
 Automatically run only local, reversible, non-secret checks with a bounded working-copy target. Require separate exact approval for deployment, credentialed network write, non-disposable migration, destructive cleanup, or an unclear target. Report skipped/manual gates as such; never call them passed.
 
-Before staging or pushing, verify the recorded feature branch, explicit path allowlist, real local SHA, no plan/state/lock/review artifacts, and no unrelated work. Never use `git add .`, `git add -A`, force push, hook bypass, or default-branch push.
+Before staging or pushing, verify the recorded `plan-pr/<first-16-stable-plan-id>/...` feature branch, exact checkout incarnation, explicit path allowlist, real local SHA, no plan/state/lock/review artifacts, and no unrelated work. Resolve Git metadata paths through `git rev-parse --git-path`; do not write shared config, refs, or `info/exclude` except through a documented narrow transaction. Never use `git add .`, `git add -A`, force push, hook bypass, or default-branch push.

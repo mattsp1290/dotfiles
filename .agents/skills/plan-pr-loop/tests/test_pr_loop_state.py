@@ -42,10 +42,14 @@ class HelperTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
-        self.lock = self.root / "common" / "plan-pr-loop" / "lock"
-        self.state = self.root / "common" / "plan-pr-loop" / "runs" / "stable-plan" / "state.json"
+        self.common_dir = self.root / "common"
+        self.git_dir = self.common_dir / "worktrees" / "primary"
+        self.git_dir.mkdir(parents=True)
+        self.lock = self.common_dir / "plan-pr-loop" / "runs" / "stable-plan" / "lock"
+        self.state = self.lock.parent / "state.json"
         self.owner = "owner-A"
         self.executor = "executor-A"
+        self.checkout_incarnation = "checkout-A"
 
         self.assert_ok(
             "lock-init",
@@ -108,6 +112,9 @@ class HelperTestCase(unittest.TestCase):
         plan_digest: str | None = None,
         goal_id: str | None = None,
         executor_id: str | None = None,
+        git_common_dir: Path | None = None,
+        git_dir: Path | None = None,
+        checkout_incarnation: str | None = None,
     ) -> subprocess.CompletedProcess[str]:
         if command in STATE_MUTATIONS and state is not None:
             lock = lock or self.lock
@@ -126,10 +133,18 @@ class HelperTestCase(unittest.TestCase):
             "plan-digest": plan_digest,
             "goal-id": goal_id,
             "executor-id": executor_id,
+            "git-common-dir": git_common_dir or self.common_dir,
+            "git-dir": git_dir or self.git_dir,
+            "checkout-incarnation": checkout_incarnation or self.checkout_incarnation,
         }
         for flag, value in values.items():
             if value is not None:
-                arguments.extend([f"--{flag}", os.fspath(value) if isinstance(value, Path) else str(value)])
+                arguments.extend(
+                    [
+                        f"--{flag}",
+                        os.fspath(value) if isinstance(value, Path) else str(value),
+                    ]
+                )
         if payload is not None:
             arguments.extend(["--input-json", json.dumps(payload, sort_keys=True)])
         return subprocess.run(arguments, text=True, capture_output=True, check=False)
@@ -331,7 +346,7 @@ class HelperTestCase(unittest.TestCase):
                 "current": {
                     "entry_id": "pr-one",
                     "sequence": 1,
-                    "branch": "plan-pr/01-one",
+                    "branch": "plan-pr/stable-plan/01-one",
                     "base_sha": base_sha,
                     "reviewed_base_sha": base_sha,
                     "local_head_sha": head_sha,
@@ -560,7 +575,7 @@ class HelperTestCase(unittest.TestCase):
             expected_revision=3,
             expected_phase="queued",
             fencing_token=self.fence,
-            payload={"current": {"branch": "plan-pr/01-example"}},
+            payload={"current": {"branch": "plan-pr/stable-plan/01-example"}},
         )
         self.assertEqual(stale.returncode, 3)
 
@@ -593,7 +608,7 @@ class HelperTestCase(unittest.TestCase):
             expected_revision=5,
             expected_phase="queued",
             fencing_token=self.fence,
-            payload={"current": {"branch": "plan-pr/01-example"}},
+            payload={"current": {"branch": "plan-pr/stable-plan/01-example"}},
         )
         self.assertEqual(stale_fence.returncode, 3)
         self.fence = new_fence
@@ -624,8 +639,651 @@ class HelperTestCase(unittest.TestCase):
         )
         self.assertEqual(wrong_release.returncode, 3)
 
-    def test_incomplete_owner_lock_recovery_requires_evidence_and_safe_fence(self) -> None:
-        incomplete_lock = self.root / "incomplete" / "plan-pr-loop" / "lock"
+    def test_different_plans_in_different_checkouts_hold_independent_leases(
+        self,
+    ) -> None:
+        second_git_dir = self.common_dir / "worktrees" / "secondary"
+        second_git_dir.mkdir()
+        second_lock = self.common_dir / "plan-pr-loop" / "runs" / "other-plan" / "lock"
+        created = self.assert_ok(
+            "lock-init",
+            lock=second_lock,
+            owner_token="owner-B",
+            repository_id="repo-1",
+            stable_plan_id="other-plan",
+            plan_digest="digest-B",
+            git_dir=second_git_dir,
+            checkout_incarnation="checkout-B",
+        )
+        self.assertTrue(created["created"])
+        second_lease = self.assert_ok(
+            "lease-acquire",
+            lock=second_lock,
+            owner_token="owner-B",
+            executor_id="executor-B",
+            git_dir=second_git_dir,
+            checkout_incarnation="checkout-B",
+        )
+        self.assertEqual(self.fence, 1)
+        self.assertEqual(second_lease["fencing_token"], 1)
+        self.assertTrue((self.lock / "executor" / "lease.json").is_file())
+        self.assertTrue((second_lock / "executor" / "lease.json").is_file())
+
+    def test_same_checkout_rejects_a_different_plan(self) -> None:
+        other_lock = self.common_dir / "plan-pr-loop" / "runs" / "other-plan" / "lock"
+        rejected = self.run_helper(
+            "lock-init",
+            lock=other_lock,
+            owner_token="owner-B",
+            repository_id="repo-1",
+            stable_plan_id="other-plan",
+            plan_digest="digest-B",
+        )
+        self.assertEqual(rejected.returncode, 3)
+        self.assertFalse(other_lock.exists())
+
+    def test_same_plan_rejects_a_different_checkout_and_cleans_partial_claim(
+        self,
+    ) -> None:
+        second_git_dir = self.common_dir / "worktrees" / "secondary"
+        second_git_dir.mkdir()
+        rejected = self.run_helper(
+            "lock-init",
+            lock=self.lock,
+            owner_token="owner-B",
+            repository_id="repo-1",
+            stable_plan_id="stable-plan",
+            plan_digest="digest-v1",
+            git_dir=second_git_dir,
+            checkout_incarnation="checkout-B",
+        )
+        self.assertEqual(rejected.returncode, 3)
+        self.assertFalse((second_git_dir / "plan-pr-loop-checkout").exists())
+
+    def test_noncanonical_lock_alias_is_rejected(self) -> None:
+        alias = (
+            self.common_dir / "plan-pr-loop" / "runs" / "stable-plan" / "alternate-lock"
+        )
+        rejected = self.run_helper(
+            "lock-init",
+            lock=alias,
+            owner_token=self.owner,
+            repository_id="repo-1",
+            stable_plan_id="stable-plan",
+            plan_digest="digest-v1",
+        )
+        self.assertEqual(rejected.returncode, 3)
+
+    def test_checkout_incarnation_is_required_for_continuation(self) -> None:
+        rejected = self.run_helper(
+            "lease-release",
+            lock=self.lock,
+            owner_token=self.owner,
+            executor_id=self.executor,
+            fencing_token=self.fence,
+            checkout_incarnation="recreated-checkout",
+        )
+        self.assertEqual(rejected.returncode, 3)
+        self.assertTrue((self.lock / "executor" / "lease.json").is_file())
+
+    def test_missing_checkout_claim_requires_yield_and_recovery_evidence(self) -> None:
+        claim = self.git_dir / "plan-pr-loop-checkout"
+        (claim / "owner.json").unlink()
+        claim.rmdir()
+        live_recovery = self.run_helper(
+            "lock-init",
+            lock=self.lock,
+            owner_token=self.owner,
+            repository_id="repo-1",
+            stable_plan_id="stable-plan",
+            plan_digest="digest-v1",
+            payload={"checkout_recovery_evidence_digest": "recovery-proof"},
+        )
+        self.assertEqual(live_recovery.returncode, 3)
+        (self.lock / "executor" / "lease.json").unlink()
+        (self.lock / "executor").rmdir()
+        missing_evidence = self.run_helper(
+            "lock-init",
+            lock=self.lock,
+            owner_token=self.owner,
+            repository_id="repo-1",
+            stable_plan_id="stable-plan",
+            plan_digest="digest-v1",
+        )
+        self.assertEqual(missing_evidence.returncode, 3)
+        recovered = self.assert_ok(
+            "lock-init",
+            lock=self.lock,
+            owner_token=self.owner,
+            repository_id="repo-1",
+            stable_plan_id="stable-plan",
+            plan_digest="digest-v1",
+            payload={"checkout_recovery_evidence_digest": "recovery-proof"},
+        )
+        self.assertFalse(recovered["created"])
+        self.assertTrue((claim / "owner.json").is_file())
+
+    def test_recorded_feature_branch_must_use_plan_namespace(self) -> None:
+        seeded = self.seed_single_queue()
+        rejected = self.run_helper(
+            "record-pr",
+            state=self.state,
+            expected_revision=seeded["state_revision"],
+            expected_phase="preflight",
+            fencing_token=self.fence,
+            payload={
+                "current": {"entry_id": "pr-one", "branch": "plan-pr/other-plan/01-one"}
+            },
+        )
+        self.assertEqual(rejected.returncode, 4)
+        accepted = self.assert_ok(
+            "record-pr",
+            state=self.state,
+            expected_revision=seeded["state_revision"],
+            expected_phase="preflight",
+            fencing_token=self.fence,
+            payload={
+                "current": {
+                    "entry_id": "pr-one",
+                    "branch": "plan-pr/stable-plan/01-one",
+                }
+            },
+        )
+        self.assertEqual(accepted["state_revision"], seeded["state_revision"] + 1)
+
+    def test_active_legacy_lock_blocks_new_plans_and_can_be_adopted_after_yield(
+        self,
+    ) -> None:
+        legacy_common = self.root / "legacy" / "common"
+        legacy_git_dir = legacy_common / "worktrees" / "checkout"
+        legacy_git_dir.mkdir(parents=True)
+        legacy_lock = legacy_common / "plan-pr-loop" / "lock"
+        legacy_lock.mkdir(parents=True)
+        (legacy_lock / "owner.json").write_text(
+            json.dumps(
+                {
+                    "owner_token": "legacy-owner",
+                    "repository_id": "legacy-repo",
+                    "stable_plan_id": "legacy-plan",
+                    "plan_digest": "legacy-digest",
+                }
+            ),
+            encoding="utf-8",
+        )
+        (legacy_lock / "fence.json").write_text(
+            json.dumps({"last_token": 3}), encoding="utf-8"
+        )
+        (legacy_lock / "executor").mkdir()
+        (legacy_lock / "executor" / "lease.json").write_text(
+            json.dumps(
+                {
+                    "owner_token": "legacy-owner",
+                    "executor_id": "old",
+                    "fencing_token": 3,
+                }
+            ),
+            encoding="utf-8",
+        )
+        new_lock = legacy_common / "plan-pr-loop" / "runs" / "new-plan" / "lock"
+        blocked = self.run_helper(
+            "lock-init",
+            lock=new_lock,
+            owner_token="new-owner",
+            repository_id="legacy-repo",
+            stable_plan_id="new-plan",
+            plan_digest="new-digest",
+            git_common_dir=legacy_common,
+            git_dir=legacy_git_dir,
+            checkout_incarnation="legacy-checkout",
+        )
+        self.assertEqual(blocked.returncode, 3)
+        adoption_blocked = self.run_helper(
+            "lock-init",
+            lock=legacy_lock,
+            owner_token="legacy-owner",
+            repository_id="legacy-repo",
+            stable_plan_id="legacy-plan",
+            plan_digest="legacy-digest",
+            payload={"legacy_checkout_adoption_evidence_digest": "resume-proof"},
+            git_common_dir=legacy_common,
+            git_dir=legacy_git_dir,
+            checkout_incarnation="legacy-checkout",
+        )
+        self.assertEqual(adoption_blocked.returncode, 3)
+        os.unlink(legacy_lock / "executor" / "lease.json")
+        os.rmdir(legacy_lock / "executor")
+        adopted = self.assert_ok(
+            "lock-init",
+            lock=legacy_lock,
+            owner_token="legacy-owner",
+            repository_id="legacy-repo",
+            stable_plan_id="legacy-plan",
+            plan_digest="legacy-digest",
+            payload={"legacy_checkout_adoption_evidence_digest": "resume-proof"},
+            git_common_dir=legacy_common,
+            git_dir=legacy_git_dir,
+            checkout_incarnation="legacy-checkout",
+        )
+        self.assertTrue(adopted["legacy"])
+        lease = self.assert_ok(
+            "lease-acquire",
+            lock=legacy_lock,
+            owner_token="legacy-owner",
+            executor_id="new",
+            git_common_dir=legacy_common,
+            git_dir=legacy_git_dir,
+            checkout_incarnation="legacy-checkout",
+        )
+        self.assertEqual(lease["fencing_token"], 4)
+
+    def test_incomplete_legacy_lock_requires_recovery_and_adoption_evidence(
+        self,
+    ) -> None:
+        legacy_common = self.root / "legacy-incomplete" / "common"
+        legacy_git_dir = legacy_common / "worktrees" / "checkout"
+        legacy_git_dir.mkdir(parents=True)
+        legacy_lock = legacy_common / "plan-pr-loop" / "lock"
+        legacy_lock.mkdir(parents=True)
+        rejected = self.run_helper(
+            "lock-init",
+            lock=legacy_lock,
+            owner_token="legacy-owner",
+            repository_id="legacy-repo",
+            stable_plan_id="legacy-plan",
+            plan_digest="legacy-digest",
+            git_common_dir=legacy_common,
+            git_dir=legacy_git_dir,
+            checkout_incarnation="legacy-checkout",
+        )
+        self.assertEqual(rejected.returncode, 3)
+        recovered = self.assert_ok(
+            "lock-init",
+            lock=legacy_lock,
+            owner_token="legacy-owner",
+            repository_id="legacy-repo",
+            stable_plan_id="legacy-plan",
+            plan_digest="legacy-digest",
+            payload={
+                "incomplete_lock_recovery_evidence_digest": "incomplete-proof",
+                "legacy_checkout_adoption_evidence_digest": "checkout-proof",
+            },
+            git_common_dir=legacy_common,
+            git_dir=legacy_git_dir,
+            checkout_incarnation="legacy-checkout",
+        )
+        self.assertTrue(recovered["legacy"])
+        self.assertTrue((legacy_lock / "fence.json").is_file())
+        self.assertTrue(
+            (legacy_git_dir / "plan-pr-loop-checkout" / "owner.json").is_file()
+        )
+
+    def test_layout_guard_rejects_legacy_lock_use(self) -> None:
+        rejected = self.run_helper(
+            "lock-init",
+            lock=self.common_dir / "plan-pr-loop" / "lock",
+            owner_token=self.owner,
+            repository_id="repo-1",
+            stable_plan_id="stable-plan",
+            plan_digest="digest-v1",
+        )
+        self.assertEqual(rejected.returncode, 3)
+
+    def test_completed_legacy_run_converts_singleton_lock_to_guard(self) -> None:
+        seeded = self.seed_single_queue(include_devex=True)
+        queued = self.transition(seeded["state_revision"], "preflight", "queued")
+        self.finish_seeded_single_queue(queued["state_revision"])
+        self.assert_ok(
+            "lease-release",
+            lock=self.lock,
+            owner_token=self.owner,
+            executor_id=self.executor,
+            fencing_token=self.fence,
+        )
+        guard = self.common_dir / "plan-pr-loop" / "lock"
+        for child in guard.iterdir():
+            child.unlink()
+        guard.rmdir()
+        legacy_owner = json.loads(
+            (self.lock / "owner.json").read_text(encoding="utf-8")
+        )
+        legacy_owner.pop("layout_version")
+        (self.lock / "owner.json").write_text(
+            json.dumps(legacy_owner), encoding="utf-8"
+        )
+        os.rename(self.lock, guard)
+        self.assert_ok(
+            "lock-release", lock=guard, state=self.state, owner_token=self.owner
+        )
+        converted = json.loads((guard / "owner.json").read_text(encoding="utf-8"))
+        self.assertTrue(converted["layout_guard"])
+        self.assertEqual(converted["converted_from_plan"], "stable-plan")
+        self.assertFalse((self.git_dir / "plan-pr-loop-checkout").exists())
+
+    def test_main_and_linked_worktree_runs_are_simultaneously_isolated(self) -> None:
+        origin = self.root / "origin.git"
+        main = self.root / "main-checkout"
+        linked = self.root / "linked-checkout"
+        subprocess.run(
+            ["git", "init", "--bare", os.fspath(origin)],
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "clone", os.fspath(origin), os.fspath(main)],
+            check=True,
+            capture_output=True,
+        )
+        for key, value in (
+            ("user.name", "Plan Test"),
+            ("user.email", "plan@example.invalid"),
+        ):
+            subprocess.run(
+                ["git", "-C", os.fspath(main), "config", key, value], check=True
+            )
+        (main / "seed.txt").write_text("seed\n", encoding="utf-8")
+        subprocess.run(["git", "-C", os.fspath(main), "add", "seed.txt"], check=True)
+        subprocess.run(
+            ["git", "-C", os.fspath(main), "commit", "-m", "seed"],
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "-C", os.fspath(main), "push", "origin", "HEAD:main"],
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                os.fspath(main),
+                "branch",
+                "--set-upstream-to",
+                "origin/main",
+                "main",
+            ],
+            check=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                os.fspath(main),
+                "worktree",
+                "add",
+                "--detach",
+                os.fspath(linked),
+                "origin/main",
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+        common = Path(
+            subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    os.fspath(main),
+                    "rev-parse",
+                    "--path-format=absolute",
+                    "--git-common-dir",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        ).resolve()
+        main_git_dir = Path(
+            subprocess.run(
+                ["git", "-C", os.fspath(main), "rev-parse", "--absolute-git-dir"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        ).resolve()
+        linked_git_dir = Path(
+            subprocess.run(
+                ["git", "-C", os.fspath(linked), "rev-parse", "--absolute-git-dir"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        ).resolve()
+        lock_a = common / "plan-pr-loop" / "runs" / "plan-a" / "lock"
+        lock_b = common / "plan-pr-loop" / "runs" / "plan-b" / "lock"
+        for lock, owner, plan, git_dir, incarnation in (
+            (lock_a, "owner-a", "plan-a", main_git_dir, "incarnation-a"),
+            (lock_b, "owner-b", "plan-b", linked_git_dir, "incarnation-b"),
+        ):
+            self.assert_ok(
+                "lock-init",
+                lock=lock,
+                owner_token=owner,
+                repository_id="repo-worktrees",
+                stable_plan_id=plan,
+                plan_digest=f"digest-{plan}",
+                git_common_dir=common,
+                git_dir=git_dir,
+                checkout_incarnation=incarnation,
+            )
+
+        def lease_arguments(
+            lock: Path, owner: str, executor: str, git_dir: Path, incarnation: str
+        ) -> list[str]:
+            return [
+                os.fspath(HELPER),
+                "lease-acquire",
+                "--lock",
+                os.fspath(lock),
+                "--owner-token",
+                owner,
+                "--executor-id",
+                executor,
+                "--git-common-dir",
+                os.fspath(common),
+                "--git-dir",
+                os.fspath(git_dir),
+                "--checkout-incarnation",
+                incarnation,
+            ]
+
+        first = subprocess.Popen(
+            lease_arguments(
+                lock_a, "owner-a", "executor-a", main_git_dir, "incarnation-a"
+            ),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        second = subprocess.Popen(
+            lease_arguments(
+                lock_b, "owner-b", "executor-b", linked_git_dir, "incarnation-b"
+            ),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        first_stdout, first_stderr = first.communicate(timeout=10)
+        second_stdout, second_stderr = second.communicate(timeout=10)
+        self.assertEqual(first.returncode, 0, first_stderr)
+        self.assertEqual(second.returncode, 0, second_stderr)
+        self.assertEqual(json.loads(first_stdout)["fencing_token"], 1)
+        self.assertEqual(json.loads(second_stdout)["fencing_token"], 1)
+        self.assertTrue((lock_a / "executor" / "lease.json").is_file())
+        self.assertTrue((lock_b / "executor" / "lease.json").is_file())
+
+        captured_base = subprocess.run(
+            ["git", "-C", os.fspath(main), "rev-parse", "origin/main"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        branch_a = "plan-pr/plan-a/01-change"
+        branch_b = "plan-pr/plan-b/01-change"
+        subprocess.run(
+            ["git", "-C", os.fspath(main), "switch", "-c", branch_a, captured_base],
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "-C", os.fspath(linked), "switch", "-c", branch_b, captured_base],
+            check=True,
+            capture_output=True,
+        )
+        linked_head = subprocess.run(
+            ["git", "-C", os.fspath(linked), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        linked_index = subprocess.run(
+            ["git", "-C", os.fspath(linked), "ls-files", "--stage"],
+            check=True,
+            capture_output=True,
+        ).stdout
+        (main / "plan-a.txt").write_text("a\n", encoding="utf-8")
+        (main / "reviews").mkdir()
+        (main / "reviews" / "a.md").write_text("review a\n", encoding="utf-8")
+        self.assertEqual(
+            subprocess.run(
+                ["git", "-C", os.fspath(linked), "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip(),
+            linked_head,
+        )
+        self.assertEqual(
+            subprocess.run(
+                ["git", "-C", os.fspath(linked), "ls-files", "--stage"],
+                check=True,
+                capture_output=True,
+            ).stdout,
+            linked_index,
+        )
+        self.assertFalse((linked / "plan-a.txt").exists())
+        self.assertFalse((linked / "reviews").exists())
+
+        main_head = subprocess.run(
+            ["git", "-C", os.fspath(main), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        main_index = subprocess.run(
+            ["git", "-C", os.fspath(main), "ls-files", "--stage"],
+            check=True,
+            capture_output=True,
+        ).stdout
+        (linked / "plan-b.txt").write_text("b\n", encoding="utf-8")
+        (linked / "reviews").mkdir()
+        (linked / "reviews" / "b.md").write_text("review b\n", encoding="utf-8")
+        self.assertEqual(
+            subprocess.run(
+                ["git", "-C", os.fspath(main), "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip(),
+            main_head,
+        )
+        self.assertEqual(
+            subprocess.run(
+                ["git", "-C", os.fspath(main), "ls-files", "--stage"],
+                check=True,
+                capture_output=True,
+            ).stdout,
+            main_index,
+        )
+        self.assertFalse((main / "plan-b.txt").exists())
+        self.assertNotEqual(branch_a, branch_b)
+        self.assertEqual(
+            subprocess.run(
+                ["git", "-C", os.fspath(main), "rev-parse", "main"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip(),
+            captured_base,
+        )
+
+        tree = subprocess.run(
+            ["git", "-C", os.fspath(main), "rev-parse", f"{captured_base}^{{tree}}"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        advanced = subprocess.run(
+            [
+                "git",
+                "-C",
+                os.fspath(main),
+                "commit-tree",
+                tree,
+                "-p",
+                captured_base,
+                "-m",
+                "advance base",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                os.fspath(main),
+                "push",
+                "origin",
+                f"{advanced}:refs/heads/main",
+            ],
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "-C", os.fspath(linked), "fetch", "origin", "main"],
+            check=True,
+            capture_output=True,
+        )
+        self.assertEqual(
+            subprocess.run(
+                ["git", "-C", os.fspath(linked), "rev-parse", captured_base],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip(),
+            captured_base,
+        )
+        self.assertEqual(
+            subprocess.run(
+                ["git", "-C", os.fspath(linked), "rev-parse", "origin/main"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip(),
+            advanced,
+        )
+        self.assertEqual(
+            subprocess.run(
+                ["git", "-C", os.fspath(main), "rev-parse", "main"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip(),
+            captured_base,
+        )
+
+    def test_incomplete_owner_lock_recovery_requires_evidence_and_safe_fence(
+        self,
+    ) -> None:
+        incomplete_common = self.root / "incomplete" / "common"
+        incomplete_git_dir = incomplete_common / "worktrees" / "checkout"
+        incomplete_git_dir.mkdir(parents=True)
+        incomplete_lock = (
+            incomplete_common / "plan-pr-loop" / "runs" / "incomplete-plan" / "lock"
+        )
         incomplete_lock.mkdir(parents=True)
         rejected = self.run_helper(
             "lock-init",
@@ -634,6 +1292,9 @@ class HelperTestCase(unittest.TestCase):
             repository_id="repo-incomplete",
             stable_plan_id="incomplete-plan",
             plan_digest="incomplete-digest",
+            git_common_dir=incomplete_common,
+            git_dir=incomplete_git_dir,
+            checkout_incarnation="incomplete-checkout",
         )
         self.assertEqual(rejected.returncode, 3)
         recovered = self.assert_ok(
@@ -643,13 +1304,23 @@ class HelperTestCase(unittest.TestCase):
             repository_id="repo-incomplete",
             stable_plan_id="incomplete-plan",
             plan_digest="incomplete-digest",
-            payload={"incomplete_lock_recovery_evidence_digest": "verified-crash-during-initialization"},
+            payload={
+                "incomplete_lock_recovery_evidence_digest": "verified-crash-during-initialization"
+            },
+            git_common_dir=incomplete_common,
+            git_dir=incomplete_git_dir,
+            checkout_incarnation="incomplete-checkout",
         )
         self.assertTrue(recovered["recovered"])
 
-        unsafe_lock = self.root / "unsafe-incomplete" / "plan-pr-loop" / "lock"
+        unsafe_common = self.root / "unsafe-incomplete" / "common"
+        unsafe_git_dir = unsafe_common / "worktrees" / "checkout"
+        unsafe_git_dir.mkdir(parents=True)
+        unsafe_lock = unsafe_common / "plan-pr-loop" / "runs" / "unsafe-plan" / "lock"
         unsafe_lock.mkdir(parents=True)
-        (unsafe_lock / "fence.json").write_text(json.dumps({"last_token": 4}), encoding="utf-8")
+        (unsafe_lock / "fence.json").write_text(
+            json.dumps({"last_token": 4}), encoding="utf-8"
+        )
         unsafe = self.run_helper(
             "lock-init",
             lock=unsafe_lock,
@@ -657,7 +1328,12 @@ class HelperTestCase(unittest.TestCase):
             repository_id="repo-unsafe",
             stable_plan_id="unsafe-plan",
             plan_digest="unsafe-digest",
-            payload={"incomplete_lock_recovery_evidence_digest": "unsafe-recovery-attempt"},
+            payload={
+                "incomplete_lock_recovery_evidence_digest": "unsafe-recovery-attempt"
+            },
+            git_common_dir=unsafe_common,
+            git_dir=unsafe_git_dir,
+            checkout_incarnation="unsafe-checkout",
         )
         self.assertEqual(unsafe.returncode, 3)
         self.assertTrue((self.lock / "executor" / "lease.json").exists())
@@ -710,7 +1386,9 @@ class HelperTestCase(unittest.TestCase):
         )
         self.assertEqual(bound["executor_fencing_token"], self.fence)
 
-    def test_owner_lock_release_requires_complete_state_and_preserves_run_state(self) -> None:
+    def test_owner_lock_release_requires_complete_state_and_preserves_run_state(
+        self,
+    ) -> None:
         active_release = self.run_helper(
             "lock-release",
             lock=self.lock,
@@ -728,13 +1406,19 @@ class HelperTestCase(unittest.TestCase):
             executor_id=self.executor,
             fencing_token=self.fence,
         )
-        self.assert_ok("lock-release", lock=self.lock, state=self.state, owner_token=self.owner)
+        self.assert_ok(
+            "lock-release", lock=self.lock, state=self.state, owner_token=self.owner
+        )
         self.assertFalse(self.lock.exists())
+        self.assertFalse((self.git_dir / "plan-pr-loop-checkout").exists())
         self.assertTrue(self.state.exists())
 
     def test_state_mutation_cannot_cross_owner_lock_boundaries(self) -> None:
-        other_lock = self.root / "other" / "plan-pr-loop" / "lock"
-        other_state = self.root / "other" / "plan-pr-loop" / "runs" / "other-plan" / "state.json"
+        other_common = self.root / "other" / "common"
+        other_git_dir = other_common / "worktrees" / "checkout"
+        other_git_dir.mkdir(parents=True)
+        other_lock = other_common / "plan-pr-loop" / "runs" / "other-plan" / "lock"
+        other_state = other_lock.parent / "state.json"
         self.assert_ok(
             "lock-init",
             lock=other_lock,
@@ -742,12 +1426,18 @@ class HelperTestCase(unittest.TestCase):
             repository_id="repo-2",
             stable_plan_id="other-plan",
             plan_digest="other-digest",
+            git_common_dir=other_common,
+            git_dir=other_git_dir,
+            checkout_incarnation="checkout-B",
         )
         other_lease = self.assert_ok(
             "lease-acquire",
             lock=other_lock,
             owner_token="owner-B",
             executor_id="executor-B",
+            git_common_dir=other_common,
+            git_dir=other_git_dir,
+            checkout_incarnation="checkout-B",
         )
         self.assert_ok(
             "init",
@@ -756,6 +1446,9 @@ class HelperTestCase(unittest.TestCase):
             owner_token="owner-B",
             executor_id="executor-B",
             fencing_token=other_lease["fencing_token"],
+            git_common_dir=other_common,
+            git_dir=other_git_dir,
+            checkout_incarnation="checkout-B",
             payload={
                 "plan": {
                     "stable_id": "other-plan",
@@ -779,10 +1472,15 @@ class HelperTestCase(unittest.TestCase):
             expected_revision=1,
             expected_phase="preflight",
             fencing_token=self.fence,
-            payload={"to_phase": "human-required", "reason": "attempt cross-lock mutation"},
+            payload={
+                "to_phase": "human-required",
+                "reason": "attempt cross-lock mutation",
+            },
         )
         self.assertEqual(crossed.returncode, 3)
-        self.assertEqual(json.loads(other_state.read_text(encoding="utf-8"))["phase"], "preflight")
+        self.assertEqual(
+            json.loads(other_state.read_text(encoding="utf-8"))["phase"], "preflight"
+        )
 
     def test_simultaneous_same_revision_mutations_are_serialized(self) -> None:
         seeded = self.seed_single_queue()
@@ -803,11 +1501,21 @@ class HelperTestCase(unittest.TestCase):
             self.owner,
             "--executor-id",
             self.executor,
+            "--git-common-dir",
+            os.fspath(self.common_dir),
+            "--git-dir",
+            os.fspath(self.git_dir),
+            "--checkout-incarnation",
+            self.checkout_incarnation,
             "--input-json",
             json.dumps({"to_phase": "queued", "reason": "concurrent test"}),
         ]
-        first = subprocess.Popen(arguments, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        second = subprocess.Popen(arguments, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        first = subprocess.Popen(
+            arguments, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        second = subprocess.Popen(
+            arguments, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         first.communicate(timeout=10)
         second.communicate(timeout=10)
         self.assertEqual(sorted([first.returncode, second.returncode]), [0, 3])
@@ -2082,7 +2790,7 @@ class HelperTestCase(unittest.TestCase):
             expected_revision=seeded["state_revision"],
             expected_phase="preflight",
             fencing_token=self.fence,
-            payload={"current": {"entry_id": "pr-one", "branch": "plan-pr/01-one"}},
+            payload={"current": {"entry_id": "pr-one", "branch": "plan-pr/stable-plan/01-one"}},
         )
         before = self.state_data()
         historical_contract = before["queue"][0]["contract_digest"]
@@ -2443,7 +3151,7 @@ class HelperTestCase(unittest.TestCase):
             expected_revision=first["state_revision"],
             expected_phase="preflight",
             fencing_token=self.fence,
-            payload={"current": {"entry_id": "pr-two", "branch": "plan-pr/02-two"}},
+            payload={"current": {"entry_id": "pr-two", "branch": "plan-pr/stable-plan/02-two"}},
         )
         state = self.state_data()
         self.assertNotIn("pr_url", state["current"])
@@ -2507,7 +3215,7 @@ class HelperTestCase(unittest.TestCase):
             payload={
                 "current": {
                     "entry_id": "pr-one",
-                    "branch": "plan-pr/01-one",
+                    "branch": "plan-pr/stable-plan/01-one",
                     "reviewed_base_sha": base_sha,
                     "local_head_sha": first_head,
                     "remote_head_sha": first_head,
@@ -2604,7 +3312,7 @@ class HelperTestCase(unittest.TestCase):
                     "kind": "pr-create",
                     "repository_id": "repo-1",
                     "base_ref": "main",
-                    "head_ref": "plan-pr/01-one",
+                    "head_ref": "plan-pr/stable-plan/01-one",
                     "expected_head_sha": changed_head,
                     "expected_base_oid": base_sha,
                     "marker": "plan-pr-loop:op=op-reviewed-pr",

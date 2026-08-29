@@ -37,7 +37,7 @@ Then run final acceptance. This is a positive assessed outcome, not a skipped ga
 If the evidence supports changes:
 
 1. Keep the persisted path boundary at root `AGENTS.md` and repo-owned `.agents/**`, but stage only the explicit files justified by the assessment; never stage `.agents/plans/` or workflow artifacts.
-2. Create a fresh final `plan-pr/<sequence>-devex-retrospective` branch from the verified updated base.
+2. Fetch and capture the updated base OID, then create a fresh final `plan-pr/<first-16-stable-plan-id>/<sequence>-devex-retrospective` branch directly from that OID without updating or checking out the local base branch.
 3. Make only the justified guidance or agent-navigation changes. Validate structural syntax plus any affected skill or repository checks.
 4. Run the complete dual `$review` and Critical + Important `$fix-review` pass, then the thermo-nuclear review and fixes. Commit and push the final reviewed head before opening a ready PR.
 5. Ask for human review, run the five-minute monitor, address feedback, and wait for the human to merge exactly as for an ordinary entry.

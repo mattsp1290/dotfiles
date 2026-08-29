@@ -8,7 +8,7 @@
       "baseRefOid": "replace-with-fixture-main-oid",
       "body": "<!-- plan-pr-loop:op=op-create-pr-1 -->",
       "comments": [],
-      "headRefName": "plan-pr/01-first-change",
+      "headRefName": "plan-pr/replace-with-stable-plan-prefix/01-first-change",
       "headRefOid": "replace-with-fixture-head-oid",
       "isDraft": false,
       "mergeStateStatus": "CLEAN",

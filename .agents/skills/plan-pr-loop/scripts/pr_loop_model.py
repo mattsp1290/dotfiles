@@ -153,6 +153,21 @@ def digest_json(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def plan_branch_prefix(stable_plan_id: str) -> str:
+    return f"plan-pr/{stable_plan_id[:16]}/"
+
+
+def require_plan_branch(stable_plan_id: str, branch: Any, sequence: int | None = None) -> None:
+    prefix = plan_branch_prefix(stable_plan_id)
+    if sequence is not None:
+        prefix += f"{sequence:02d}-"
+    require(
+        isinstance(branch, str) and branch.startswith(prefix) and len(branch) > len(prefix),
+        "feature branch is outside the stable plan namespace",
+        4,
+    )
+
+
 def feedback_identity_digest(stream: str, record: dict[str, Any]) -> str:
     identity_keys = (
         ("id", "body_digest", "classification", "submitted_at", "state")
@@ -659,6 +674,9 @@ def validate_state(state: dict[str, Any]) -> None:
     ]
     if active_entries:
         require(current_entry == active_entries[0]["entry_id"], "active queue entry does not match current.entry_id")
+    if current.get("branch") is not None:
+        current_sequence = queue_by_id[current_entry]["sequence"] if current_entry in queue_by_id else None
+        require_plan_branch(plan["stable_id"], current.get("branch"), current_sequence)
 
     prs = state.get("prs")
     require(isinstance(prs, dict), "prs must be an object")
@@ -666,6 +684,8 @@ def validate_state(state: dict[str, Any]) -> None:
     require(set(prs).issubset(queue_ids), "prs references unknown queue entry")
     require(all(isinstance(item, dict) for item in prs.values()), "each prs record must be an object")
     for entry_id, pr_record in prs.items():
+        if pr_record.get("branch") is not None:
+            require_plan_branch(plan["stable_id"], pr_record.get("branch"), queue_by_id[entry_id]["sequence"])
         require(
             pr_record.get("contract_digest") == queue_by_id[entry_id]["contract_digest"],
             f"PR record contract is stale: {entry_id}",
