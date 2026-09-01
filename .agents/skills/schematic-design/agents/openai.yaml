@@ -1,0 +1,4 @@
+interface:
+  display_name: "Schematic Design"
+  short_description: "Research and design evidence-backed circuits"
+  default_prompt: "Use $schematic-design to research and design this circuit with calculations, parts evidence, and verification."

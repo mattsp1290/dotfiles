@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Schematic — RC Low-pass</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script defer src="../assets/site.js"></script>
+</head>
+<body data-page="schematic">
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="site-header"><div class="site-header__inner">
+    <a class="brand" href="../index.html">RC Low-pass / Circuit Atlas</a>
+    <nav class="site-nav" aria-label="Primary">
+      <a data-nav="overview" href="../index.html">Overview</a>
+      <a data-nav="schematic" href="index.html">Schematic</a>
+      <a data-nav="components" href="../components/index.html">Components</a>
+      <a data-nav="bom" href="../bom/index.html">BOM</a>
+    </nav>
+  </div></header>
+  <main id="content">
+    <p class="eyebrow">01 / detailed schematic</p>
+    <h1>Passive RC low-pass</h1>
+    <p class="lede">The series resistor and shunt capacitor form a single-pole low-pass. Activate a component to learn what it does here and how its value affects the cutoff.</p>
+    <div class="diagram-frame" tabindex="0" role="region" aria-label="Scrollable RC low-pass schematic">
+      <svg class="schematic" viewBox="0 0 900 360" role="img" aria-labelledby="schematic-title schematic-desc">
+        <title id="schematic-title">Passive RC low-pass filter</title>
+        <desc id="schematic-desc">Input passes through resistor R1 to the output node. Capacitor C1 connects the output node to ground.</desc>
+        <text x="55" y="154">IN</text>
+        <path class="wire" d="M90 170 H220 M390 170 H760"/>
+        <circle cx="760" cy="170" r="5" fill="var(--signal)"/>
+        <text x="780" y="176">OUT</text>
+        <a class="component-link" href="../components/r1.html" aria-label="R1, 10 kilohm series resistor">
+          <g data-component-ref="R1">
+            <rect class="component-hit" x="205" y="120" width="205" height="100"/>
+            <path class="symbol" d="M220 170 l20 -28 30 56 30 -56 30 56 30 -56 30 28"/>
+            <text x="295" y="110" text-anchor="middle">R1</text>
+            <text class="value" x="295" y="232" text-anchor="middle">10 kΩ</text>
+          </g>
+        </a>
+        <circle cx="540" cy="170" r="5" fill="var(--signal)"/>
+        <path class="wire" d="M540 170 V205 M540 305 V330"/>
+        <a class="component-link" href="../components/c1.html" aria-label="C1, 10 nanofarad shunt capacitor">
+          <g data-component-ref="C1">
+            <rect class="component-hit" x="480" y="190" width="120" height="135"/>
+            <path class="symbol" d="M500 220 H580 M500 250 H580"/>
+            <path class="wire" d="M540 205 V220 M540 250 V305"/>
+            <text x="615" y="232">C1</text>
+            <text class="value" x="615" y="255">10 nF</text>
+          </g>
+        </a>
+        <path class="wire wire--power" d="M510 330 H570 M520 342 H560 M530 354 H550"/>
+        <text class="value" x="540" y="95" text-anchor="middle">fc = 1 / (2πR1C1) ≈ 1.59 kHz</text>
+      </svg>
+    </div>
+    <section class="section">
+      <h2>Signal path</h2>
+      <p>At low frequency, C1's reactance is high and the output follows the input. As frequency rises, C1 presents a lower impedance to ground and attenuates the output. At the calculated cutoff, the ideal unloaded magnitude is approximately −3 dB.</p>
+      <span class="evidence evidence--calculated">calculated · ideal unloaded network</span>
+    </section>
+  </main>
+  <footer class="site-footer"><a href="../index.html">Back to overview</a></footer>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C1 — RC Low-pass</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script defer src="../assets/site.js"></script>
+</head>
+<body data-page="components" data-component-page="C1">
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="site-header"><div class="site-header__inner">
+    <a class="brand" href="../index.html">RC Low-pass / Circuit Atlas</a>
+    <nav class="site-nav" aria-label="Primary">
+      <a data-nav="overview" href="../index.html">Overview</a>
+      <a data-nav="schematic" href="../schematic/index.html">Schematic</a>
+      <a data-nav="components" href="index.html">Components</a>
+      <a data-nav="bom" href="../bom/index.html">BOM</a>
+    </nav>
+  </div></header>
+  <main id="content">
+    <p class="eyebrow">Component detail</p>
+    <p class="ref">C1 · 10 nF</p>
+    <h1>Shunt capacitor</h1>
+    <div class="detail-grid section">
+      <article>
+        <h2>Purpose in this circuit</h2>
+        <p>C1 provides the frequency-dependent path to ground. Its reactance falls with frequency, so the output node is attenuated progressively above the pole formed with R1.</p>
+        <h2>Value rationale</h2>
+        <p>With R1 = 10 kΩ, 10 nF produces the ideal nominal cutoff of approximately 1.59 kHz. Capacitance tolerance and dielectric behavior move the real cutoff; those properties need selection and verification in a real design.</p>
+        <span class="evidence evidence--provisional">provisional · dielectric unspecified</span>
+        <h2>Substitution and failure</h2>
+        <p>A larger capacitor lowers cutoff. An open C1 removes intentional filtering. A short C1 holds the output node at ground through R1.</p>
+        <p><a href="../schematic/index.html">Return to schematic</a> · <a href="r1.html">Previous: R1</a></p>
+      </article>
+      <dl class="facts">
+        <div><dt>Type</dt><dd>Non-polarized capacitor</dd></div>
+        <div><dt>Value</dt><dd>10 nF nominal</dd></div>
+        <div><dt>Block</dt><dd>Passive low-pass</dd></div>
+        <div><dt>Inventory</dt><dd>Example only; not reconciled</dd></div>
+        <div><dt>Status</dt><dd>Not bench measured</dd></div>
+      </dl>
+    </div>
+  </main>
+  <footer class="site-footer">Canonical component page for C1.</footer>
+</body>
+</html>

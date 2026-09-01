@@ -1,0 +1,4 @@
+interface:
+  display_name: "Schematic Site"
+  short_description: "Build reviewed interactive circuit documentation"
+  default_prompt: "Use $schematic-site to turn this circuit project into a dark, interactive multi-page schematic site."
