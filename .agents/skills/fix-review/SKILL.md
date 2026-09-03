@@ -18,13 +18,25 @@ Parse `$ARGUMENTS` for optional flags:
   - Handle conflicts automatically (prefer stricter severity; when tied, prefer the first reviewer listed in `manifest.json` or the first reviewer directory alphabetically)
   - **Security guardrail**: Flag (but do NOT auto-fix) changes to files involving auth, secrets, credentials, permissions, or config. Log these as "needs-manual" in the summary.
   - After implementing fixes, output a structured summary (see Step 5)
+- `--review-dir <path>`: Use this exact review directory instead of selecting
+  one by alphabetical order. The path must be an immediate child of
+  `./reviews/` or `./.agents/reviews/`. When it contains a `review-v1`
+  manifest, require `branch` to match the current branch and `head_sha` to
+  match the current `HEAD`; stop on a mismatch rather than applying stale or
+  cross-branch feedback.
 
 If `--auto` is absent, behavior is identical to the default interactive mode.
 
 ## Prerequisites
 
 1. **Reviews directory exists.** Check for `./reviews/` first, then fall back to `./.agents/reviews/` for legacy artifacts. If neither exist with review subdirectories, stop and tell the user: "No reviews found. Run `/review` first to generate a code review."
-2. **Find the most recent review.** List directories in the reviews directory and pick the last one alphabetically (the date suffix makes alphabetical order = chronological order). Tell the user which review you're working from.
+2. **Select the review.** If `--review-dir` was provided, canonicalize the path,
+   verify it is an immediate child of one of the supported review roots, and
+   use it exactly. Otherwise, list directories in the reviews directory and
+   pick the last one alphabetically (legacy behavior). Tell the user which
+   review you're working from and whether it was explicit or discovered.
+   For an explicit `review-v1` directory, validate its manifest `branch` and
+   `head_sha` against `git branch --show-current` and `git rev-parse HEAD`.
 3. **Detect review structure.** Determine the format in this priority order:
    - If `manifest.json` exists with a `reviewers` array → **review-v1**. Read reviewer directories in manifest order.
    - Otherwise, find all immediate subdirectories containing `04-action-items.md`. If two or more exist → **multi-reviewer directory format**. Read them alphabetically.
