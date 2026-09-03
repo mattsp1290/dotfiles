@@ -63,21 +63,9 @@ Before stage 1:
    its two independently produced reviewer artifact sets.
 2. Record the exact review directory created by this invocation. Validate its
    manifest branch, base, and head against this run.
-3. Run the canonical dotfiles `fix-review` skill with
-   `--auto --review-dir <exact-stage-1-path>`, even when the review appears to
-   have no action items. Preserve its structured summary.
-4. If the fixer reports any `needs-manual` items or fails, stop before commit
-   and push. Otherwise discover quality gates in this order: commands mandated
-   by applicable `AGENTS.md` files, commands used by changed-path CI workflows,
-   then documented project test/lint/build scripts. Record the commands before
-   running them, run each applicable gate plus `git diff --check`, and report
-   explicitly when no repository-specific gate is found.
-5. Stage only changes produced for this stage. Exclude review artifacts and
-   any unrelated paths. If there are staged changes, commit them with a message
-   describing the standard-review fixes. Do not create an empty commit.
-6. Push the branch with `git push -u origin HEAD` when it has no upstream, or
-   `git push origin HEAD` otherwise. Verify the pushed remote branch resolves
-   to the local `HEAD`. Do not begin stage 2 unless this push succeeds.
+3. Run the shared Fix and Push Checkpoint with that exact directory, a
+   standard-review commit label, and first-push mode. Do not begin stage 2
+   unless the checkpoint succeeds, including remote-SHA verification.
 
 ## Stage 2: Thermonuclear Review
 
@@ -98,18 +86,32 @@ shape; do not weaken, summarize, or replace the upstream rubric.
    actionable thermonuclear finding into a self-contained unchecked action
    item with severity, file, line, problem, and concrete remedy. State
    explicitly when there are no findings.
-5. Validate the new directory's manifest branch, base, and head against this
-   run. Then run the canonical fixer with
-   `--auto --review-dir <exact-stage-2-path>`, even when no findings were
-   produced.
-6. If the fixer reports any `needs-manual` items or fails, stop before commit
-   and push. Otherwise discover, record, and run the quality gates in the same
-   order used by stage 1, plus `git diff --check`.
-7. Stage only changes produced for this stage. Exclude review artifacts and
-   unrelated paths. If there are staged changes, commit them with a message
-   describing the thermonuclear-review fixes. Do not create an empty commit.
-8. Push with `git push origin HEAD` and verify the remote branch resolves to
-   local `HEAD`.
+5. Run the shared Fix and Push Checkpoint with the exact new directory, a
+   thermonuclear-review commit label, and regular-push mode.
+
+## Fix and Push Checkpoint
+
+Each stage supplies its exact review directory, commit label, and push mode.
+Run this procedure without changing its order:
+
+1. Validate the directory's manifest branch, base, and head against this run.
+   Run the canonical dotfiles `fix-review` skill with
+   `--auto --review-dir <exact-stage-path>`, even when the review appears to
+   have no action items, and preserve its structured summary.
+2. If the fixer fails or reports any `needs-manual` items, stop before commit
+   and push.
+3. Discover quality gates in this order: commands mandated by applicable
+   `AGENTS.md` files, commands used by changed-path CI workflows, then
+   documented project test/lint/build scripts. Record the commands before
+   running them, run each applicable gate plus `git diff --check`, and report
+   explicitly when no repository-specific gate is found.
+4. Stage only changes produced for this stage. Exclude review artifacts and
+   unrelated paths. If there are staged changes, commit them with the supplied
+   label. Do not create an empty commit.
+5. In first-push mode, use `git push -u origin HEAD` when the branch has no
+   upstream and `git push origin HEAD` otherwise. In regular-push mode, use
+   `git push origin HEAD`. Verify the pushed remote branch resolves to local
+   `HEAD` before declaring the checkpoint successful.
 
 ## Completion Report
 

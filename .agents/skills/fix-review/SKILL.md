@@ -1,13 +1,17 @@
 ---
 name: fix-review
-description: Address feedback from the most recent code review in ./reviews/
+description: Address feedback from a selected code review in ./reviews/, with legacy alphabetical discovery as the default
 user-invocable: true
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
 ---
 
 # Fix Review Skill
 
-Read the most recent code review from `./reviews/` and implement the fixes. Supports the current `review-v1` schema with agent-chosen reviewer directories, plus legacy single-reviewer and fixed-directory review layouts.
+Read a selected code review from `./reviews/` and implement the fixes. By
+default, use the legacy alphabetical discovery rule; callers can instead
+supply an exact directory. Supports the current `review-v1` schema with
+agent-chosen reviewer directories, plus legacy single-reviewer and
+fixed-directory layouts.
 
 ## Arguments
 

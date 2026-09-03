@@ -37,8 +37,12 @@ If either check fails, do not proceed.
 ### 1. Gather the diff and context
 
 - Run `git branch --show-current` to get the branch name. Sanitize it for use in paths: replace `/` with `-`.
-- Run `date +%Y-%m-%d` to get the review date.
-- Build `<change-name>` as `<sanitized-branch>-<YYYY-MM-DD>`.
+- Run `date +%Y-%m-%d-%H%M%S` to get a review-run timestamp and
+  `git rev-parse --short=12 HEAD` to get the reviewed revision.
+- Build `<change-name>` as
+  `<sanitized-branch>-<YYYY-MM-DD-HHMMSS>-<short-head-sha>`. Require the
+  directory not to exist; in the unlikely event of a collision, append the
+  first unused numeric suffix rather than reusing prior artifacts.
 - Run `git diff $BASE_BRANCH...HEAD` to get the full diff.
 - Run `git diff $BASE_BRANCH...HEAD --name-only` to get the list of changed files.
 - Read each changed file in full to understand the complete context (not just the diff hunks).
