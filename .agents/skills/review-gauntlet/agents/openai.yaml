@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Gauntlet"
+  short_description: "Run two review, fix, commit, and push passes"
+  default_prompt: "Use $review-gauntlet to review, fix, commit, and push this branch through both passes."
