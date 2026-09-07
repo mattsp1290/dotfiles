@@ -8,7 +8,7 @@ Give each reviewer this context:
 
 - the user's request verbatim;
 - the repository root;
-- the plan directory;
+- the plan directory and canonical cross-repository request locations linked by the plan;
 - permission to inspect relevant repository files and history;
 - a prohibition on editing files or implementing the change.
 
@@ -25,6 +25,8 @@ Require evidence-backed findings. Each finding must include:
 Ask reviewers to omit compliments, summaries, and style preferences. A reviewer with no material findings must say `No material findings`.
 
 Every reviewer must also map the user's explicit outcomes, constraints, non-goals, and compatibility promises to plan locations and acceptance criteria. Verify that the structured application context matches the user's answers and is applied consistently to compatibility, rollout, migration, rollback, and behavior-changing work packages. Flag each omitted requirement, changed constraint, unstated scope expansion, and success criterion that does not prove the requested outcome. Never infer or rewrite an application-context answer; identify the exact question that must return to the user.
+
+For plans with cross-repository requests, inspect those documents too. Check owner selection, demonstrated versus prospective consumers, new-repository justification, usable dependency pins, and consistency between request acceptance and local readiness gates. Request creation is not owner acceptance or implementation.
 
 ## Initial reviewer A: implementation completeness
 

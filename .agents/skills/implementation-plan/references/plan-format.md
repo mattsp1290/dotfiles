@@ -26,7 +26,8 @@ Use numeric prefixes so a filesystem listing preserves reading order. Scale the 
 - key decisions with reasons and rejected alternatives when they matter;
 - the clearest relevant change model, such as target architecture, before/after control or data flow, configuration transition, or dependency transition;
 - risks, assumptions, unresolved decisions, and stop/go gates;
-- a document map with one-line purposes.
+- a document map with one-line purposes;
+- when external requests exist, their canonical locations, owners, demonstrated/prospective consumers, affected work packages, blocking status, and exact unblock evidence, including any proposed new repository.
 
 ## Application-context record
 

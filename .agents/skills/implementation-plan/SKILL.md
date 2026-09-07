@@ -12,7 +12,7 @@ Create an implementation specification under the current repository. Planning is
 1. Resolve the repository root with `git rev-parse --show-toplevel` from the invocation directory. If that command fails, stop and ask the user to invoke the skill inside a repository.
 2. Read every applicable `AGENTS.md` and the repository's contributor guidance.
 3. Derive a short plan name from the requested change. Normalize both derived and user-provided names to lowercase kebab-case. The result must be one non-empty path segment that matches `^[a-z0-9]+(?:-[a-z0-9]+)*$`.
-4. Set the only output directory to `<repo-root>/.agents/plans/<plan-name>/`. Resolve the destination before writing and verify that it is a direct child of `<repo-root>/.agents/plans/`. Reject path traversal, nested names, absolute names, and symlink escapes.
+4. Set the local plan output directory to `<repo-root>/.agents/plans/<plan-name>/`. Resolve the destination before writing and verify that it is a direct child of `<repo-root>/.agents/plans/`. Reject path traversal, nested names, absolute names, and symlink escapes.
 5. If that directory contains files, preserve them unless the user explicitly asked to revise that plan. Ask before replacing an existing plan whose relationship to the request is unclear.
 
 ## Research before writing
@@ -37,7 +37,13 @@ Record the answers in the exact `application_context` structure in [references/p
 
 Classify every remaining question as blocking or non-blocking. Resolve blocking questions before calling the plan implementation-ready. If a blocking decision cannot be resolved, mark the plan `blocked` and record the decision owner and exact unblock action.
 
-Read [references/plan-format.md](references/plan-format.md), then write the complete plan as a numerically ordered series of Markdown files. Use repository-relative paths for repository content. Do not use checkout-specific absolute paths. Identify external locations with documented environment variables or platform-neutral identifiers and state how the implementer resolves them. Do not create implementation artifacts outside the plan directory.
+Read [references/plan-format.md](references/plan-format.md), then write the complete plan as a numerically ordered series of Markdown files. Use repository-relative paths for repository content. Do not use checkout-specific absolute paths. Identify external locations with documented environment variables or platform-neutral identifiers and state how the implementer resolves them. Do not create implementation artifacts. Cross-repository request documents are an allowed planning output outside the plan directory under the workflow below.
+
+## Reusable capabilities and cross-repository requests
+
+When research reveals a capability useful to other projects, read [references/cross-repository-requests.md](references/cross-repository-requests.md). Inspect likely owners and consumers before deciding whether it belongs in the local application, an existing shared repository, or a proposed new repository. Go, Flutter, and Eino integration are examples of reusable boundaries, not a requirement to extract every integration.
+
+Write concrete requests under `~/.agents/projects/<target-repo>/requests/`, following nearby request formats. A target may be a proposed new repository; clearly request its creation and define its responsibility without creating the repository during planning. Link requests from the plan, classify their effect on implementation readiness, and include them in every required review. Request creation alone does not establish owner acceptance or a usable dependency.
 
 ## Review and revise
 
@@ -59,7 +65,7 @@ Confirm that:
 
 - the plan contains at least an overview, one implementation work file, and an execution handoff;
 - a ready plan's overview contains valid, user-confirmed `application_context`, while a blocked plan names any missing context answer and owner;
-- all document-map links and references to existing repository files resolve;
+- all document-map links and references to existing repository files resolve; external requests resolve at their documented locations and state their owners, consumers, and blocking status;
 - every proposed file or symbol is labeled `new` or `proposed` and names an existing parent path or insertion point;
 - dependencies and work packages have an unambiguous order;
 - each work package has concrete verification and acceptance criteria;
