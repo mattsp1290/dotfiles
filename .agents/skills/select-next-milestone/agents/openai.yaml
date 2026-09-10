@@ -1,0 +1,4 @@
+interface:
+  display_name: "Select Next Milestone"
+  short_description: "Choose the next evidence-backed milestone"
+  default_prompt: "Use $implementation-plan $select-next-milestone to research, select, and plan one bounded milestone for this repository."
