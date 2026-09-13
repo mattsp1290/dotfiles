@@ -4,7 +4,7 @@ description: >-
   Run the end-of-session handoff ritual that leaves a repo ready for the next
   session: file follow-up issues for remaining work, run the project's quality
   gates if code changed, close/update tracked issues, commit related changes,
-  push to the remote (beads/dolt-aware when present), verify the tree is clean
+  push to the remote (beans/hub-aware when present), verify the tree is clean
   and up to date with origin, prune stale local state, and print a handoff
   summary for the next session. Use when wrapping up work — instead of
   re-typing the close checklist each time. Composes /preflight before pushing.
@@ -15,8 +15,8 @@ allowed-tools: Bash, Read, Glob, Grep, AskUserQuestion, Skill
 # Handoff Skill
 
 Codifies the recurring "leave the repo ready for the next session" ritual into
-one command. It is generic — it detects beads (`.beads/` + `bd` CLI) and Dolt at
-runtime and adapts — and it respects git conventions: feature-branch pushes
+one command. It is generic — it detects Beans with `command -v bn` plus a
+non-mutating `bn status` probe — and it respects git conventions: feature-branch pushes
 proceed without asking, but pushing a **default branch** requires explicit
 approval.
 
@@ -40,11 +40,10 @@ Run once up front; every later phase keys off this.
 pwd; git rev-parse --show-toplevel 2>/dev/null   # confirm repo root
 git rev-parse --abbrev-ref HEAD                   # BRANCH
 git status --porcelain                            # dirty?
-test -d .beads && command -v bd >/dev/null && echo "BEADS=yes"
-bd dolt status >/dev/null 2>&1 && echo "DOLT=yes" # only if BEADS=yes
+command -v bn >/dev/null && bn status >/dev/null 2>&1 && echo "BEANS=yes"
 ```
 
-Record: `BRANCH`, whether the tree is dirty, `BEADS`, `DOLT`, and whether
+Record: `BRANCH`, whether the tree is dirty, `BEANS`, and whether
 `BRANCH` is a default branch (`main`/`master`/`develop`/`trunk`).
 
 If `pwd` is under a `.claude/worktrees/` path or otherwise ≠ toplevel, `cd` to
@@ -57,11 +56,11 @@ up. Sources to scan: uncommitted TODO/FIXME added this session
 (`git diff` for new `TODO`/`FIXME`), partially-done work, and anything the user
 flagged but didn't finish.
 
-- **If BEADS:** create issues with `bd create` (short title, details in `-d`,
+- **If BEANS:** create issues with `bn create` (short title, details in `-d`,
   set `-p` and `-l`). Do not invent work — only file genuinely-pending items.
-  If a task is partially done, `bd update <id>` its status/notes rather than
+  If a task is partially done, `bn update <id>` its status/notes rather than
   duplicating.
-- **If no beads:** list the remaining items in the final summary and ask the
+- **If no beans:** list the remaining items in the final summary and ask the
   user whether to record them anywhere (don't silently drop them).
 
 In `--dry-run`, list the issues you *would* file instead of creating them.
@@ -83,9 +82,9 @@ a decision. Never mark work done on compile-success alone when tests exist.
 
 ## Phase 3 — Update issue state
 
-- **If BEADS:** close finished issues (`bd close <id> -r "..."`, batch multiple
+- **If BEANS:** close finished issues (`bn close <id> -r "..."`, batch multiple
   in one call), and update any still in-progress with current notes. Run
-  `bd ready` afterward so the summary can show what's unblocked next.
+  `bn ready` afterward so the summary can show what's unblocked next.
 - Confirm nothing you're about to commit is tracked by an issue you forgot to
   update.
 
@@ -108,13 +107,11 @@ nothing.
 2. Invoke `/preflight --push` (Skill tool). If it returns
    `PREFLIGHT_RESULT=BLOCKED`, stop and surface the remedies — do not attempt
    the push.
-3. Push, beads/dolt-aware. Run as **separate, individually-checked commands**
+3. Push code. Run as **separate, individually-checked commands**
    (no compound `&&` chain that can mask a mid-step failure):
 
    ```bash
    git pull --rebase            # reconcile first
-   # if DOLT: persist the beads task graph to its remote
-   bd dolt push                 # only when DOLT=yes
    git push                     # push code
    git status -sb               # MUST show "up to date with origin/<branch>"
    ```

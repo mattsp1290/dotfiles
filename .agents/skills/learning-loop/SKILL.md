@@ -18,7 +18,7 @@ $ARGUMENTS
 
 Accepted forms:
 - `<task description>` — describe the feature or bug in natural language
-- `--beads <id>` — work on a specific beads task (`bd show <id>` for title and description)
+- `--beans <id>` — work on a specific beans task (`bn show <id>` for title and description)
 - `--apply [slug]` — apply a mechanical-takeover patch from an earlier session
 - `--cleanup` — remove all `/tmp/learning-session/` patches for this repo
 - `-n <number>` — cap the number of increments (default: unlimited)
@@ -36,12 +36,12 @@ Use Go/Python comparisons when they help the user write better target-language c
 ## Step 0 — Session setup
 
 ```bash
-# Parse $ARGUMENTS: extract --beads <id> or plain task description
+# Parse $ARGUMENTS: extract --beans <id> or plain task description
 ARGS="$ARGUMENTS"
-if printf '%s' "$ARGS" | grep -qE '^--beads '; then
-  BEADS_ID=$(printf '%s' "$ARGS" | awk '{print $2}')
-  RAW_SLUG=$(bd show "$BEADS_ID" --json | jq -r .title 2>/dev/null \
-             || bd show "$BEADS_ID" | head -1)
+if printf '%s' "$ARGS" | grep -qE '^--beans '; then
+  BEANS_ID=$(printf '%s' "$ARGS" | awk '{print $2}')
+  RAW_SLUG=$(bn show "$BEANS_ID" --json | jq -r .title 2>/dev/null \
+             || bn show "$BEANS_ID" | head -1)
 else
   # Strip flag tokens; remainder is the task description
   RAW_SLUG=$(printf '%s' "$ARGS" \

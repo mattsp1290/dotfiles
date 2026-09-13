@@ -92,7 +92,7 @@ Once you have all 4 user answers plus the 2 auto-detected values, fill in the te
 
 ## GPT Review Loop
 
-After the plan file is saved, run an opt-out GPT review pass so ChatGPT can catch gaps before the plan is turned into a Beads task graph. The loop iterates up to 3 rounds, applying user-approved edits between rounds.
+After the plan file is saved, run an opt-out GPT review pass so ChatGPT can catch gaps before the plan is turned into a Beans task graph. The loop iterates up to 3 rounds, applying user-approved edits between rounds.
 
 ### Opt-in gate
 
@@ -177,7 +177,7 @@ You are critiquing a planning document. Your tools are denied by the enclosing
 config — respond with TEXT only. Do not attempt file edits. Do not propose
 rewrites of the plan.
 
-The plan below will later drive an autonomous agent to generate a Beads task
+The plan below will later drive an autonomous agent to generate a Beans task
 graph for a big change. Your job is to catch gaps BEFORE task creation.
 
 Plan contents:
@@ -252,11 +252,11 @@ After saving (and completing the GPT review loop, if run), tell the user:
 - The file path where it was saved
 - A brief summary of the change plan (auto-detected change type, description, number of affected areas)
 - If the review loop ran, a one-line summary of the outcome (converged on round N, capped at 3, skipped on error, user-exited)
-- Suggest next step: "You can now run this prompt with Claude to generate your beads task graph."
+- Suggest next step: "You can now run this prompt with Claude to generate your beans task graph."
 
 ## Template
 
-# Big Change Planning with Beads
+# Big Change Planning with Beans
 
 ## Agent Instructions
 
@@ -267,9 +267,9 @@ Create a thorough, production-ready task graph. Include all necessary analysis, 
 </quality_expectations>
 
 <critical_constraint>
-You must NOT implement any of the changes yourself. Your ONLY output is a bash shell script containing `bd create` and `bd dep add` commands. Do NOT use `bd add` — the correct command is `bd create`. Do not write code. Do not create files other than the shell script. Do not modify existing files. Read and analyze the codebase, then produce the script.
+You must NOT implement any of the changes yourself. Your ONLY output is a bash shell script containing `bn create` and `bn dep add` commands. Do NOT use `bn add` — the correct command is `bn create`. Do not write code. Do not create files other than the shell script. Do not modify existing files. Read and analyze the codebase, then produce the script.
 
-The script MUST create a single parent **epic** first (`bd create -t epic`) and parent **every** task bead to it via `--parent "$EPIC"`, so the whole change is one trackable rollup. The epic is an organizational rollup only — never make it a blocking dependency (do NOT `bd dep add` to or from the epic; `bd dep add` is for real ordering edges between task beads, and a blocking edge on an epic both excludes it wrongly and inverts `bd dep tree`). Membership is the `--parent` relationship, nothing else.
+The script MUST create a single parent **epic** first (`bn create -t epic`) and parent **every** task bead to it via `--parent "$EPIC"`, so the whole change is one trackable rollup. The epic is an organizational rollup only — never make it a blocking dependency (do NOT `bn dep add` to or from the epic; `bn dep add` is for real ordering edges between task beans, and a blocking edge on an epic both excludes it wrongly and inverts `bn dep tree`). Membership is the `--parent` relationship, nothing else.
 </critical_constraint>
 
 ## Change Information
@@ -296,7 +296,7 @@ The script MUST create a single parent **epic** first (`bd create -t epic`) and 
 
 ## Your Task
 
-Analyze this codebase change and create a comprehensive **Beads task graph** using the `bd` CLI. Beads provides dependency-aware, conflict-free task management for multi-agent execution.
+Analyze this codebase change and create a comprehensive **Beans task graph** using the `bn` CLI. Beans provides dependency-aware, conflict-free task management for multi-agent execution.
 
 Before creating the task graph, you MUST first analyze the affected areas of the codebase:
 
@@ -310,7 +310,7 @@ Use your analysis to make each bead specific — reference actual file paths, mo
 
 Then generate a shell script that creates the complete task graph.
 
-**IMPORTANT: Your ONLY deliverable is a bash shell script with `bd create` commands. Not an implementation plan. Not a design document. Not a code review. A runnable `.sh` script.**
+**IMPORTANT: Your ONLY deliverable is a bash shell script with `bn create` commands. Not an implementation plan. Not a design document. Not a code review. A runnable `.sh` script.**
 
 ---
 
@@ -318,11 +318,11 @@ Then generate a shell script that creates the complete task graph.
 
 Generate a shell script that creates the full task graph. The script should:
 
-1. **Initialize Beads** (if not already initialized)
-2. **Create one parent epic** (`bd create -t epic`) representing the whole change, capturing its ID into `$EPIC`
-3. **Create all task beads** with appropriate priorities, each parented to the epic via `--parent "$EPIC"`
-4. **Establish dependencies** between task beads (ordering edges only — never to or from the epic)
-5. **Add labels** for phase grouping (child beads inherit the epic's labels unless `--no-inherit-labels`)
+1. **Initialize Beans** (if not already initialized)
+2. **Create one parent epic** (`bn create -t epic`) representing the whole change, capturing its ID into `$EPIC`
+3. **Create all task beans** with appropriate priorities, each parented to the epic via `--parent "$EPIC"`
+4. **Establish dependencies** between task beans (ordering edges only — never to or from the epic)
+5. **Add labels** for phase grouping (child beans inherit the epic's labels unless `--no-inherit-labels`)
 
 ### Example Output
 
@@ -334,76 +334,71 @@ Generate a shell script that creates the full task graph. The script should:
 
 set -e
 
-# Initialize beads if needed
-if [ ! -d ".beads" ]; then
-    bd init
-fi
-
-echo "Creating change beads..."
+echo "Creating change beans..."
 
 # ========================================
 # Parent epic — every task below is parented to it (--parent "$EPIC").
 # The epic is an organizational rollup: it is NEVER given a blocking dep
-# (no `bd dep add` to or from it) and is never dispatched as work itself.
+# (no `bn dep add` to or from it) and is never dispatched as work itself.
 # ========================================
 
-EPIC=$(bd create "Epic: Refactor auth middleware for compliance" -t epic -p 0 --label epic --silent)
-bd update "$EPIC" --status in_progress   # rollup, not dispatchable work — keep it out of `bd ready`
+EPIC=$(bn create "Epic: Refactor auth middleware for compliance" -t epic -p 0 --label epic --silent)
+bn update "$EPIC" --status in_progress   # rollup, not dispatchable work — keep it out of `bn ready`
 
 # ========================================
 # Phase 1: Analysis & Preparation
 # ========================================
 
-ANALYZE_CURRENT=$(bd create "Analyze current auth middleware implementation in src/auth/ — document all session token storage patterns and consumer dependencies" -p 0 --label analysis --parent "$EPIC" --silent)
+ANALYZE_CURRENT=$(bn create "Analyze current auth middleware implementation in src/auth/ — document all session token storage patterns and consumer dependencies" -p 0 --label analysis --parent "$EPIC" --silent)
 
-IDENTIFY_DEPS=$(bd create "Map all modules importing from src/auth/ and catalog their usage patterns" -p 0 --label analysis --parent "$EPIC" --silent)
+IDENTIFY_DEPS=$(bn create "Map all modules importing from src/auth/ and catalog their usage patterns" -p 0 --label analysis --parent "$EPIC" --silent)
 
-CHAR_TESTS=$(bd create "Add characterization tests capturing current auth middleware behavior before refactoring" -p 0 --label prep --parent "$EPIC" --silent)
-bd dep add $CHAR_TESTS $ANALYZE_CURRENT
+CHAR_TESTS=$(bn create "Add characterization tests capturing current auth middleware behavior before refactoring" -p 0 --label prep --parent "$EPIC" --silent)
+bn dep add $CHAR_TESTS $ANALYZE_CURRENT
 
 # ========================================
 # Phase 2: Core Implementation
 # ========================================
 
-IMPL_NEW_STORAGE=$(bd create "Implement compliant session token storage in src/auth/session.ts replacing in-memory store" -p 0 --label impl --parent "$EPIC" --silent)
-bd dep add $IMPL_NEW_STORAGE $CHAR_TESTS
-bd dep add $IMPL_NEW_STORAGE $IDENTIFY_DEPS
+IMPL_NEW_STORAGE=$(bn create "Implement compliant session token storage in src/auth/session.ts replacing in-memory store" -p 0 --label impl --parent "$EPIC" --silent)
+bn dep add $IMPL_NEW_STORAGE $CHAR_TESTS
+bn dep add $IMPL_NEW_STORAGE $IDENTIFY_DEPS
 
-IMPL_MIGRATION=$(bd create "Create migration script for existing session data to new storage format" -p 1 --label impl --parent "$EPIC" --silent)
-bd dep add $IMPL_MIGRATION $IMPL_NEW_STORAGE
+IMPL_MIGRATION=$(bn create "Create migration script for existing session data to new storage format" -p 1 --label impl --parent "$EPIC" --silent)
+bn dep add $IMPL_MIGRATION $IMPL_NEW_STORAGE
 
-UPDATE_CONSUMERS=$(bd create "Update all consumer modules to use new auth middleware API surface" -p 1 --label impl --parent "$EPIC" --silent)
-bd dep add $UPDATE_CONSUMERS $IMPL_NEW_STORAGE
+UPDATE_CONSUMERS=$(bn create "Update all consumer modules to use new auth middleware API surface" -p 1 --label impl --parent "$EPIC" --silent)
+bn dep add $UPDATE_CONSUMERS $IMPL_NEW_STORAGE
 
 # ========================================
 # Phase 3: Testing & Validation
 # ========================================
 
-UNIT_TESTS=$(bd create "Add unit tests for new session storage implementation" -p 1 --label testing --parent "$EPIC" --silent)
-bd dep add $UNIT_TESTS $IMPL_NEW_STORAGE
+UNIT_TESTS=$(bn create "Add unit tests for new session storage implementation" -p 1 --label testing --parent "$EPIC" --silent)
+bn dep add $UNIT_TESTS $IMPL_NEW_STORAGE
 
-INTEGRATION_TESTS=$(bd create "Add integration tests for auth flow end-to-end with new middleware" -p 1 --label testing --parent "$EPIC" --silent)
-bd dep add $INTEGRATION_TESTS $UPDATE_CONSUMERS
+INTEGRATION_TESTS=$(bn create "Add integration tests for auth flow end-to-end with new middleware" -p 1 --label testing --parent "$EPIC" --silent)
+bn dep add $INTEGRATION_TESTS $UPDATE_CONSUMERS
 
-REGRESSION_CHECK=$(bd create "Run full regression suite and verify characterization tests still pass" -p 0 --label testing --parent "$EPIC" --silent)
-bd dep add $REGRESSION_CHECK $INTEGRATION_TESTS
-bd dep add $REGRESSION_CHECK $UNIT_TESTS
+REGRESSION_CHECK=$(bn create "Run full regression suite and verify characterization tests still pass" -p 0 --label testing --parent "$EPIC" --silent)
+bn dep add $REGRESSION_CHECK $INTEGRATION_TESTS
+bn dep add $REGRESSION_CHECK $UNIT_TESTS
 
 # ========================================
 # Phase 4: Cleanup & Documentation
 # ========================================
 
-UPDATE_DOCS=$(bd create "Update auth middleware documentation and API reference" -p 2 --label docs --parent "$EPIC" --silent)
-bd dep add $UPDATE_DOCS $REGRESSION_CHECK
+UPDATE_DOCS=$(bn create "Update auth middleware documentation and API reference" -p 2 --label docs --parent "$EPIC" --silent)
+bn dep add $UPDATE_DOCS $REGRESSION_CHECK
 
-CLEANUP=$(bd create "Remove deprecated session storage code and update changelog" -p 3 --label cleanup --parent "$EPIC" --silent)
-bd dep add $CLEANUP $REGRESSION_CHECK
+CLEANUP=$(bn create "Remove deprecated session storage code and update changelog" -p 3 --label cleanup --parent "$EPIC" --silent)
+bn dep add $CLEANUP $REGRESSION_CHECK
 
 echo ""
 echo "Bead graph created! View with:"
-echo "  bd show $EPIC          # The parent epic and its rollup"
-echo "  bd children $EPIC      # All task beads under the epic"
-echo "  bd ready              # List unblocked tasks (the epic itself is not work)"
+echo "  bn show $EPIC          # The parent epic and its rollup"
+echo "  bn children $EPIC      # All task beans under the epic"
+echo "  bn ready              # List unblocked tasks (the epic itself is not work)"
 ```
 
 ---
@@ -411,10 +406,10 @@ echo "  bd ready              # List unblocked tasks (the epic itself is not wor
 ## Bead Creation Guidelines
 
 ### Epic / Hierarchy (REQUIRED)
-- Create exactly **one parent epic** for the whole change: `EPIC=$(bd create "Epic: <change summary>" -t epic -p 0 --label epic --silent)`.
-- Parent **every** task bead to it: add `--parent "$EPIC"` to every `bd create` (children inherit the epic's labels unless you pass `--no-inherit-labels`).
-- The epic is a **rollup, not work**: never `bd dep add` to or from it. Membership is `--parent`; `bd dep add` is reserved for real ordering edges *between task beads*. A blocking edge on an epic wrongly keeps it out of (or drops it into) `bd ready` and inverts `bd dep tree`.
-- **Keep the epic out of `bd ready`** by marking it active right after creation: `bd update "$EPIC" --status in_progress`. `bd ready` excludes `in_progress`/`blocked`/`deferred`/`hooked`. Do **not** rely on `--exclude-type epic` — that flag is ineffective on some `bd`/`bn` builds, whereas status-based exclusion works everywhere.
+- Create exactly **one parent epic** for the whole change: `EPIC=$(bn create "Epic: <change summary>" -t epic -p 0 --label epic --silent)`.
+- Parent **every** task bead to it: add `--parent "$EPIC"` to every `bn create` (children inherit the epic's labels unless you pass `--no-inherit-labels`).
+- The epic is a **rollup, not work**: never `bn dep add` to or from it. Membership is `--parent`; `bn dep add` is reserved for real ordering edges *between task beans*. A blocking edge on an epic wrongly keeps it out of (or drops it into) `bn ready` and inverts `bn dep tree`.
+- **Keep the epic out of `bn ready`** by marking it active right after creation: `bn update "$EPIC" --status in_progress`. `bn ready` excludes `in_progress`/`blocked`/`deferred`/`hooked`. Do **not** rely on `--exclude-type epic` — that flag is ineffective on some `bn`/`bn` builds, whereas status-based exclusion works everywhere.
 - An epic must have **≥ 2 children** to be meaningful — a one-task change does not need this skill.
 - For very large changes you MAY use phase sub-epics (each `--parent "$EPIC"`, each with its own children), but a single top-level epic is the default and is sufficient for most changes.
 
@@ -425,7 +420,7 @@ echo "  bd ready              # List unblocked tasks (the epic itself is not wor
 - `-p 3` = Low (cleanup, nice-to-haves)
 
 ### Labels (Phase Grouping)
-Use `--label` to group beads by phase:
+Use `--label` to group beans by phase:
 - `analysis` - Understanding current state
 - `prep` - Preparation work (characterization tests, feature flags, scaffolding)
 - `impl` - Core implementation
@@ -438,9 +433,9 @@ Use `--label` to group beads by phase:
 1. Never create cycles
 2. Analysis tasks should complete before implementation begins
 3. Characterization tests should exist before changing code
-4. Use `bd dep add CHILD PARENT` (child depends on parent completing first)
+4. Use `bn dep add CHILD PARENT` (child depends on parent completing first)
 5. Parallel work should share a common ancestor, not depend on each other
-6. `bd dep add` is for ordering edges **between task beads only** — never use it to attach a task to the epic (that is `--parent`), and never add a blocking edge to or from the epic
+6. `bn dep add` is for ordering edges **between task beans only** — never use it to attach a task to the epic (that is `--parent`), and never add a blocking edge to or from the epic
 
 ### Task Granularity
 - Each bead should be completable in **under 750 lines of code changed**
@@ -496,10 +491,10 @@ This helps agents claim appropriate file surfaces when they start work.
 
 After generating the script:
 
-1. **Run it**: `chmod +x setup-beads.sh && ./setup-beads.sh`
-2. **Check the rollup**: `bd children "$EPIC"` should list every task bead, and `bd dep tree` should show them under the epic with no orphan (un-parented) tasks
-3. **Check ready work**: `bd ready` should show initial analysis/prep tasks and **not** the epic. Epics are rollups, never dispatched as work — and because some `bd`/`bn` builds do not exclude epic-typed issues from `ready` (with `--exclude-type epic` sometimes ineffective), the script marks the epic `in_progress` right after creating it; status-based exclusion keeps it out of `ready` on every build.
-4. **Check no cycles**: `bd dep cycles` should report none
+1. **Run it**: `chmod +x setup-beans.sh && ./setup-beans.sh`
+2. **Check the rollup**: `bn children "$EPIC"` should list every task bead, and `bn dep tree` should show them under the epic with no orphan (un-parented) tasks
+3. **Check ready work**: `bn ready` should show initial analysis/prep tasks and **not** the epic. Epics are rollups, never dispatched as work — and because some `bn`/`bn` builds do not exclude epic-typed issues from `ready` (with `--exclude-type epic` sometimes ineffective), the script marks the epic `in_progress` right after creating it; status-based exclusion keeps it out of `ready` on every build.
+4. **Check no cycles**: `bn dep cycles` should report none
 
 ---
 

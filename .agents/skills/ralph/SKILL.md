@@ -17,7 +17,7 @@ $ARGUMENTS
 Parse arguments:
 - **No arguments** → **Autopilot** mode: work through the entire task graph
 - `--goal "<description>"` → **Goal** mode: work toward the stated goal
-- `--single` → **Single Task** mode: work on the next Beads task only
+- `--single` → **Single Task** mode: work on the next Beans task only
 - `--epic <id>` → **Epic mode**: work only through that epic's descendants, then stop
 - `-n <number>` / `--max-iterations <number>` → hard cap on iterations
 
@@ -25,12 +25,12 @@ Parse arguments:
 
 ### Epic selection guard
 
-In Epic mode, build the allowed task set before selecting or claiming work. Recompute it after every task closes so newly unblocked descendants become eligible. Never fall back to repository-wide `bd ready` output when the filtered set is empty.
+In Epic mode, build the allowed task set before selecting or claiming work. Recompute it after every task closes so newly unblocked descendants become eligible. Never fall back to repository-wide `bn ready` output when the filtered set is empty.
 
 ```bash
 EPIC_ID="<value passed to --epic>"
 
-EPIC_TYPE=$(bd show "$EPIC_ID" --json | jq -er '.[0].issue_type') || {
+EPIC_TYPE=$(bn show "$EPIC_ID" --json | jq -er 'if type == "array" then .[0].type else .type end') || {
   echo "Cannot load epic $EPIC_ID." >&2
   exit 1
 }
@@ -40,24 +40,26 @@ EPIC_TYPE=$(bd show "$EPIC_ID" --json | jq -er '.[0].issue_type') || {
 }
 
 collect_epic_descendants() {
-  local child
+  local current child
   EPIC_DESCENDANTS=()
-  while IFS= read -r child; do
-    [[ -n "$child" ]] && EPIC_DESCENDANTS+=("$child")
-  done < <(bd list --all --limit 0 --json | jq -r --arg root "$EPIC_ID" '
-    def descendants($issues; $parent):
-      [$issues[] | select(.parent == $parent) | .id] as $children
-      | $children + [$children[] as $child | descendants($issues; $child)[]];
-    descendants(.; $root)[]
-  ')
+  local queue=("$EPIC_ID") seen=" $EPIC_ID "
+  while ((${#queue[@]})); do
+    current=${queue[0]}; queue=("${queue[@]:1}")
+    while IFS= read -r child; do
+      [[ -z "$child" || "$seen" == *" $child "* ]] && continue
+      seen="$seen$child "
+      EPIC_DESCENDANTS+=("$child")
+      queue+=("$child")
+    done < <(bn children "$current" --json | jq -r '.[] | if type == "string" then . else .id end')
+  done
 }
 
 select_epic_task() {
   collect_epic_descendants
   local allowed_json
   allowed_json=$(printf '%s\n' "${EPIC_DESCENDANTS[@]}" | jq -Rsc 'split("\n") | map(select(length > 0))')
-  bd ready --json | jq --argjson allowed "$allowed_json" \
-    '[.[] | select(.id as $id | $allowed | index($id))] | sort_by(.priority, .created_at) | .[0] // empty'
+  bn ready --json | jq --argjson allowed "$allowed_json" \
+    '[.[] | select(.id as $id | $allowed | index($id))] | sort_by(.priority, .id) | .[0] // empty'
 }
 
 assert_epic_task() {
@@ -189,7 +191,7 @@ N=$(( ${N:-0} + 1 ))
 ### Slug
 
 Source in priority order:
-1. **Autopilot / single-task / epic mode**: title of the current Beads task (`bd show "$TASK_ID" --json | jq -r '.[0].title'`)
+1. **Autopilot / single-task / epic mode**: title of the current Beans task (`bn show "$TASK_ID" --json | jq -r '.title'`)
 2. **Goal mode**: the `--goal` argument
 3. **Fallback**: `iter-$(date +%Y%m%d-%H%M%S)`
 
@@ -214,8 +216,8 @@ if [[ "${RALPH_FORCE_UI:-0}" == "1" ]]; then
   # --ui flag was passed
   TASK_HAS_UI_LABEL=1
 elif [[ -n "${TASK_ID:-}" ]]; then
-  # Autopilot / single mode with a beads task
-  bd show "$TASK_ID" --json 2>/dev/null \
+  # Autopilot / single mode with a beans task
+  bn show "$TASK_ID" --json 2>/dev/null \
     | jq -r '.labels[]?' 2>/dev/null \
     | grep -qx ui && TASK_HAS_UI_LABEL=1
 fi
@@ -231,12 +233,12 @@ This is the existing ralph inner loop. Run it until the objective is locally com
 
 ### Objective source
 
-- **Autopilot**: `bv --robot-triage` then process tasks in priority order. After each task: `bd update <id> --status closed`, check for newly unblocked tasks, continue. One iteration = one task (or one task cluster).
-- **Epic mode**: use only `select_epic_task`; assert membership before claiming or mutating the task, close one descendant per iteration, recompute the allowed/ready set, and stop when every descendant is closed. Never use `bv --robot-triage` or an unfiltered ready task in this mode.
+- **Autopilot**: `bn ready --json` then process tasks in priority order. After each task: `bn update <id> --claim`, check for newly unblocked tasks, continue. One iteration = one task (or one task cluster).
+- **Epic mode**: use only `select_epic_task`; assert membership before claiming or mutating the task, close one descendant per iteration, recompute the allowed/ready set, and stop when every descendant is closed. Never use `bn ready --json` or an unfiltered ready task in this mode.
 - **Goal mode**: work toward the stated goal, breaking it into logical sub-steps.
-- **Single Task**: work the one highest-priority ready beads task.
+- **Single Task**: work the one highest-priority ready beans task.
 
-If beads is not initialized: fall back to goal-less behavior. No UI detection, slug uses timestamp.
+If `bn status` fails: fall back to goal-less behavior. No UI detection; the slug uses a timestamp.
 
 ### Inner cycle
 
@@ -399,7 +401,7 @@ With `--no-ff` preserving the iteration branch, `$RALPH_MAIN_BRANCH` ends up wit
 | `reviews/` already tracked in git | Preflight abort with remediation |
 | Merge conflict against `$RALPH_MAIN_BRANCH` | `merge --abort`, halt, leave branch |
 | Push rejected (any cause) | reset to safe state, bounded retry, then halt |
-| Beads not initialized | Fall back: no UI label detection, timestamp slug |
+| Beans not initialized | Fall back: no UI label detection, timestamp slug |
 | `--epic` ID missing, unknown, or not an epic | Preflight abort before task selection |
 | Epic has no ready descendants but open descendants remain | Halt and report their statuses; never fall back to global work |
 | Empty iteration (no net diff vs merge-base) | Delete branch, skip review/merge, loop |

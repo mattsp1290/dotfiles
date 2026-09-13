@@ -64,7 +64,7 @@ Once you have all 4 answers, fill in the template. The template has four section
 
 ## GPT Review Loop
 
-After the plan file is saved, run an opt-out GPT review pass so ChatGPT can catch gaps before the plan is turned into a Beads task graph. The loop iterates up to 3 rounds, applying user-approved edits between rounds.
+After the plan file is saved, run an opt-out GPT review pass so ChatGPT can catch gaps before the plan is turned into a Beans task graph. The loop iterates up to 3 rounds, applying user-approved edits between rounds.
 
 ### Opt-in gate
 
@@ -149,7 +149,7 @@ You are critiquing a planning document. Your tools are denied by the enclosing
 config — respond with TEXT only. Do not attempt file edits. Do not propose
 rewrites of the plan.
 
-The plan below will later drive an autonomous agent to generate a Beads task
+The plan below will later drive an autonomous agent to generate a Beans task
 graph for a new project. Your job is to catch gaps BEFORE task creation.
 
 Plan contents:
@@ -225,11 +225,11 @@ After saving (and completing the GPT review loop, if run), tell the user:
 - The file path where it was saved
 - A brief summary of the project plan
 - If the review loop ran, a one-line summary of the outcome (converged on round N, capped at 3, skipped on error, user-exited)
-- Suggest next step: "You can now run this prompt with Claude to generate your beads task graph."
+- Suggest next step: "You can now run this prompt with Claude to generate your beans task graph."
 
 ## Template
 
-# Project Planning with Beads
+# Project Planning with Beans
 
 ## Agent Instructions
 
@@ -257,24 +257,24 @@ Create a thorough, production-ready task graph. Include all necessary setup, imp
 
 ## Your Task
 
-Analyze this project and create a comprehensive **Beads task graph** using the `bd` CLI. Beads provides dependency-aware, conflict-free task management for multi-agent execution.
+Analyze this project and create a comprehensive **Beans task graph** using the `bn` CLI. Beans provides dependency-aware, conflict-free task management for multi-agent execution.
 
 ---
 
 <critical_constraint>
-Your ONLY output is a bash shell script containing `bd create` and `bd dep add` commands. Do NOT use `bd add` — the correct command to create a bead is `bd create`. Use `bd dep add` for dependencies between task beads. Do not implement anything yourself.
+Your ONLY output is a bash shell script containing `bn create` and `bn dep add` commands. Do NOT use `bn add` — the correct command to create a bead is `bn create`. Use `bn dep add` for dependencies between task beans. Do not implement anything yourself.
 
-The script MUST create a single parent **epic** first (`bd create -t epic`) and parent **every** task bead to it via `--parent "$EPIC"`, so the whole project is one trackable rollup. The epic is an organizational rollup only — never make it a blocking dependency (do NOT `bd dep add` to or from the epic; `bd dep add` is for real ordering edges between task beads, and a blocking edge on an epic both excludes it wrongly and inverts `bd dep tree`). Membership is the `--parent` relationship, nothing else.
+The script MUST create a single parent **epic** first (`bn create -t epic`) and parent **every** task bead to it via `--parent "$EPIC"`, so the whole project is one trackable rollup. The epic is an organizational rollup only — never make it a blocking dependency (do NOT `bn dep add` to or from the epic; `bn dep add` is for real ordering edges between task beans, and a blocking edge on an epic both excludes it wrongly and inverts `bn dep tree`). Membership is the `--parent` relationship, nothing else.
 </critical_constraint>
 
 ## Output Format
 
 Generate a shell script that creates the full task graph. The script should:
 
-1. **Initialize Beads** (if not already initialized)
-2. **Create one parent epic** (`bd create -t epic`) representing the whole project, capturing its ID into `$EPIC`
-3. **Create all task beads** with appropriate priorities, each parented to the epic via `--parent "$EPIC"`
-4. **Establish dependencies** between task beads (ordering edges only — never to or from the epic)
+1. **Initialize Beans** (if not already initialized)
+2. **Create one parent epic** (`bn create -t epic`) representing the whole project, capturing its ID into `$EPIC`
+3. **Create all task beans** with appropriate priorities, each parented to the epic via `--parent "$EPIC"`
+4. **Establish dependencies** between task beans (ordering edges only — never to or from the epic)
 
 ### Example Output
 
@@ -285,58 +285,53 @@ Generate a shell script that creates the full task graph. The script should:
 
 set -e
 
-# Initialize beads if needed
-if [ ! -d ".beads" ]; then
-    bd init
-fi
-
-echo "Creating project beads..."
+echo "Creating project beans..."
 
 # ========================================
 # Parent epic — every task below is parented to it (--parent "$EPIC").
 # The epic is an organizational rollup: it is NEVER given a blocking dep
-# (no `bd dep add` to or from it) and is never dispatched as work itself.
+# (no `bn dep add` to or from it) and is never dispatched as work itself.
 # ========================================
 
-EPIC=$(bd create "Epic: {PROJECT_NAME}" -t epic -p 0 --silent)
-bd update "$EPIC" --status in_progress   # rollup, not dispatchable work — keep it out of `bd ready`
+EPIC=$(bn create "Epic: {PROJECT_NAME}" -t epic -p 0 --silent)
+bn update "$EPIC" --status in_progress   # rollup, not dispatchable work — keep it out of `bn ready`
 
 # ========================================
 # Phase 1: Project Setup & Infrastructure
 # ========================================
 
-SETUP_VITE=$(bd create "Initialize project with Vite + React + TypeScript" -p 0 --parent "$EPIC" --silent)
+SETUP_VITE=$(bn create "Initialize project with Vite + React + TypeScript" -p 0 --parent "$EPIC" --silent)
 
-SETUP_LINT=$(bd create "Configure ESLint, Prettier, and TypeScript strict mode" -p 1 --parent "$EPIC" --silent)
-bd dep add $SETUP_LINT $SETUP_VITE
+SETUP_LINT=$(bn create "Configure ESLint, Prettier, and TypeScript strict mode" -p 1 --parent "$EPIC" --silent)
+bn dep add $SETUP_LINT $SETUP_VITE
 
-SETUP_TAILWIND=$(bd create "Set up Tailwind CSS with design system tokens" -p 1 --parent "$EPIC" --silent)
-bd dep add $SETUP_TAILWIND $SETUP_VITE
+SETUP_TAILWIND=$(bn create "Set up Tailwind CSS with design system tokens" -p 1 --parent "$EPIC" --silent)
+bn dep add $SETUP_TAILWIND $SETUP_VITE
 
-SETUP_TESTING=$(bd create "Configure testing framework (Vitest + Testing Library)" -p 1 --parent "$EPIC" --silent)
-bd dep add $SETUP_TESTING $SETUP_LINT
+SETUP_TESTING=$(bn create "Configure testing framework (Vitest + Testing Library)" -p 1 --parent "$EPIC" --silent)
+bn dep add $SETUP_TESTING $SETUP_LINT
 
 # ========================================
 # Phase 2: Core Architecture
 # ========================================
 
-API_CLIENT=$(bd create "Implement API client with error handling and retries" -p 0 --parent "$EPIC" --silent)
-bd dep add $API_CLIENT $SETUP_VITE
+API_CLIENT=$(bn create "Implement API client with error handling and retries" -p 0 --parent "$EPIC" --silent)
+bn dep add $API_CLIENT $SETUP_VITE
 
-STATE_MGMT=$(bd create "Set up global state management (Zustand/Jotai)" -p 0 --parent "$EPIC" --silent)
-bd dep add $STATE_MGMT $SETUP_VITE
+STATE_MGMT=$(bn create "Set up global state management (Zustand/Jotai)" -p 0 --parent "$EPIC" --silent)
+bn dep add $STATE_MGMT $SETUP_VITE
 
-AUTH_CONTEXT=$(bd create "Create authentication context and hooks" -p 0 --parent "$EPIC" --silent)
-bd dep add $AUTH_CONTEXT $STATE_MGMT
-bd dep add $AUTH_CONTEXT $API_CLIENT
+AUTH_CONTEXT=$(bn create "Create authentication context and hooks" -p 0 --parent "$EPIC" --silent)
+bn dep add $AUTH_CONTEXT $STATE_MGMT
+bn dep add $AUTH_CONTEXT $API_CLIENT
 
 # ... continue for all phases ...
 
 echo ""
 echo "Bead graph created! View with:"
-echo "  bd show $EPIC          # The parent epic and its rollup"
-echo "  bd children $EPIC      # All task beads under the epic"
-echo "  bd ready              # List unblocked tasks (the epic itself is not work)"
+echo "  bn show $EPIC          # The parent epic and its rollup"
+echo "  bn children $EPIC      # All task beans under the epic"
+echo "  bn ready              # List unblocked tasks (the epic itself is not work)"
 ```
 
 ---
@@ -344,10 +339,10 @@ echo "  bd ready              # List unblocked tasks (the epic itself is not wor
 ## Bead Creation Guidelines
 
 ### Epic / Hierarchy (REQUIRED)
-- Create exactly **one parent epic** for the whole project: `EPIC=$(bd create "Epic: <project summary>" -t epic -p 0 --silent)`.
-- Parent **every** task bead to it: add `--parent "$EPIC"` to every `bd create`.
-- The epic is a **rollup, not work**: never `bd dep add` to or from it. Membership is `--parent`; `bd dep add` is reserved for real ordering edges *between task beads*. A blocking edge on an epic wrongly keeps it out of (or drops it into) `bd ready` and inverts `bd dep tree`.
-- **Keep the epic out of `bd ready`** by marking it active right after creation: `bd update "$EPIC" --status in_progress`. `bd ready` excludes `in_progress`/`blocked`/`deferred`/`hooked`. Do **not** rely on `--exclude-type epic` — that flag is ineffective on some `bd`/`bn` builds, whereas status-based exclusion works everywhere.
+- Create exactly **one parent epic** for the whole project: `EPIC=$(bn create "Epic: <project summary>" -t epic -p 0 --silent)`.
+- Parent **every** task bead to it: add `--parent "$EPIC"` to every `bn create`.
+- The epic is a **rollup, not work**: never `bn dep add` to or from it. Membership is `--parent`; `bn dep add` is reserved for real ordering edges *between task beans*. A blocking edge on an epic wrongly keeps it out of (or drops it into) `bn ready` and inverts `bn dep tree`.
+- **Keep the epic out of `bn ready`** by marking it active right after creation: `bn update "$EPIC" --status in_progress`. `bn ready` excludes `in_progress`/`blocked`/`deferred`/`hooked`. Do **not** rely on `--exclude-type epic` — that flag is ineffective on some `bn`/`bn` builds, whereas status-based exclusion works everywhere.
 - For very large projects you MAY use phase sub-epics (each `--parent "$EPIC"`, each with its own children), but a single top-level epic is the default and is sufficient for most projects.
 
 ### Priority Levels
@@ -359,9 +354,9 @@ echo "  bd ready              # List unblocked tasks (the epic itself is not wor
 ### Dependency Rules
 1. Never create cycles
 2. Every bead should have a clear dependency chain back to setup tasks
-3. Use `bd dep add CHILD PARENT` (child depends on parent completing first)
+3. Use `bn dep add CHILD PARENT` (child depends on parent completing first)
 4. Parallel work should share a common ancestor, not depend on each other
-5. `bd dep add` is for ordering edges **between task beads only** — never use it to attach a task to the epic (that is `--parent`), and never add a blocking edge to or from the epic
+5. `bn dep add` is for ordering edges **between task beans only** — never use it to attach a task to the epic (that is `--parent`), and never add a blocking edge to or from the epic
 
 ### Task Granularity
 - Each bead should be completable in **under 750 lines of code**
@@ -399,9 +394,9 @@ Place any important context in `prompts/docs/` for agents to reference. This inc
 
 After generating the script:
 
-1. **Run it**: `chmod +x setup-beads.sh && ./setup-beads.sh`
-2. **Check the rollup**: `bd children "$EPIC"` should list every task bead, and `bd dep tree` should show them under the epic with no orphan (un-parented) tasks
-3. **Check ready work**: `bd ready` should show initial setup tasks and **not** the epic. Epics are rollups, never dispatched as work — mark the epic `in_progress` right after creating it so status-based exclusion keeps it out of `bd ready` on every build.
+1. **Run it**: `chmod +x setup-beans.sh && ./setup-beans.sh`
+2. **Check the rollup**: `bn children "$EPIC"` should list every task bead, and `bn dep tree` should show them under the epic with no orphan (un-parented) tasks
+3. **Check ready work**: `bn ready` should show initial setup tasks and **not** the epic. Epics are rollups, never dispatched as work — mark the epic `in_progress` right after creating it so status-based exclusion keeps it out of `bn ready` on every build.
 
 ---
 
