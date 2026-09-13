@@ -418,17 +418,33 @@ def validate_queue(queue: Any, requirement_ids_available: set[str]) -> set[str]:
         for prerequisite in entry.get("prerequisites", []):
             require(prerequisite in seen, f"queue prerequisite references unknown entry_id: {prerequisite}")
             require(prerequisite != entry["entry_id"], f"queue entry cannot depend on itself: {prerequisite}")
-            if entry.get("status") in ACTIVE_QUEUE_STATUSES | {"merged", "satisfied-by-base"}:
-                require(
-                    next(
-                        (candidate.get("status", "queued") for candidate in queue_items if isinstance(candidate, dict) and candidate.get("entry_id") == prerequisite),
-                        None,
-                    )
-                    in {"merged", "satisfied-by-base"},
-                    f"queue prerequisite is not complete: {prerequisite}",
-                )
 
     by_id = {entry["entry_id"]: entry for entry in cast(list[dict[str, Any]], queue_items)}
+
+    def prerequisite_is_complete(entry_id: str, lineage: frozenset[str] = frozenset()) -> bool:
+        if entry_id in lineage:
+            return False
+        entry = by_id[entry_id]
+        status = entry.get("status", "queued")
+        if status in {"merged", "satisfied-by-base"}:
+            return True
+        if status != "superseded":
+            return False
+        children = entry.get("split_into", [])
+        next_lineage = lineage | {entry_id}
+        return bool(children) and all(
+            prerequisite_is_complete(child_id, next_lineage) for child_id in children
+        )
+
+    for entry in by_id.values():
+        if entry.get("status") not in ACTIVE_QUEUE_STATUSES | {"merged", "satisfied-by-base"}:
+            continue
+        for prerequisite in entry.get("prerequisites", []):
+            require(
+                prerequisite_is_complete(prerequisite),
+                f"queue prerequisite is not complete: {prerequisite}",
+            )
+
     visiting: set[str] = set()
     visited: set[str] = set()
 

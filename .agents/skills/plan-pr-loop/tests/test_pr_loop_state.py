@@ -1567,6 +1567,87 @@ class HelperTestCase(unittest.TestCase):
         self.assertEqual(bad.returncode, 2)
         self.assertEqual(before, self.state.read_bytes())
 
+    def test_superseded_prerequisite_is_complete_through_merged_replacement_lineage(self) -> None:
+        devex_requirement = self.requirement("R-devex", dependencies=["R1"])
+        devex_requirement["source"]["file"] = "skill://plan-pr-loop/devex-retrospective"
+        inventory = self.record_requirements(
+            1,
+            [self.requirement("R1"), devex_requirement],
+        )
+        terminal_evidence = {
+            "pr_number": 1,
+            "merge_sha": "merge-sha",
+            "base_sha": "base-sha",
+            "verification_digest": "verification-digest",
+        }
+        queue = [
+            self.queue_entry(
+                "pr-original",
+                ["R1"],
+                0,
+                status="superseded",
+                split_into=["pr-replacement"],
+            ),
+            self.queue_entry(
+                "pr-replacement",
+                ["R1"],
+                1,
+                status="superseded",
+                supersedes=["pr-original"],
+                split_into=["pr-final"],
+            ),
+            self.queue_entry(
+                "pr-final",
+                ["R1"],
+                1,
+                status="merged",
+                supersedes=["pr-replacement"],
+                terminal_evidence=terminal_evidence,
+            ),
+            self.queue_entry(
+                "pr-devex",
+                ["R-devex"],
+                2,
+                workflow_kind="devex-retrospective",
+                prerequisites=["pr-original"],
+                included_paths=["AGENTS.md", ".agents/**"],
+            ),
+        ]
+        recorded = self.assert_ok(
+            "record-queue",
+            state=self.state,
+            expected_revision=inventory["state_revision"],
+            expected_phase="preflight",
+            fencing_token=self.fence,
+            payload={"queue": queue, "reason": "replacement lineage"},
+        )
+        queued = self.transition(recorded["state_revision"], "preflight", "queued")
+        current = self.assert_ok(
+            "record-pr",
+            state=self.state,
+            expected_revision=queued["state_revision"],
+            expected_phase="queued",
+            fencing_token=self.fence,
+            payload={
+                "current": {
+                    "entry_id": "pr-devex",
+                    "sequence": 2,
+                    "branch": "plan-pr/stable-plan/02-devex",
+                    "base_sha": "base-sha",
+                    "local_head_sha": "base-sha",
+                }
+            },
+        )
+        queue[-1]["status"] = "implementing"
+        self.assert_ok(
+            "record-queue",
+            state=self.state,
+            expected_revision=current["state_revision"],
+            expected_phase="queued",
+            fencing_token=self.fence,
+            payload={"queue": queue, "reason": "start retrospective"},
+        )
+
     def test_post_preflight_split_requires_persisted_parent_and_conserves_requirements(self) -> None:
         seeded = self.seed_single_queue()
         queued = self.transition(seeded["state_revision"], "preflight", "queued")
