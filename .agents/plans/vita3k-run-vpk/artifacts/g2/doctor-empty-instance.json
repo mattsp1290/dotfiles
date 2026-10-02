@@ -1,0 +1,40 @@
+{
+  "ready": false,
+  "host": {
+    "os": "darwin",
+    "arch": "arm64",
+    "display_mode": "host"
+  },
+  "instance_root": "$HOME/.vita3k-agent",
+  "emulator": null,
+  "paths": {
+    "config_file": "$HOME/.vita3k-agent/emulator/portable/config.yml",
+    "log_file": "$HOME/.vita3k-agent/emulator/portable/vita3k.log",
+    "vita_fs": "$HOME/.vita3k-agent/emulator/portable/fs",
+    "runs_dir": "$HOME/.vita3k-agent/runs",
+    "lock_file": "$HOME/.vita3k-agent/run.lock",
+    "state_file": "$HOME/.vita3k-agent/run-state.json",
+    "version_cache": "$HOME/.vita3k-agent/emulator-version.json"
+  },
+  "firmware": {
+    "main": false,
+    "font": false
+  },
+  "headless": {
+    "needed": false,
+    "xvfb": false,
+    "xwd": false
+  },
+  "problems": [
+    {
+      "code": "emulator_missing",
+      "detail": "no Vita3K executable for the instance at $HOME/.vita3k-agent",
+      "fix": "references/install.md, section \"macOS\""
+    },
+    {
+      "code": "firmware_missing",
+      "detail": "optional: no firmware in the instance. Most homebrew boots without it.",
+      "fix": "references/install.md, section \"Firmware (optional)\""
+    }
+  ]
+}

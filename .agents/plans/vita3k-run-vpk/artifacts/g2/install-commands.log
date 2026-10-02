@@ -1,0 +1,61 @@
++(eval):2> export VITA3K_AGENT_HOME=$HOME/.vita3k-agent
++(eval):3> BUILD=4111 
++(eval):4> ASSET=vita3k-4111-ab71f829-macos-arm64.dmg 
++(eval):5> mkdir -p $HOME/.vita3k-agent/emulator
++(eval):6> cd $HOME/.vita3k-agent/emulator
++(eval):7> curl -fL -sS -o vita3k-4111-ab71f829-macos-arm64.dmg https://github.com/Vita3K/Vita3K-builds/releases/download/4111/vita3k-4111-ab71f829-macos-arm64.dmg
++(eval):7> echo 'exit 0'
+exit 0
++(eval):8> curl -fsSL https://api.github.com/repos/Vita3K/Vita3K-builds/releases/tags/4111
++(eval):8> /usr/bin/python3 -c 'import json, sys; print(next(a["digest"] for a in json.load(sys.stdin)["assets"] if a["name"] == sys.argv[1]))' vita3k-4111-ab71f829-macos-arm64.dmg
+sha256:d647be251adf383defacfa321baa6dd7e7715c4584aa87016a3319374f6ea432
++(eval):8> echo 'exit 0'
+exit 0
++(eval):9> shasum -a 256 vita3k-4111-ab71f829-macos-arm64.dmg
+d647be251adf383defacfa321baa6dd7e7715c4584aa87016a3319374f6ea432  vita3k-4111-ab71f829-macos-arm64.dmg
++(eval):9> echo 'exit 0'
+exit 0
++(eval):10> hdiutil attach -nobrowse -readonly -mountpoint $HOME/.vita3k-agent/emulator/dmg vita3k-4111-ab71f829-macos-arm64.dmg
+Checksumming Protective Master Boot Record (MBR : 0)…
+Protective Master Boot Record (MBR :: verified   CRC32 $E496A186
+Checksumming GPT Header (Primary GPT Header : 1)…
+ GPT Header (Primary GPT Header : 1): verified   CRC32 $A0F6EBF5
+Checksumming GPT Partition Data (Primary GPT Table : 2)…
+GPT Partition Data (Primary GPT Tabl: verified   CRC32 $24EC7644
+Checksumming  (Apple_Free : 3)…
+                    (Apple_Free : 3): verified   CRC32 $00000000
+Checksumming disk image (Apple_HFS : 4)…
+          disk image (Apple_HFS : 4): verified   CRC32 $B76F876C
+Checksumming  (Apple_Free : 5)…
+                    (Apple_Free : 5): verified   CRC32 $00000000
+Checksumming GPT Partition Data (Backup GPT Table : 6)…
+GPT Partition Data (Backup GPT Table: verified   CRC32 $24EC7644
+Checksumming GPT Header (Backup GPT Header : 7)…
+  GPT Header (Backup GPT Header : 7): verified   CRC32 $4C691F3A
+verified   CRC32 $9FAC7708
+/dev/disk15         	GUID_partition_scheme          	
+/dev/disk15s1       	Apple_HFS                      	$HOME/.vita3k-agent/emulator/dmg
++(eval):10> echo 'exit 0'
+exit 0
++(eval):11> cp -R $HOME/.vita3k-agent/emulator/dmg/Vita3K.app $HOME/.vita3k-agent/emulator/
++(eval):11> echo 'exit 0'
+exit 0
++(eval):12> hdiutil detach $HOME/.vita3k-agent/emulator/dmg
+"disk15" ejected.
++(eval):12> echo 'exit 0'
+exit 0
++(eval):13> mkdir -p $HOME/.vita3k-agent/emulator/portable
++(eval):13> echo 'exit 0'
+exit 0
++(eval):14> /usr/bin/xattr -dr com.apple.quarantine $HOME/.vita3k-agent/emulator/Vita3K.app
++(eval):14> echo 'exit 0'
+exit 0
++(eval):15> rm vita3k-4111-ab71f829-macos-arm64.dmg
++(eval):15> echo 'exit 0'
+exit 0
++(eval):16> set +x
+total 0
+drwxr-xr-x@ 4 user  staff  128 Oct  2 17:04 .
+drwxr-xr-x@ 3 user  staff   96 Oct  2 17:04 ..
+drwxr-xr-x@ 2 user  staff   64 Oct  2 17:04 portable
+drwxr-xr-x@ 3 user  staff   96 Oct  2 17:04 Vita3K.app

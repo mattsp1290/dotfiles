@@ -1,6 +1,6 @@
 # Choosing expectations and reading the result
 
-Verified against `Vita3K v0.2.1 4111-ab71f829` on 2026-10-02 with the bevypoc fixture on headless aarch64 Linux. Log strings in this file were observed in real runs.
+Verified against `Vita3K v0.2.1 4111-ab71f829` on 2026-10-02 with the bevypoc fixture on headless aarch64 Linux and on macOS (Apple silicon). Log strings in this file were observed in real runs.
 
 The script never infers that an app works. You tell it what success looks like, and it reports whether that happened during this run.
 
@@ -42,7 +42,7 @@ Rules for the filesystem diff:
 
 When `paths.run_dir` is set, the same document is in `<run_dir>/result.json`, and the run directory also holds the tested copy of the VPK. The script keeps the newest 20 run directories.
 
-The script stops the emulator with a signal at the end of every normal run, so `emulator_signal` 9 or 15 without reason `emulator_crashed` is the script's own stop.
+The script stops the emulator with a signal at the end of every normal run, so `emulator_signal` 9 or 15 without reason `emulator_crashed` is the script's own stop. Vita3K ignores `SIGTERM` while an app runs, and on macOS it ignored it in the install launch too. In a healthy macOS run both `install_exit_code` and `emulator_exit_code` are therefore -9.
 
 ## Choosing expectations
 
@@ -58,7 +58,7 @@ With `--stop-when-satisfied` the run ends once the expectations have held for th
 
 | Project type | Build output | Typical evidence | Status |
 | --- | --- | --- | --- |
-| Rust with `cargo-vita` (bevypoc) | `target/armv7-sony-vita-newlibeabihf/release/<bin>.vpk` | `ux0:data/bevypoc/build.txt` contains the source SHA. `ux0:data/bevypoc/server.txt` is an input file: seed it with `--seed`. Without it the log repeats `*** TTY: SpacetimeDB unavailable: ` and the screen shows `ERR`. | Exercised on headless aarch64 Linux. |
+| Rust with `cargo-vita` (bevypoc) | `target/armv7-sony-vita-newlibeabihf/release/<bin>.vpk` | `ux0:data/bevypoc/build.txt` contains the source SHA. `ux0:data/bevypoc/server.txt` is an input file: seed it with `--seed`. Without it the log repeats `*** TTY: SpacetimeDB unavailable: ` and the screen shows `ERR`. | Exercised on headless aarch64 Linux and on macOS. |
 | Rust with `cargo-vita` (vitair) | same layout, `vitair-app.vpk` | `ux0:data/vitair/startup.log` gains lines of the form `<source SHA> <message>`. The file is append-only, so an expectation matches appended lines only. The on-screen `ux0:` listing needs the screenshot. vitair's README requires firmware in Vita3K. | not exercised |
 | Nim with a VitaSDK script (clckr spike) | path set by the project's `scripts/build_vita.sh` | Breadcrumb file `ux0:data/clckr_vita_spike.txt`. The last line names the last step reached. | not exercised |
 | Nim with a network client (topdown) | same | Host `127.0.0.1` reaches a server on the same machine only inside the emulator. | not exercised |
@@ -80,7 +80,7 @@ python3 <skill-dir>/scripts/vita3k_vpk.py run target/armv7-sony-vita-newlibeabih
 - Boot markers: `App session phase: Launching -> Running` and `Game started: <title> (<TITLE_ID>)`.
 - Every file access is logged. `Missing file at "<host path>" (target path: ux0:...)` shows a file that the app tried to read and did not find.
 - Error-level lines occur in healthy runs: the `os0:kd/*.skprx` lines without firmware, and at least one `Missing file at` line for every file that the app probes and does not find. Never use the presence of `|E|` lines as a failure signal. Log severity never changes the verdict.
-- Lines without a timestamp (Qt, Mesa, and other library output) are noise. They count as level `?`.
+- Lines without a timestamp (Qt, Mesa, MoltenVK, and other library output) are noise. They count as level `?`. On macOS MoltenVK prints most of them: `[mvk-info] …` and a tab-indented list of Vulkan extensions. In a passing run 191 of 208 lines of the install launch and 387 of 472 lines of the boot launch were noise.
 - The install launch logs `Content installed, will auto-boot: <TITLE_ID>` and does not boot. That is why the script makes a second launch.
 
 ## Failure classes

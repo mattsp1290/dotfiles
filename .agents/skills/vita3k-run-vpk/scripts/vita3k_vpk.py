@@ -425,9 +425,15 @@ def upsert_config_text(text: str, pairs: Iterable[Tuple[str, str]]) -> str:
         if separator and key in pending:
             lines[index] = "%s: %s" % (key, pending[key])
             seen.add(key)
-    for key, value in pending.items():
-        if key not in seen:
-            lines.append("%s: %s" % (key, value))
+    missing = ["%s: %s" % (key, value) for key, value in pending.items() if key not in seen]
+    # Vita3K ends its file with the YAML document-end line `...`. A key after that line
+    # would start a second document, so new keys go before it. Only a `...` that is the
+    # last non-blank line counts.
+    end = len(lines)
+    while end > 0 and not lines[end - 1].strip():
+        end -= 1
+    position = end - 1 if end > 0 and lines[end - 1].rstrip() == "..." else len(lines)
+    lines[position:position] = missing
     return "\n".join(lines) + "\n"
 
 

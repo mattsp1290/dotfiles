@@ -1,6 +1,6 @@
 # Installing Vita3K for this skill
 
-Verified against `Vita3K v0.2.1 4111-ab71f829` (build 4111 of `Vita3K/Vita3K-builds`) on 2026-10-02 on the gate host: a headless aarch64 Ubuntu 24.04 machine where the Linux recipe was first proven with the real emulator. Steps that were not executed are marked `not run`, with the reason. Gate G2 is the acceptance run of the macOS steps on a Mac.
+Verified against `Vita3K v0.2.1 4111-ab71f829` (build 4111 of `Vita3K/Vita3K-builds`) on 2026-10-02 on two hosts. The gate host is a headless aarch64 Ubuntu 24.04 machine where the Linux recipe was first proven with the real emulator. The macOS steps were run from an empty instance on an Apple silicon Mac with macOS 26.6. Steps that were not executed are marked `not run`, with the reason.
 
 The skill installs nothing by itself. `doctor` reports what is missing and names the section of this file to follow. Follow the section for the host, then run `doctor` again.
 
@@ -95,7 +95,7 @@ Use build 4111 unless the user asks for another build. Pick the asset by `uname 
 
 Run steps 1 to 6 in one shell session. They share the variables and the working directory of step 1.
 
-1. Set the variables and create the emulator directory (unverified until gate G2):
+1. Set the variables and create the emulator directory (verified 2026-10-02):
 
    ```sh
    export VITA3K_AGENT_HOME="${VITA3K_AGENT_HOME:-$HOME/.vita3k-agent}"
@@ -105,20 +105,20 @@ Run steps 1 to 6 in one shell session. They share the variables and the working 
    cd "$VITA3K_AGENT_HOME/emulator"
    ```
 
-2. Download the disk image (unverified until gate G2):
+2. Download the disk image (verified 2026-10-02):
 
    ```sh
    curl -fL -o "$ASSET" "https://github.com/Vita3K/Vita3K-builds/releases/download/$BUILD/$ASSET"
    ```
 
-3. Verify the SHA-256 against the release asset `digest`. The two values must be equal. Stop on a mismatch and delete the file (unverified until gate G2):
+3. Verify the SHA-256 against the release asset `digest`. The two values must be equal. Stop on a mismatch and delete the file (verified 2026-10-02):
 
    ```sh
    curl -fsSL "https://api.github.com/repos/Vita3K/Vita3K-builds/releases/tags/$BUILD" | /usr/bin/python3 -c 'import json, sys; print(next(a["digest"] for a in json.load(sys.stdin)["assets"] if a["name"] == sys.argv[1]))' "$ASSET"
    shasum -a 256 "$ASSET"
    ```
 
-4. Copy `Vita3K.app` out of the disk image into the instance (unverified until gate G2):
+4. Copy `Vita3K.app` out of the disk image into the instance (verified 2026-10-02):
 
    ```sh
    hdiutil attach -nobrowse -readonly -mountpoint "$VITA3K_AGENT_HOME/emulator/dmg" "$ASSET"
@@ -128,22 +128,30 @@ Run steps 1 to 6 in one shell session. They share the variables and the working 
 
    When the copy fails, still run the `hdiutil detach` line, so the image does not stay mounted.
 
-5. Create the portable directory beside the app. Vita3K then keeps its config, log, and emulated filesystem there (unverified until gate G2):
+5. Create the portable directory beside the app. Vita3K then keeps its config, log, and emulated filesystem there (verified 2026-10-02):
 
    ```sh
    mkdir -p "$VITA3K_AGENT_HOME/emulator/portable"
    ```
 
-6. Remove the quarantine attribute, then delete the disk image. Use `/usr/bin/xattr`: another `xattr` on `PATH` may not know `-r` (unverified until gate G2):
+6. Remove the quarantine attribute, then delete the disk image. Use `/usr/bin/xattr`: another `xattr` on `PATH` may not know `-r` (verified 2026-10-02):
 
    ```sh
    /usr/bin/xattr -dr com.apple.quarantine "$VITA3K_AGENT_HOME/emulator/Vita3K.app"
    rm "$ASSET"
    ```
 
-7. Run `doctor`. It must print `"ready": true` (unverified until gate G2).
+7. Run `doctor`. It must print `"ready": true` (verified 2026-10-02).
 
 If macOS still blocks the app, for example with a dialog that says it cannot be opened, stop and ask the user. Do not change system security settings.
+
+What the verified run showed:
+
+- The app bundle is signed ad hoc and is not notarized. It started without a prompt. The disk image downloaded with `curl` and the app copied from it carried no quarantine attribute, so the `xattr` step had nothing to remove and exited 0. An app that carries the attribute, for example after a browser download, was not tried.
+- `--version` prints the version and exits by itself: in about 1 s on the first start after the copy, and in about 0.1 s afterwards.
+- Vita3K used the `portable/` directory for everything. `~/Library/Application Support/Vita3K` did not change.
+- macOS uses Vita3K's default renderer, Vulkan through MoltenVK. The script does not set a renderer on a host display.
+- `SIGTERM` did not stop Vita3K on macOS in either launch, so the script ends each launch with `SIGKILL` after its 2-second grace period. A run takes about 4 seconds longer than its evidence needs, and `stages.install_exit_code` and `stages.emulator_exit_code` are -9 in a healthy run.
 
 ## Firmware (optional)
 

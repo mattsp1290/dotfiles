@@ -244,6 +244,17 @@ class ConfigTests(TempDirCase):
         v.seed_config(str(config), "xvfb")
         self.assertEqual(config.read_text().splitlines(), lines)
 
+    def test_upsert_adds_keys_inside_the_yaml_document(self) -> None:
+        # Vita3K writes `---` first and the document-end line `...` last.
+        text = v.upsert_config_text("---\nshow-welcome: true\npref-path: \"\"\n...\n\n", [("show-welcome", "false"), ("new-key", "1")])
+        self.assertEqual(text, "---\nshow-welcome: false\npref-path: \"\"\nnew-key: 1\n...\n\n")
+        self.assertEqual(v.upsert_config_text("...\n", [("a", "1")]), "a: 1\n...\n")
+        self.assertEqual(v.upsert_config_text("b: 2\n...  \n", [("a", "1")]), "b: 2\na: 1\n...  \n")
+        self.assertEqual(v.upsert_config_text("", [("a", "1")]), "a: 1\n")
+        # Without a document-end line, and with one that is not last, keys go to the end.
+        self.assertEqual(v.upsert_config_text("b: 2\n", [("a", "1")]), "b: 2\na: 1\n")
+        self.assertEqual(v.upsert_config_text("b: 2\n...\nc: 3\n", [("a", "1")]), "b: 2\n...\nc: 3\na: 1\n")
+
     def test_upsert_keeps_odd_bytes_and_separators(self) -> None:
         config = self.tmp / "config.yml"
         config.write_bytes(b"name: caf\xe9\x0cpage\r\nshow-welcome: true\r\n")

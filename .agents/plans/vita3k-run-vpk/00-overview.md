@@ -1,6 +1,6 @@
 # 00 — Overview: `vita3k-run-vpk` skill
 
-Status: Ready for implementation. WP1 is complete: gate G1 passed on 2026-10-02 and its record is [G1.md](G1.md). No skill code exists yet. WP2 is the next work package.
+Status: macOS gate passed, Linux acceptance open. WP1 is complete: gate G1 passed on 2026-10-02 and its record is [G1.md](G1.md). WP2, WP3, WP4, and WP6 are complete: the skill exists under `.agents/skills/vita3k-run-vpk/`, and gate G2 passed on 2026-10-02 on a Mac, with its record in [G2.md](G2.md). WP5 is the only open work package. It needs the Linux gate host. The plan is not done until WP5 passes.
 
 G1 corrected several findings and assumptions below. Corrected items are marked. Where this plan and [G1.md](G1.md) differ, G1.md is right.
 
@@ -176,7 +176,7 @@ After:
 
 ## Assumptions
 
-Each assumption was unverified when the plan was written. G1 results: A1, A3, A7, A8, and A9 are true. A2, A4, and A5 are false, with working alternatives in [G1.md](G1.md). A6 waits for G2.
+Each assumption was unverified when the plan was written. G1 results: A1, A3, A7, A8, and A9 are true. A2, A4, and A5 are false, with working alternatives in [G1.md](G1.md). G2 result: A6 is true.
 
 - A1 — A minimal `config.yml` containing only the seeded keys is accepted and suppresses the three config-controlled dialogs of F14 (G1).
 - A2 — `Vita3K <vpk>` with no other arguments installs and boots under Xvfb (G1).
@@ -203,7 +203,7 @@ None. G1 resolved the decisions that were open:
 ## Stop/go gates
 
 - G1 — Headless Linux feasibility. Defined in [01-fixture-and-headless-gate.md](01-fixture-and-headless-gate.md). **Passed 2026-10-02.** Record: [G1.md](G1.md).
-- G2 — macOS acceptance. Defined in [04-acceptance-gates.md](04-acceptance-gates.md). It needs a Mac. Until it passes, the skill documents macOS as unverified, and the plan is not done. The user owns the gate: the user runs it, starts an agent on a Mac, or accepts macOS as unsupported.
+- G2 — macOS acceptance. Defined in [04-acceptance-gates.md](04-acceptance-gates.md). **Passed 2026-10-02** on an Apple silicon Mac. Record: [G2.md](G2.md). The Intel build was not run.
 
 ## External requests
 
@@ -216,6 +216,7 @@ None. The skill consumes VPK files that other repositories already produce and n
 | [00-overview.md](00-overview.md) | Context, findings, decisions, risks, gates. |
 | [01-fixture-and-headless-gate.md](01-fixture-and-headless-gate.md) | WP1: obtain a fixture VPK, install Vita3K in the instance, run gate G1. Complete. |
 | [G1.md](G1.md) | G1 gate record: the working launch recipe, check results, deviations, and script constants. |
+| [G2.md](G2.md) | G2 gate record: the macOS run of the skill with the real emulator, and how macOS differs from G1. |
 | [02-runner-script.md](02-runner-script.md) | WP2 and WP3: the `vita3k_vpk.py` contract, host-independent core, launch lifecycle, tests. |
 | [03-skill-documents.md](03-skill-documents.md) | WP4: `SKILL.md`, references, `agents/openai.yaml`. |
 | [04-acceptance-gates.md](04-acceptance-gates.md) | WP5 and WP6: Linux end-to-end acceptance and macOS gate G2. |

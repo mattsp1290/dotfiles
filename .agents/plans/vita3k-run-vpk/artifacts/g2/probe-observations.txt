@@ -1,0 +1,11 @@
+# Version probe observations on the instance, 2026-10-02T21:26:02Z
+## 1. doctor with an empty version cache (cache file removed first)
+doctor exit 0, 0.24 s, ready True, version 'Vita3K v0.2.1 4111-ab71f829', problems ['firmware_missing']
+second doctor (cached version) exit 0, 0.07 s
+## 2. lsappinfo samples during the probe: 'lsappinfo list | grep -c vita3k-agent' every 0.05 s plus command time
+samples:       40, spanning 1790976362.05 to 1790976366.69, counts seen:   40 0 
+## 3. raw --version on the instance binary
+exit 0 after 0.11 s, output: 'Vita3K v0.2.1 4111-ab71f829\n'
+## 4. log noise in the first skill pass run, counted by the script's own parser
+install-stdout.log 208 {'T': 0, 'D': 0, 'I': 16, 'W': 1, 'E': 0, 'C': 0, '?': 191}
+emulator-stdout.log 472 {'T': 20, 'D': 8, 'I': 46, 'W': 4, 'E': 7, 'C': 0, '?': 387}

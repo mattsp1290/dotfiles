@@ -1,6 +1,6 @@
 # 05 — Execution handoff
 
-Terms are defined in [00-overview.md](00-overview.md). WP1 is complete (2026-10-02, gate G1 passed, record in [G1.md](G1.md)). No skill code exists. Start with WP2.
+Terms are defined in [00-overview.md](00-overview.md). WP1 is complete (2026-10-02, gate G1 passed, record in [G1.md](G1.md)). WP2, WP3, WP4, and WP6 are complete (2026-10-02, on a Mac, gate G2 passed, record in [G2.md](G2.md)). WP5 is open. Continue with WP5 on the Linux gate host.
 
 Host state left by WP1: VitaSDK at `/usr/local/vitasdk`, Rust `nightly-2026-04-08`, `cargo-vita 0.2.2`, `libfuse2t64`, and the instance at `$HOME/.vita3k-agent` with Vita3K build 4111 and bevypoc installed. `$HOME/.vita3k-agent/g1-artifacts/` on that host holds the G1 harness, full dumps, and all logs.
 
