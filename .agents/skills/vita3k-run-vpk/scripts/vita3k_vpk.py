@@ -6,17 +6,27 @@ Standard library only. Runs on Python 3.9 or newer.
 from __future__ import annotations
 
 import argparse
+import datetime
+import fcntl
 import hashlib
+import json
 import math
 import os
+import platform
 import re
+import select
 import shutil
+import signal
 import stat
 import struct
+import subprocess
 import sys
+import tempfile
+import time
+import traceback
 import zipfile
 import zlib
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 EXIT_PASS = 0
 EXIT_FAIL = 1
@@ -36,8 +46,18 @@ INSTALL_MARKER = "installed successfully!"
 HEADLESS_RENDERER = "OpenGL"
 HEADLESS_ENV = {"LIBGL_ALWAYS_SOFTWARE": "1", "__GLX_VENDOR_LIBRARY_NAME": "mesa"}
 
+# Not measured, chosen: how long the script waits for other things.
+KILL_WAIT = 10.0
+PROBE_TIMEOUT = 20.0
+XVFB_START_TIMEOUT = 10.0
+XVFB_SCREEN = "1280x800x24"
+
 HASH_LIMIT = 16 * 1024 * 1024
+EVIDENCE_FILE_LIMIT = 1024 * 1024
+EVIDENCE_MAX_FILES = 50
 KEEP_RUNS = 20
+EMULATOR_ROLES = ("probe", "install", "boot")
+XVFB_ROLES = ("probe_xvfb", "xvfb")
 
 TITLE_ID_RE = re.compile(r"[A-Z0-9]{9}")
 RUN_DIR_RE = re.compile(r"\d{8}T\d{6}Z-[A-Z0-9]{9}(-\d+)?")
@@ -887,3 +907,823 @@ def build_run_plan(args: argparse.Namespace, paths: InstancePaths, vpk: VpkInfo)
     for spec in args.clean:
         plan.cleans.append(map_clean_path(paths.vita_fs, spec, vpk.title_id))
     return plan
+
+
+# --- Process handling ---------------------------------------------------------------
+
+
+class Interrupted(Exception):
+    """The script received SIGINT, SIGTERM, or SIGHUP."""
+
+
+class DisplayError(Exception):
+    """Xvfb could not be started."""
+
+
+def utc_now() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _ps(*arguments: str) -> str:
+    """Output of `ps`, or an empty string. The fixed environment keeps the format stable."""
+    ps = "/bin/ps" if os.path.exists("/bin/ps") else "ps"
+    try:
+        done = subprocess.run(
+            [ps, *arguments],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            env={"LC_ALL": "C", "PATH": "/bin:/usr/bin"}, timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return done.stdout.decode("ascii", "replace")
+
+
+def ps_lstart(pid: int) -> Optional[str]:
+    """The start time of a process as `ps` prints it, or None when it does not exist."""
+    return _ps("-o", "lstart=", "-p", str(pid)).strip() or None
+
+
+def group_is_defunct(pgid: int) -> bool:
+    """True when every member left in the group is a zombie.
+
+    A killed process stays a zombie until its parent reaps it. Where nothing reaps
+    orphans, for example in a container without an init process, that never happens.
+    """
+    states = [
+        fields[1] for fields in (line.split() for line in _ps("-A", "-o", "pgid=,stat=").splitlines())
+        if len(fields) == 2 and fields[0] == str(pgid)
+    ]
+    return bool(states) and all(state.startswith("Z") for state in states)
+
+
+def group_alive(pgid: int) -> bool:
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # macOS reports a group that holds only zombies this way. It empties once they are reaped.
+        return True
+    return True
+
+
+def _wait_until(condition: Callable[[], bool], seconds: float) -> bool:
+    deadline = time.monotonic() + seconds
+    while not condition():
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.05)
+    return True
+
+
+def stop_process_group(pgid: int, reap: Optional[Callable[[], object]] = None) -> bool:
+    """Stop a launch: SIGTERM, the grace period, then SIGKILL, all to the process group.
+
+    Returns True when a signal was sent. The script's own group is never signalled.
+    """
+    if pgid <= 1 or pgid == os.getpgrp():
+        return False
+
+    def gone() -> bool:
+        if reap is not None:
+            reap()  # a zombie leader would keep the group non-empty
+        return not group_alive(pgid)
+
+    if gone():
+        return False
+    for signum, seconds in ((signal.SIGTERM, KILL_GRACE), (signal.SIGKILL, KILL_WAIT)):
+        try:
+            os.killpg(pgid, signum)
+        except (ProcessLookupError, PermissionError):
+            pass
+        # Members that are not this script's children cannot be reaped here.
+        if _wait_until(lambda: gone() or group_is_defunct(pgid), seconds):
+            break
+    return True
+
+
+def read_state(path: str) -> List[Dict[str, object]]:
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return []
+    return [entry for entry in data if isinstance(entry, dict)] if isinstance(data, list) else []
+
+
+def write_state(path: str, entries: List[Dict[str, object]]) -> None:
+    """An empty list removes the file."""
+    if not entries:
+        try:
+            os.unlink(path)
+        except FileNotFoundError:
+            pass
+        return
+    with open(path + ".tmp", "w", encoding="utf-8") as handle:
+        json.dump(entries, handle)
+    os.replace(path + ".tmp", path)
+
+
+def orphan_is_ours(entry: Dict[str, object]) -> bool:
+    """True when the recorded process still exists with the recorded start time and group.
+
+    Anything else means the ID was reused or the process ended. It is not signalled.
+    """
+    pid, pgid, lstart = entry.get("pid"), entry.get("pgid"), entry.get("lstart")
+    if not (isinstance(pid, int) and isinstance(pgid, int) and isinstance(lstart, str) and lstart):
+        return False
+    if pid <= 1 or ps_lstart(pid) != lstart:
+        return False
+    try:
+        return os.getpgid(pid) == pgid
+    except OSError:
+        return False
+
+
+class Launch:
+    def __init__(self, role: str, proc: "subprocess.Popen[bytes]") -> None:
+        self.role = role
+        self.proc = proc
+        self.pgid = proc.pid  # each launch leads its own session and process group
+        self.signalled = False
+
+
+class Session:
+    """Owns the lock, run-state.json, and every process that the script starts."""
+
+    def __init__(self, paths: InstancePaths, env: Dict[str, str]) -> None:
+        self.paths = paths
+        self.env = env
+        self.launches: List[Launch] = []
+        self.lock_fd: Optional[int] = None
+        self.interrupted = False
+        self.raise_on_interrupt = True
+
+    # Signals set a flag. Every wait loop calls check(), so teardown runs in normal control flow.
+    def install_signal_handlers(self) -> None:
+        def handler(_signum: int, _frame: object) -> None:
+            self.interrupted = True
+
+        for signum in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            signal.signal(signum, handler)
+
+    def check(self) -> None:
+        if self.interrupted and self.raise_on_interrupt:
+            raise Interrupted()
+
+    def sleep(self, seconds: float) -> None:
+        deadline = time.monotonic() + seconds
+        while True:
+            self.check()
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return
+            time.sleep(min(0.1, remaining))
+
+    def acquire_lock(self) -> bool:
+        os.makedirs(self.paths.root, exist_ok=True)
+        fd = os.open(self.paths.lock_file, os.O_RDWR | os.O_CREAT, 0o644)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            os.close(fd)
+            return False
+        self.lock_fd = fd
+        return True
+
+    def release_lock(self) -> None:
+        if self.lock_fd is not None:
+            os.close(self.lock_fd)
+            self.lock_fd = None
+
+    def clean_orphans(self) -> bool:
+        """Stop what a previous script left behind. Only called while the lock is held."""
+        entries = read_state(self.paths.state_file)
+        cleaned = False
+        for roles in (EMULATOR_ROLES, XVFB_ROLES):  # Vita3K aborts when its X server goes away first
+            for entry in entries:
+                if entry.get("role") in roles and orphan_is_ours(entry):
+                    cleaned = stop_process_group(int(entry["pgid"])) or cleaned  # type: ignore[call-overload]
+        write_state(self.paths.state_file, [])
+        return cleaned
+
+    def start(
+        self, role: str, argv: List[str], env: Dict[str, str], output: object, pass_fds: Tuple[int, ...] = ()
+    ) -> Launch:
+        proc = subprocess.Popen(
+            argv, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT,  # type: ignore[call-overload]
+            env=env, start_new_session=True, pass_fds=pass_fds,
+        )
+        launch = Launch(role, proc)
+        self.launches.append(launch)
+        entries = read_state(self.paths.state_file)
+        entries.append({"role": role, "pid": proc.pid, "pgid": launch.pgid, "lstart": ps_lstart(proc.pid)})
+        write_state(self.paths.state_file, entries)
+        return launch
+
+    def ended(self, launch: Launch) -> bool:
+        """The launch ended when its whole process group is empty."""
+        launch.proc.poll()
+        return not group_alive(launch.pgid)
+
+    def stop(self, launch: Launch) -> None:
+        if stop_process_group(launch.pgid, launch.proc.poll):
+            launch.signalled = True
+        try:
+            launch.proc.wait(timeout=KILL_WAIT)
+        except subprocess.TimeoutExpired:
+            pass
+        if launch in self.launches:
+            self.launches.remove(launch)
+        if group_alive(launch.pgid) and not group_is_defunct(launch.pgid):
+            return  # it survived SIGKILL: the entry stays, so the next run can find it
+        try:
+            entries = [entry for entry in read_state(self.paths.state_file) if entry.get("pid") != launch.proc.pid]
+            write_state(self.paths.state_file, entries)
+        except OSError:
+            pass  # the remaining launches must still be stopped
+
+    def teardown(self) -> None:
+        """Stop every process of this script, emulator roles first and Xvfb roles last."""
+        self.raise_on_interrupt = False
+        for roles in (EMULATOR_ROLES, XVFB_ROLES):
+            for launch in list(self.launches):
+                if launch.role in roles:
+                    self.stop(launch)
+
+    def emulator_env(self, display_mode: str, display: Optional[str]) -> Dict[str, str]:
+        env = dict(self.env)
+        env.update(self.paths.xdg_env())
+        if display_mode == "xvfb":
+            env.update(HEADLESS_ENV)
+            if display:
+                env["DISPLAY"] = display
+        return env
+
+    def start_xvfb(self, role: str, log_path: Optional[str]) -> Tuple[Launch, str]:
+        """Start Xvfb and return it with its display name. The script owns this display."""
+        xvfb = shutil.which("Xvfb", path=self.env.get("PATH"))
+        if not xvfb:
+            raise DisplayError("Xvfb not found on PATH")
+        read_fd, write_fd = os.pipe()
+        output = None
+        try:
+            output = open(log_path, "wb") if log_path else None
+            argv = [xvfb, "-displayfd", str(write_fd), "-screen", "0", XVFB_SCREEN, "-nolisten", "tcp"]
+            launch = self.start(role, argv, dict(self.env), output or subprocess.DEVNULL, pass_fds=(write_fd,))
+        except OSError as error:
+            os.close(read_fd)
+            raise DisplayError("Xvfb did not start: %s" % error)
+        finally:
+            os.close(write_fd)
+            if output:
+                output.close()
+        try:
+            number = b""
+            deadline = time.monotonic() + XVFB_START_TIMEOUT
+            while not number.endswith(b"\n") and time.monotonic() < deadline and not self.ended(launch):
+                self.check()
+                if select.select([read_fd], [], [], 0.1)[0]:
+                    data = os.read(read_fd, 32)
+                    if not data:
+                        break
+                    number += data
+        except Interrupted:
+            self.stop(launch)
+            raise
+        finally:
+            os.close(read_fd)
+        if not number.strip().isdigit():
+            self.stop(launch)
+            raise DisplayError("Xvfb did not report a display number")
+        return launch, ":%s" % number.strip().decode("ascii")
+
+    def probe_version(self, binary: str, display_mode: str) -> Tuple[Optional[str], List[str]]:
+        """Run `<binary> --version` the way a launch runs. Returns (version, last output lines).
+
+        The probe proves that the emulator starts on this host. Only called while the lock is held,
+        because every Vita3K start truncates vita3k.log.
+        """
+        xvfb = None
+        display = None
+        text = ""
+        try:
+            if display_mode == "xvfb":
+                xvfb, display = self.start_xvfb("probe_xvfb", None)
+            with tempfile.TemporaryFile(dir=self.paths.root) as output:
+                launch = self.start("probe", [binary, "--version"], self.emulator_env(display_mode, display), output)
+                try:
+                    deadline = time.monotonic() + PROBE_TIMEOUT
+                    while not self.ended(launch) and time.monotonic() < deadline:
+                        self.sleep(0.05)
+                finally:
+                    self.stop(launch)
+                output.seek(0)
+                text = output.read().decode("utf-8", "replace")
+        except (OSError, DisplayError) as error:
+            text += "\n%s" % error
+        finally:
+            if xvfb is not None:
+                self.stop(xvfb)
+        lines = [line for line in clean_log_lines(text) if line.strip()]
+        version = next((line.strip() for line in lines if line.startswith("Vita3K ")), None)
+        return version, lines[-10:]
+
+    def take_screenshot(self, display: str, target: str) -> bool:
+        xwd = shutil.which("xwd", path=self.env.get("PATH"))
+        if not xwd:
+            return False
+        try:
+            dump = subprocess.run(
+                [xwd, "-root", "-silent", "-display", display],
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=15,
+            )
+            if dump.returncode != 0:
+                return False
+            with open(target, "wb") as handle:
+                handle.write(xwd_to_png(dump.stdout))
+        except (OSError, subprocess.SubprocessError, XwdError):
+            return False
+        return True
+
+
+# --- Emulator version cache -----------------------------------------------------------
+
+
+def _binary_key(binary: str) -> Dict[str, object]:
+    info = os.stat(binary)
+    return {"path": binary, "size": info.st_size, "mtime_ns": info.st_mtime_ns}
+
+
+def cached_version(paths: InstancePaths, binary: str) -> Optional[str]:
+    try:
+        with open(paths.version_cache, "r", encoding="utf-8") as handle:
+            cache = json.load(handle)
+        key = _binary_key(binary)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(cache, dict) or any(cache.get(name) != value for name, value in key.items()):
+        return None
+    version = cache.get("version")
+    return version if isinstance(version, str) else None
+
+
+def store_version(paths: InstancePaths, binary: str, version: str) -> None:
+    entry = _binary_key(binary)
+    entry["version"] = version
+    with open(paths.version_cache, "w", encoding="utf-8") as handle:
+        json.dump(entry, handle)
+
+
+# --- run --------------------------------------------------------------------------------
+
+
+def new_result(host: str, display_mode: str, vpk: VpkInfo, plan: RunPlan) -> Dict[str, object]:
+    """The result document with the values of a run that reached nothing yet."""
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "verdict": None,
+        "reason": None,
+        "warnings": [],
+        "host": {"os": host, "arch": platform.machine(), "display_mode": display_mode},
+        "emulator": {"path": None, "version": None, "sha256": None},
+        "vpk": vpk.as_dict(),
+        "stages": {
+            "installed": None, "install_logged": None, "eboot_matches": None, "install_exit_code": None,
+            "emulator_exit_code": None, "emulator_signal": None, "seconds_running": None,
+        },
+        "expectations": [item.unevaluated() for item in plan.expectations],
+        "fs_diff": {"created": [], "modified": [], "deleted": [], "emulator_owned": []},
+        "log_summary": None,
+        "paths": {
+            "run_dir": None, "vita_fs": None, "log_copy": None,
+            "install_stdout": None, "boot_stdout": None, "screenshot": None,
+        },
+        "started_at": utc_now(),
+        "finished_at": None,
+    }
+
+
+def record_personal_paths(host: str, env: Dict[str, str]) -> Dict[str, Optional[int]]:
+    """Existence and modification time of each personal Vita3K path. Nothing is written."""
+    record: Dict[str, Optional[int]] = {}
+    for path in personal_vita3k_paths(host, home_dir(env)):
+        try:
+            record[path] = os.stat(path).st_mtime_ns
+        except OSError:
+            record[path] = None
+    return record
+
+
+def _add_warning(result: Dict[str, object], code: str) -> None:
+    warnings = result["warnings"]
+    if code not in warnings:  # type: ignore[operator]
+        warnings.append(code)  # type: ignore[attr-defined]
+
+
+class RunContext:
+    """What the launch phase learned and the finishing phase needs."""
+
+    def __init__(self) -> None:
+        self.run_dir: Optional[str] = None
+        self.personal: Optional[Dict[str, Optional[int]]] = None
+        self.install_reference_ns: Optional[int] = None
+        self.before: Optional[Dict[str, Dict[str, object]]] = None
+        self.boot_log: Optional[str] = None
+        self.crashed = False
+
+
+def install_stages(paths: InstancePaths, vpk: VpkInfo, install_log: str) -> Dict[str, bool]:
+    """The install is complete when the installed eboot.bin has the VPK's bytes and
+    Vita3K has logged the install. Vita3K logs it after it extracted every file."""
+    eboot = os.path.join(paths.vita_fs, "ux0", "app", vpk.title_id, "eboot.bin")
+    logged = any(INSTALL_MARKER in line for line in read_log_lines(install_log))
+    try:
+        matches = os.path.isfile(eboot) and sha256_file(eboot) == vpk.eboot_sha256
+    except OSError:
+        matches = False
+    return {"install_logged": logged, "eboot_matches": matches, "installed": logged and matches}
+
+
+def expectations_hold(plan: RunPlan, paths: InstancePaths, ctx: RunContext) -> bool:
+    """True when every --expect-* condition holds right now. Used by --stop-when-satisfied."""
+    expects = [item for item in plan.expectations if item.kind in EXPECT_KINDS]
+    after = snapshot_paths(paths.vita_fs, [item.rel for item in expects if item.rel])
+    lines = read_log_lines(ctx.boot_log or "")
+    return all(
+        evaluate_expectation(item, ctx.before or {}, after, lines)["satisfied"] for item in expects
+    )
+
+
+def run_launches(
+    args: argparse.Namespace, session: Session, vpk: VpkInfo, plan: RunPlan,
+    result: Dict[str, object], ctx: RunContext,
+) -> Optional[str]:
+    """Steps 1 to 15 of a run. Returns a lifecycle failure code, or None."""
+    paths, env = session.paths, session.env
+    display_mode = result["host"]["display_mode"]  # type: ignore[index]
+    stages: Dict[str, object] = result["stages"]  # type: ignore[assignment]
+    result_paths: Dict[str, object] = result["paths"]  # type: ignore[assignment]
+    emulator: Dict[str, object] = result["emulator"]  # type: ignore[assignment]
+
+    if is_privileged(os.getuid(), os.geteuid()):
+        return "privileged_user"
+    binary, reason = discover_binary(paths, env)
+    emulator["path"] = binary
+    if reason or binary is None:
+        return reason
+    if not session.acquire_lock():
+        return "instance_busy"
+    if session.clean_orphans():
+        _add_warning(result, "orphan_cleaned")
+
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    ctx.run_dir = create_run_dir(paths.runs_dir, stamp, vpk.title_id)
+    result_paths["run_dir"] = ctx.run_dir
+    result_paths["vita_fs"] = paths.vita_fs
+    # Vita3K installs only paths that end in .vpk or .zip. The copy also fixes the tested bytes.
+    vpk_copy = os.path.join(ctx.run_dir, "%s.vpk" % vpk.title_id)
+    shutil.copyfile(vpk.path, vpk_copy)
+    ctx.personal = record_personal_paths(paths.host, env)
+
+    emulator["sha256"] = sha256_file(binary)
+    version = cached_version(paths, binary)
+    if version is None:
+        version, _lines = session.probe_version(binary, display_mode)
+        if version is not None:
+            store_version(paths, binary, version)
+    emulator["version"] = version
+
+    seed_config(paths.config_file, display_mode)
+    # Removing the title first means an eboot.bin found afterwards was written by this run.
+    remove_no_follow(os.path.join(paths.vita_fs, "ux0", "app", vpk.title_id))
+    for target in plan.cleans:
+        remove_no_follow(target)
+    for host_file, target in plan.seeds:
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        shutil.copyfile(host_file, target)
+
+    display = None
+    if display_mode == "xvfb":
+        try:
+            _xvfb, display = session.start_xvfb("xvfb", os.path.join(ctx.run_dir, "xvfb.log"))
+        except DisplayError as error:
+            print("vita3k_vpk.py: %s" % error, file=sys.stderr)
+            return "display_failed"
+    launch_env = session.emulator_env(display_mode, display)
+
+    # Install launch. The `--` is required: without it Vita3K reads a leading `/` as an option.
+    install_log = os.path.join(ctx.run_dir, "install-stdout.log")
+    with open(install_log, "wb") as output:
+        ctx.install_reference_ns = os.stat(install_log).st_mtime_ns
+        result_paths["install_stdout"] = install_log
+        try:
+            install = session.start("install", [binary, "--", vpk_copy], launch_env, output)
+        except OSError as error:
+            print("vita3k_vpk.py: the emulator did not start: %s" % error, file=sys.stderr)
+            return "emulator_start_failed"
+    try:
+        timeout = float(env.get("VITA3K_VPK_INSTALL_TIMEOUT") or INSTALL_TIMEOUT)
+    except ValueError:
+        timeout = INSTALL_TIMEOUT
+    if not (math.isfinite(timeout) and timeout > 0):
+        timeout = INSTALL_TIMEOUT
+    deadline = time.monotonic() + timeout
+    try:
+        while time.monotonic() < deadline and not session.ended(install):
+            if install_stages(paths, vpk, install_log)["installed"]:
+                break
+            session.sleep(0.5)
+    finally:
+        # Vita3K logs that it will auto-boot and does not, so the launch is stopped here.
+        session.stop(install)
+        stages["install_exit_code"] = install.proc.returncode
+    stages.update(install_stages(paths, vpk, install_log))
+    if not stages["installed"]:
+        return "install_failed"
+
+    # The before-snapshot comes after the install, so the diff covers the boot launch only.
+    ctx.before = take_snapshot(paths.vita_fs, [item.rel for item in plan.expectations if item.rel])
+    ctx.boot_log = os.path.join(ctx.run_dir, "emulator-stdout.log")
+    with open(ctx.boot_log, "wb") as output:
+        result_paths["boot_stdout"] = ctx.boot_log
+        try:
+            boot = session.start("boot", [binary, "-r", vpk.title_id], launch_env, output)
+        except OSError as error:
+            print("vita3k_vpk.py: the emulator did not start: %s" % error, file=sys.stderr)
+            # Nothing ran, so nothing is evidence, and the install log is the one to show.
+            ctx.before = None
+            ctx.boot_log = None
+            result_paths["boot_stdout"] = None
+            return "emulator_start_failed"
+    started = time.monotonic()
+    try:
+        deadline = started + args.timeout
+        satisfied_since: Optional[float] = None
+        next_poll = started
+        while not session.ended(boot):
+            now = time.monotonic()
+            if now >= deadline:
+                break
+            if args.stop_when_satisfied and now >= next_poll:
+                next_poll = now + 1.0
+                if not expectations_hold(plan, paths, ctx):
+                    satisfied_since = None
+                elif satisfied_since is None:
+                    satisfied_since = now
+                if satisfied_since is not None and now - satisfied_since >= args.settle:
+                    _add_warning(result, "stopped_early")
+                    break
+            session.sleep(min(0.1, max(0.0, deadline - now)))
+        if display and not args.no_screenshot:
+            screenshot = os.path.join(ctx.run_dir, "screenshot.png")
+            if session.take_screenshot(display, screenshot):
+                result_paths["screenshot"] = screenshot
+            else:
+                _add_warning(result, "screenshot_failed")
+    finally:
+        stages["seconds_running"] = round(time.monotonic() - started, 1)
+        # Vita3K ignores SIGTERM while an app runs, so this launch normally ends by SIGKILL.
+        session.stop(boot)
+        code = boot.proc.returncode
+        stages["emulator_exit_code"] = code
+        stages["emulator_signal"] = exit_signal(code)
+    if not boot.signalled:
+        # The emulator ended by itself. A launch that the script signalled is never a crash.
+        if code == 0:
+            _add_warning(result, "emulator_exited_early")
+        else:
+            ctx.crashed = True
+    return None
+
+
+def copy_evidence(
+    paths: InstancePaths, run_dir: str, plan: RunPlan,
+    before: Dict[str, Dict[str, object]], after: Dict[str, Dict[str, object]],
+) -> None:
+    """Copy fresh expectation files and small created files to <run_dir>/evidence/."""
+    fresh = [rel for rel in sorted(after) if change_kind(before.get(rel), after[rel]) is not None]
+    named = [item.rel for item in plan.expectations if item.rel in fresh]
+    created = [
+        rel for rel in fresh
+        if rel not in before and not is_emulator_owned(rel) and int(after[rel]["size"]) <= EVIDENCE_FILE_LIMIT  # type: ignore[call-overload]
+    ]
+    copied = 0
+    for rel in dict.fromkeys(named + created):
+        if copied >= EVIDENCE_MAX_FILES:
+            break
+        source = os.path.join(paths.vita_fs, *rel.split("/"))  # type: ignore[union-attr]
+        target = os.path.join(run_dir, "evidence", *rel.split("/")[1:])  # type: ignore[union-attr]
+        try:
+            info = os.lstat(source)
+            if not stat.S_ISREG(info.st_mode) or info.st_size > HASH_LIMIT:
+                continue
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            shutil.copyfile(source, target)
+            copied += 1
+        except OSError:
+            continue
+
+
+def finish_run(
+    session: Session, plan: RunPlan, result: Dict[str, object], ctx: RunContext, lifecycle_reason: Optional[str],
+) -> None:
+    """Steps 17 to 19: diff, evidence copies, isolation and stage checks, verdict."""
+    paths = session.paths
+    stages: Dict[str, object] = result["stages"]  # type: ignore[assignment]
+    result_paths: Dict[str, object] = result["paths"]  # type: ignore[assignment]
+    reason = lifecycle_reason
+    expectations = result["expectations"]
+    if ctx.run_dir is not None:
+        log_lines: List[str] = []
+        if ctx.boot_log is not None:
+            log_lines = read_log_lines(ctx.boot_log)
+            result["log_summary"] = summarize_log(log_lines, "emulator-stdout.log")
+        elif result_paths["install_stdout"] is not None:
+            # The install log tail shows why an install failed, for example a missing library.
+            install_lines = read_log_lines(str(result_paths["install_stdout"]))
+            result["log_summary"] = summarize_log(install_lines, "install-stdout.log")
+        if ctx.before is not None:
+            after = take_snapshot(paths.vita_fs, [item.rel for item in plan.expectations if item.rel])
+            result["fs_diff"] = diff_snapshots(ctx.before, after)
+            if has_unhashed_change(ctx.before, after):
+                _add_warning(result, "large_file_unhashed")
+            expectations = [evaluate_expectation(item, ctx.before, after, log_lines) for item in plan.expectations]
+            result["expectations"] = expectations
+            copy_evidence(paths, ctx.run_dir, plan, ctx.before, after)
+        # Secondary evidence. It lags far behind stdout and reflects the last launch only.
+        # A log that no launch of this run opened is left alone: it belongs to an earlier start.
+        log_copy = os.path.join(ctx.run_dir, "vita3k.log")
+        try:
+            if ctx.install_reference_ns is not None and os.stat(paths.log_file).st_mtime_ns >= ctx.install_reference_ns:
+                shutil.copyfile(paths.log_file, log_copy)
+                result_paths["log_copy"] = log_copy
+        except OSError:
+            pass
+
+    # Order of checks: isolation_violated, then the stage checks, then isolation_unverified.
+    if reason != "interrupted" and ctx.personal is not None:
+        if record_personal_paths(paths.host, session.env) != ctx.personal:
+            reason = "isolation_violated"
+        elif reason is None and stages["installed"]:
+            # Vita3K truncates its log at every start, so the instance log is at least as new
+            # as the install launch when the emulator used the instance paths.
+            try:
+                isolated = os.stat(paths.log_file).st_mtime_ns >= (ctx.install_reference_ns or 0)
+            except OSError:
+                isolated = False
+            if not isolated:
+                reason = "isolation_unverified"
+    result["verdict"], result["reason"] = decide_verdict(reason, ctx.crashed, expectations)  # type: ignore[arg-type]
+
+
+def cmd_run(args: argparse.Namespace, env: Dict[str, str]) -> int:
+    host = detect_host(env)
+    paths = InstancePaths(instance_root(env), host)
+    vpk = inspect_vpk(args.vpk)
+    plan = build_run_plan(args, paths, vpk)
+    result = new_result(host, resolve_display_mode(args.display, host, env), vpk, plan)
+    session = Session(paths, env)
+    ctx = RunContext()
+    session.install_signal_handlers()
+    try:
+        try:
+            reason = run_launches(args, session, vpk, plan, result, ctx)
+        except Interrupted:
+            reason = "interrupted"
+        except Exception:
+            traceback.print_exc()
+            reason = "internal_error"
+        finally:
+            session.teardown()
+        try:
+            finish_run(session, plan, result, ctx, reason)
+        except Exception:
+            traceback.print_exc()
+            result["verdict"], result["reason"] = "environment_error", "internal_error"
+        if session.interrupted:
+            result["verdict"], result["reason"] = "environment_error", "interrupted"
+        result["finished_at"] = utc_now()
+        document = json.dumps(result, indent=2)
+        if ctx.run_dir is not None:
+            try:
+                with open(os.path.join(ctx.run_dir, "result.json"), "w", encoding="utf-8") as handle:
+                    handle.write(document + "\n")
+                prune_run_dirs(paths.runs_dir, ctx.run_dir)
+            except OSError as error:
+                print("vita3k_vpk.py: could not write result.json: %s" % error, file=sys.stderr)
+    finally:
+        session.release_lock()
+    print(document)
+    return exit_code_for(str(result["verdict"]))
+
+
+# --- doctor -----------------------------------------------------------------------------
+
+
+def _has_content(directory: str) -> bool:
+    try:
+        return bool(os.listdir(directory))
+    except OSError:
+        return False
+
+
+def cmd_doctor(args: argparse.Namespace, env: Dict[str, str]) -> int:
+    host = detect_host(env)
+    paths = InstancePaths(instance_root(env), host)
+    display_mode = resolve_display_mode(args.display, host, env)
+    install_section = "references/install.md, section \"%s\"" % ("macOS" if host == "darwin" else "Linux aarch64 and x86_64")
+    problems: List[Dict[str, str]] = []
+    ready = True
+
+    def problem(code: str, detail: str, fix: str, blocks: bool) -> None:
+        nonlocal ready
+        problems.append({"code": code, "detail": detail, "fix": fix})
+        ready = ready and not blocks
+
+    privileged = is_privileged(os.getuid(), os.geteuid())
+    if privileged:
+        problem("privileged_user", "running as root, or with differing real and effective user IDs",
+                "Run as a normal user.", True)
+    binary, reason = discover_binary(paths, env)
+    if reason == "emulator_missing":
+        problem("emulator_missing", "no Vita3K executable for the instance at %s" % paths.root, install_section, True)
+    elif reason == "isolation_unavailable":
+        problem(
+            "isolation_unavailable",
+            "Vita3K.app must be the instance's own copy in %s, with a portable/ directory beside it" % paths.emulator_dir,
+            install_section, True,
+        )
+    headless = {
+        "needed": display_mode == "xvfb",
+        "xvfb": shutil.which("Xvfb", path=env.get("PATH")) is not None,
+        "xwd": shutil.which("xwd", path=env.get("PATH")) is not None,
+    }
+    if headless["needed"] and not headless["xvfb"]:
+        problem("xvfb_missing", "Xvfb is needed on a host without a display", install_section, True)
+    if headless["needed"] and not headless["xwd"]:
+        problem("xwd_missing", "xwd is missing, so runs produce no screenshot", install_section, False)
+
+    emulator: Optional[Dict[str, object]] = None
+    if binary is not None:
+        emulator = {"path": binary, "version": None, "sha256": sha256_file(binary)}
+        can_probe = reason is None and not privileged and not (headless["needed"] and not headless["xvfb"])
+        version = cached_version(paths, binary) if reason is None else None
+        if version is None and can_probe:
+            session = Session(paths, env)
+            session.install_signal_handlers()
+            if not session.acquire_lock():
+                problem("instance_busy", "a run holds the instance lock, so the version probe was skipped",
+                        "Run doctor again after the run.", False)
+            else:
+                try:
+                    version, lines = session.probe_version(binary, display_mode)
+                    if version is None:
+                        problem("version_probe_failed", "the emulator did not start: " + " | ".join(lines),
+                                install_section, True)
+                    else:
+                        store_version(paths, binary, version)
+                except Interrupted:
+                    problem("interrupted", "the script was signalled during the version probe", "Run doctor again.", True)
+                finally:
+                    session.teardown()
+                    session.release_lock()
+        emulator["version"] = version
+
+    firmware = {
+        "main": _has_content(os.path.join(paths.vita_fs, "vs0")),
+        "font": _has_content(os.path.join(paths.vita_fs, "sa0")),
+    }
+    if not (firmware["main"] and firmware["font"]):
+        problem("firmware_missing", "optional: no firmware in the instance. Most homebrew boots without it.",
+                "references/install.md, section \"Firmware (optional)\"", False)
+
+    host_info = {"os": host, "arch": platform.machine(), "display_mode": display_mode}
+    document = {
+        "ready": ready,
+        "host": host_info,
+        "instance_root": paths.root,
+        "emulator": emulator,
+        "paths": paths.as_dict(),
+        "firmware": firmware,
+        "headless": headless,
+        "problems": problems,
+    }
+    print(json.dumps(document, indent=2))
+    return EXIT_PASS if ready else EXIT_ENVIRONMENT
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    args = build_parser().parse_args(argv)
+    env = dict(os.environ)
+    try:
+        if args.command == "doctor":
+            return cmd_doctor(args, env)
+        return cmd_run(args, env)
+    except UsageError as error:
+        print("vita3k_vpk.py: error: %s" % error, file=sys.stderr)
+        return EXIT_USAGE
+
+
+if __name__ == "__main__":
+    sys.exit(main())

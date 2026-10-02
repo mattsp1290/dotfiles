@@ -1,0 +1,133 @@
+[19:29:07.904] |I| [init_config]: input-installed-path: BEVYPOC01
+[19:29:07.904] |I| [init_config]: log-level: trace
+[19:29:07.940] |I| [main]: Vita3K v0.2.1 4111-ab71f829
+[19:29:07.940] |I| [main]: OS: Ubuntu 24.04.4 LTS
+[19:29:07.940] |I| [main]: CPU: <unknown> | 20 Threads | -0.001 GHz
+[19:29:07.940] |I| [main]: Available ram memory: 122566 MiB
+[19:29:07.940] |I| [init]: Base path: "/tmp/.mount_Vita3KKMPELO/usr/share/Vita3K"
+[19:29:07.940] |I| [init]: Static assets path: "/tmp/.mount_Vita3KKMPELO/usr/share/Vita3K"
+[19:29:07.940] |I| [init]: Shared path: "$HOME/.vita3k-agent/xdg/data/Vita3K"
+[19:29:07.940] |I| [init]: Log path: "$HOME/.vita3k-agent/xdg/cache/Vita3K"
+[19:29:07.940] |I| [init]: User config path: "$HOME/.vita3k-agent/xdg/config/Vita3K"
+[19:29:07.940] |I| [init]: User cache path: "$HOME/.vita3k-agent/xdg/cache/Vita3K"
+[19:29:07.940] |I| [init]: VitaFS path: "$HOME/.vita3k-agent/xdg/data/Vita3K/Vita3K"
+[19:29:07.941] |I| [export_library_init_taihen]: taiHEN: HLE module initialized
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_app_selected(app::AppEntry)
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_game_closed()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_live_area_play()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_live_area_closed()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_firmware_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_pkg_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_zip_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_license_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_finished()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_pause_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_stop_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_ps_button()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_toolbar_refresh()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_toolbar_fullscreen()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_toolbar_start()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_app_selection_changed(const app::AppEntry*)
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_context_menu_requested(QPoint,std::vector<const app::AppEntry*>)
+TU: error: ../src/freedreno/vulkan/tu_knl.cc:387: failed to open device /dev/dri/renderD128 (VK_ERROR_INCOMPATIBLE_DRIVER)
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+qt.multimedia.pipewire.devicemonitor: Ignoring dummy output: std::map(std::pair("client.id", "32"), std::pair("factory.id", "18"), std::pair("media.class", "Audio/Sink"), std::pair("node.description", "Dummy Output"), std::pair("node.name", "auto_null"), std::pair("object.serial", "33"))
+[19:29:08.552] |I| [apply_theme_entry]: Loaded stylesheet 'light' from :/themes/light/light.qss
+[19:29:08.645] |D| [set_phase]: App session phase: Idle -> Launching
+[19:29:08.712] |I| [create_gl_context]: Created OpenGL 4.6 context
+[19:29:08.714] |I| [create]: GPU = llvmpipe (LLVM 20.1.2, 128 bits)
+[19:29:08.714] |I| [create]: GL_VERSION = 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.2
+[19:29:08.714] |I| [create]: GL_SHADING_LANGUAGE_VERSION = 4.50
+[19:29:08.714] |I| [create]: Your GPU supports direct access to last fragment color. Your performance with programmable blending games will be optimized.
+[19:29:08.731] |I| [init_overlay_font_dirs]: Overlay font firmware dir: $HOME/.vita3k-agent/xdg/data/Vita3K/Vita3K/sa0/data/font/pvf/
+[19:29:08.731] |I| [init_overlay_font_dirs]: Overlay font system dirs: 6 entries
+[19:29:08.731] |D| [init_overlay_font_dirs]:   system font dir: $HOME/.vita3k-agent/xdg/data/fonts/
+[19:29:08.731] |D| [init_overlay_font_dirs]:   system font dir: $HOME/.fonts/
+[19:29:08.731] |D| [init_overlay_font_dirs]:   system font dir: /usr/share/gnome/fonts/
+[19:29:08.731] |D| [init_overlay_font_dirs]:   system font dir: /usr/local/share/fonts/
+[19:29:08.731] |D| [init_overlay_font_dirs]:   system font dir: /usr/share/fonts/
+[19:29:08.731] |D| [init_overlay_font_dirs]:   system font dir: /var/lib/snapd/desktop/fonts/
+[19:29:08.752] |I| [load_app_impl]: CPU Optimisation state: true
+[19:29:08.752] |I| [load_app_impl]: ngs state: true
+[19:29:08.752] |I| [load_app_impl]: Resolution multiplier: 1
+[19:29:08.752] |I| [load_app_impl]: modules mode: Automatic
+[19:29:08.752] |I| [load_app_impl]: Title: Bevy DB Value
+[19:29:08.752] |I| [load_app_impl]: Serial: BEVYPOC01
+[19:29:08.752] |I| [load_app_impl]: Version: 0.00
+[19:29:08.752] |I| [load_app_impl]: Category: gd
+[19:29:08.752] |I| [load_module]: Loading module "app0:eboot.bin"
+[19:29:08.753] |T| [load_self]: ELF Header: e_type: 0xFE04, e_machine: 0x28, e_version: 0x1, e_entry: 0x6D588, e_phoff: 0x34, e_shoff: 0x0, e_flags: 0x5000000, e_ehsize: 0x34, e_phentsize: 0x20, e_phnum: 0x3, e_shentsize: 0x0, e_shnum: 0x0, e_shstrndx: 0x0
+[19:29:08.754] |I| [load_self]: Loaded module segment 0 @ [0x81000000 - 0x8106DBD0 / 0x81000000] (size: 0x0006DBD0) of module app0:eboot.bin
+[19:29:08.754] |I| [load_self]: Loaded module segment 1 @ [0x81070000 - 0x810B6844 / 0x81070000] (size: 0x00046844) of module app0:eboot.bin
+[19:29:08.754] |I| [load_self]: Linking SELF app0:eboot.bin...
+[19:29:08.754] |I| [load_self]: eboot.bin module NID: 0x6F052F9D
+[19:29:08.754] |D| [load_var_exports]: 	NID 0x6C2224BA (NID_MODULE_INFO) at 0x8106D588
+[19:29:08.754] |D| [load_var_exports]: 	NID 0x70FBA1E7 (SCE_PROC_PARAMS) at 0x8106D5E4
+[19:29:08.755] |I| [operator()]: Module bevypoc.elf (at "app0:eboot.bin") loaded
+[19:29:08.755] |I| [load_app_impl]: Main executable bevypoc.elf (eboot.bin) loaded
+[19:29:08.755] |I| [get_patches]: Found 0 patches for titleid BEVYPOC01
+[19:29:08.755] |I| [load_module]: Loading module "os0:kd/bootimage.skprx"
+[19:29:08.755] |E| [load_module]: Missing file at kd/bootimage.skprx (target path: os0:kd/bootimage.skprx)
+[19:29:08.755] |E| [load_app_impl]: Failed to load preloaded module: os0:kd/bootimage.skprx. Ignoring this error.
+[19:29:08.755] |I| [load_module]: Loading module "os0:kd/sysmodule.skprx"
+[19:29:08.755] |E| [load_module]: Missing file at kd/sysmodule.skprx (target path: os0:kd/sysmodule.skprx)
+[19:29:08.755] |E| [load_app_impl]: Failed to load preloaded module: os0:kd/sysmodule.skprx. Ignoring this error.
+[19:29:08.755] |D| [load_taihen_config]: taiHEN: no config.txt found
+[19:29:08.822] |D| [set_phase]: App session phase: Launching -> Running
+[19:29:08.822] |I| [boot_game_once]: Game started: Bevy DB Value (BEVYPOC01)
+[19:29:08.829] |I| [on_ver_reply_finished]: DB is up to date (2026-10-02 14:38:42Z)
+[19:29:08.942] |I| [export_sceIoOpen]: Opening file: tty0:
+[19:29:08.942] |T| [open_file]: sceIoOpen: Opening terminal tty0:
+[19:29:08.942] |I| [export_sceIoOpen]: Opening file: tty0:
+[19:29:08.942] |T| [open_file]: sceIoOpen: Opening terminal tty0:
+[19:29:08.942] |I| [export_sceIoOpen]: Opening file: tty0:
+[19:29:08.942] |T| [open_file]: sceIoOpen: Opening terminal tty0:
+[19:29:08.946] |T| [write_file]: *** TTY: bevypoc source commit: 
+[19:29:08.946] |T| [write_file]: *** TTY: 81930e738b4b0973db47275d0a1a0e2e27df42a3
+[19:29:08.946] |T| [write_file]: *** TTY: 
+[19:29:08.949] |W| [io_error_impl]: create_dir (_sceIoMkdir) returned 0x80010011
+[19:29:08.951] |I| [export_sceIoOpen]: Opening file: ux0:/data/bevypoc/build.txt
+[19:29:08.951] |T| [open_file]: sceIoOpen: Opening file ux0:/data/bevypoc/build.txt (ux0:/data/bevypoc/build.txt), fd: 0x3
+[19:29:08.951] |T| [write_file]: sceIoWrite: Writing to fd: 0x3, size: 41
+[19:29:08.952] |T| [close_file]: sceIoClose: Closing file fd: 0x3
+[19:29:08.977] |I| [export_sceSysmoduleLoadModule]: Loading module ID: SCE_SYSMODULE_NET
+[19:29:08.977] |W| [operator()]: Stubbed sceNetCtlInit import called. (Stub)
+[19:29:08.977] |I| [adhoc_thread]: Adhoc thread started
+[19:29:08.977] |E| [stat_file]: Missing file at "$HOME/.vita3k-agent/xdg/data/Vita3K/Vita3K/ux0/data/bevypoc/server.txt" (target path: ux0:/data/bevypoc/server.txt)
+[19:29:08.977] |W| [io_error_impl]: stat_file (_sceIoGetstat) returned 0x80010002
+[19:29:08.977] |I| [export_sceIoOpen]: Opening file: ux0:/data/bevypoc/server.txt
+[19:29:08.977] |E| [open_file]: Missing file at "$HOME/.vita3k-agent/xdg/data/Vita3K/Vita3K/ux0/data/bevypoc/server.txt" (target path: ux0:/data/bevypoc/server.txt)
+[19:29:08.977] |W| [io_error_impl]: open_file (sceIoOpen) returned 0x80010002
+[19:29:08.994] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:08.994] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:08.994] |T| [write_file]: *** TTY: 
+[19:29:12.027] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:12.027] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:12.027] |T| [write_file]: *** TTY: 
+[19:29:15.043] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:15.043] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:15.043] |T| [write_file]: *** TTY: 
+[19:29:18.060] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:18.060] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:18.060] |T| [write_file]: *** TTY: 
+[19:29:21.076] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:21.076] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:21.076] |T| [write_file]: *** TTY: 
+[19:29:24.093] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:24.093] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:24.093] |T| [write_file]: *** TTY: 
+[19:29:27.109] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:27.109] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:27.109] |T| [write_file]: *** TTY: 
+[19:29:30.126] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:30.126] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:30.126] |T| [write_file]: *** TTY: 
+[19:29:33.142] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:33.142] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:33.142] |T| [write_file]: *** TTY: 
+[19:29:36.159] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:36.159] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:36.159] |T| [write_file]: *** TTY: 
+[19:29:39.176] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[19:29:39.176] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[19:29:39.176] |T| [write_file]: *** TTY: 
