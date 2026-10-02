@@ -14,8 +14,8 @@ All paths are **new**. The parent `.agents/skills/` exists.
 | --- | --- | --- |
 | `.agents/skills/vita3k-run-vpk/scripts/vita3k_vpk.py` | WP2, WP3 | The helper script. One file. Run through `python3`. |
 | `.agents/skills/vita3k-run-vpk/tests/test_core.py` | WP2 | Unit tests for pure logic. |
-| `.agents/skills/vita3k-run-vpk/tests/fixtures/xvfb-root.xwd` | WP2 | A real `xwd` dump of a small Xvfb root window. |
-| `.agents/skills/vita3k-run-vpk/tests/fixtures/vita3k-sample.log` | WP3 | The sanitized real log excerpt from G1 check 7. |
+| `.agents/skills/vita3k-run-vpk/tests/fixtures/vita3k-frame-crop-64x48.xwd` | WP2 | A 64x48 crop of a real `xwd` dump from G1. Copy it from [artifacts/](artifacts/). |
+| `.agents/skills/vita3k-run-vpk/tests/fixtures/vita3k-sample.log` | WP3 | A real boot-launch log from G1. Copy [artifacts/boot-stdout.log](artifacts/boot-stdout.log). |
 | `.agents/skills/vita3k-run-vpk/tests/test_run.py` | WP3 | Integration tests with the stub emulator. |
 | `.agents/skills/vita3k-run-vpk/tests/stub_vita3k.py` | WP3 | Stub emulator for tests. Mode 755 with a `python3` shebang, because `VITA3K_BIN` must name an executable. |
 | `.agents/skills/vita3k-run-vpk/.gitignore` | WP2 | One line: `__pycache__/`. Reason: F5. |
@@ -79,7 +79,7 @@ No option changes the renderer. In `xvfb` mode the script seeds the G1 renderer 
 
 ## WP2 — Host-independent core
 
-Goal: every piece of logic that does not start a process, with unit tests. Prerequisite: none. G1 used a standalone converter, `xwd2png.py` in the G1 artifacts, which produced correct images from real dumps. Use it as the starting point for `xwd_to_png`.
+Goal: every piece of logic that does not start a process, with unit tests. Prerequisite: none. G1 used a standalone converter, [artifacts/xwd2png.py](artifacts/xwd2png.py), which produced correct images from real dumps. Use it as the starting point for `xwd_to_png`.
 
 ### Instance layout
 
@@ -172,7 +172,7 @@ G1 confirmed that Vita3K accepts a file with only these keys and rewrites it to 
 
 ### XWD conversion
 
-`xwd_to_png` reads the XWD version-7 header (big-endian 32-bit fields), skips the header remainder and the colormap, and reads ZPixmap rows of 24 or 32 bits per pixel using the header's byte order, bytes per line, and channel masks. It writes an 8-bit RGB PNG with `zlib` and `struct`. It raises a specific error for any other format.
+`xwd_to_png` reads the XWD version-7 header (big-endian 32-bit fields), skips the header remainder and the colormap, and reads ZPixmap rows of 24 or 32 bits per pixel using the header's byte order, bytes per line, and channel masks. Row length comes from `bytes_per_line` and pixel size from `bits_per_pixel`. They are independent: the real Xvfb dump from G1 has 3-byte pixels in rows padded to 4 bytes per pixel. It writes an 8-bit RGB PNG with `zlib` and `struct`. It raises a specific error for any other format.
 
 ### Verdict evaluation
 
@@ -244,12 +244,10 @@ Each item is one or more `unittest` cases. Build SFO and VPK fixtures in the tes
 13. Verdict precedence: one case per rule above, including a reject match that overrides satisfied expectations and a crash that overrides satisfied expectations.
 14. `InstancePaths` returns the Linux and macOS layouts for an injected host name.
 15. macOS binary discovery with `VITA3K_VPK_HOST=darwin`: a temporary `emulator/Vita3K.app/Contents/MacOS/Vita3K` with `emulator/portable/` resolves. The same bundle without `portable/` returns `isolation_unavailable`. A `VITA3K_BIN` outside the instance returns `isolation_unavailable`.
-16. `xwd_to_png` converts `tests/fixtures/xvfb-root.xwd` to a PNG. The test decodes the PNG with `zlib` and asserts the dimensions and the color of one known pixel. A truncated dump raises the specific error.
+16. `xwd_to_png` converts `tests/fixtures/vita3k-frame-crop-64x48.xwd` to a PNG. The test decodes the PNG with `zlib` and asserts: size 64x48, pixel (0,0) is RGB `(24, 16, 48)`, pixel (8,4) is RGB `(255, 96, 96)`, and no other colour occurs. A truncated dump raises the specific error. A synthetic 32-bit dump with `bytes_per_line == width * 4` also converts correctly.
 17. Python 3.9 syntax: `ast.parse(source, feature_version=(3, 9))` succeeds for the script and every test file. A text scan of `scripts/vita3k_vpk.py` only finds no `match ` statement at line start, no `strict=`, and no `datetime.UTC`. This check covers syntax only. Full 3.9 behavior is proven at G2.
 18. Large file: a sparse file larger than 16 MiB that changes during the run is reported as modified with `sha256: null`, and the result carries warning `large_file_unhashed`.
 19. Run directory naming and pruning order: a second directory for the same second and title gets the suffix `-2`. Sorting run directory names lexicographically gives creation order.
-
-Create the XWD fixture once, on this host: start `Xvfb` with a `64x48x24` screen, run `xsetroot -solid '#336699'` (present on this host), and run `xwd -root -silent`. The expected pixel is RGB `(0x33, 0x66, 0x99)`. The file is about 12 KiB.
 
 WP2 acceptance: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s .agents/skills/vita3k-run-vpk/tests -p 'test_core.py'` exits 0.
 

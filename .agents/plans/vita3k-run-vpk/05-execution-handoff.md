@@ -2,7 +2,9 @@
 
 Terms are defined in [00-overview.md](00-overview.md). WP1 is complete (2026-10-02, gate G1 passed, record in [G1.md](G1.md)). No skill code exists. Start with WP2.
 
-Host state left by WP1: VitaSDK at `/usr/local/vitasdk`, Rust `nightly-2026-04-08`, `cargo-vita 0.2.2`, `libfuse2t64`, and the instance at `$HOME/.vita3k-agent` with Vita3K build 4111 and bevypoc installed. `$HOME/.vita3k-agent/g1-artifacts/` holds the G1 harness, a working XWD-to-PNG converter (`xwd2png.py`), a real 1280x800 dump (`runs/p2r/screen.xwd`), and real logs (`runs/*/stdout.log`). Use the converter and the logs as the starting point for `xwd_to_png` and for `tests/fixtures/vita3k-sample.log`. Replace `$HOME` in every path before committing a log excerpt.
+Host state left by WP1: VitaSDK at `/usr/local/vitasdk`, Rust `nightly-2026-04-08`, `cargo-vita 0.2.2`, `libfuse2t64`, and the instance at `$HOME/.vita3k-agent` with Vita3K build 4111 and bevypoc installed. `$HOME/.vita3k-agent/g1-artifacts/` on that host holds the G1 harness, full dumps, and all logs.
+
+WP2, WP3, and WP4 can be done on any host. Everything they need from G1 is committed in [artifacts/](artifacts/): the working XWD-to-PNG converter, a small real XWD fixture with its expected pixel values, and sanitized real install and boot logs. [G1.md](G1.md) describes each file. WP5 needs the Linux gate host. WP6 (gate G2) needs a Mac.
 
 ## Before starting
 
