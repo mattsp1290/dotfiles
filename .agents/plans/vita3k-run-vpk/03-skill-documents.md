@@ -36,7 +36,7 @@ Body sections, in order:
    5. Run `run` with the expectations, `--seed` for input files, and `--clean` for evidence that must not carry over.
    6. Read the JSON result. For `fail` and `inconclusive`, read the files under `paths.run_dir`.
    7. Report the verdict, the VPK SHA-256, the emulator version, and the evidence that supports the verdict.
-2. **Commands.** The two command lines, the option table, the exit-code table, and the environment variables `VITA3K_AGENT_HOME` and `VITA3K_BIN` from [02-runner-script.md](02-runner-script.md). Keep the tables identical to the implemented script. State the default timeout and that a run without `--stop-when-satisfied` lasts the full timeout. Do not document the test seam `VITA3K_VPK_HOST`.
+2. **Commands.** The two command lines, the option table, the exit-code table, and the environment variables `VITA3K_AGENT_HOME` and `VITA3K_BIN` from [02-runner-script.md](02-runner-script.md). Keep the tables identical to the implemented script. State the default timeout and that a run without `--stop-when-satisfied` lasts the full timeout. State that log expectations read the boot launch only. Do not document the test seams `VITA3K_VPK_HOST` and `VITA3K_VPK_INSTALL_TIMEOUT`.
 3. **Invariants.**
    - A `pass` needs at least one expectation. Never report success from an `inconclusive` run.
    - Emulator evidence never proves physical-device behavior. State this in every report.
@@ -64,14 +64,14 @@ Three keys under `interface`, following `.agents/skills/select-next-milestone/ag
 Sections:
 
 1. **Instance layout.** The `VITA3K_AGENT_HOME` tree per host, from [02-runner-script.md](02-runner-script.md). State that the skill never uses a personal Vita3K install.
-2. **Linux aarch64 and x86_64.** Host packages are preconditions that need `sudo`. The agent asks the user to install a missing one and does not install it. The exact instance-scoped commands that G1 proved: create `emulator/`, download the matching AppImage from the `continuous` release of `Vita3K/Vita3K` (F10), verify its SHA-256 against the release asset `digest` from the GitHub API, make it executable, extract it when the direct form does not run. List the required host packages from the G1 observations, with Ubuntu 24.04 package names. The baseline from F8 is `xvfb`, `x11-apps` for `xwd`, `mesa-vulkan-drivers`, and `libgl1-mesa-dri`. Add every package that G1 found necessary. Mark the whole x86_64 path `unverified`: the asset name comes from the release listing and no x86_64 host ran it.
-3. **Headless Linux.** The renderer profile that G1 chose, with one sentence on why the NVIDIA driver is or is not used.
-
-The references restate gate results in their own words. They never link to or name a file under `.agents/plans/` (D14).
+2. **Linux aarch64 and x86_64.** Host packages are preconditions that need `sudo`. The agent asks the user to install a missing one and does not install it. The exact instance-scoped commands that G1 proved: create `emulator/`, download `Vita3K-aarch64.AppImage` from a numbered release of `Vita3K/Vita3K-builds` (F10), verify its SHA-256 against the release asset `digest` from the GitHub API, and make it executable. State the glibc rule: builds from 4112 on need glibc 2.43 (Ubuntu 26.04 or newer). On a host with an older glibc, use build 4111. Give the check command `ldd --version` and the failure text `version 'GLIBC_2.43' not found`. On a host with glibc 2.43 or newer, the newest build is expected to work and is marked `not run`. Describe `--appimage-extract` as the untested fallback for a host without `libfuse2t64`. List the required host packages from the G1 observations, with Ubuntu 24.04 package names. The list from G1 is `xvfb`, `x11-apps` for `xwd`, `libgl1-mesa-dri` for software OpenGL, and `libfuse2t64` for the direct AppImage form. G1 needed no other package on this host. Whether the AppImage runs without `libfuse2t64` is untested. Mark the whole x86_64 path `unverified`: the asset name comes from the release listing and no x86_64 host ran it.
+3. **Headless Linux.** The renderer profile that G1 chose: software OpenGL through Mesa. State that software Vulkan boots the app and leaves the game window black in screenshots, and that the NVIDIA profiles were not tried.
 4. **macOS.** Download `macos-arm64-latest.dmg` or `macos-latest.dmg`, copy `Vita3K.app` into `emulator/`, create `emulator/portable/`, and remove the quarantine attribute. Mark every macOS step `unverified until gate G2` until [04-acceptance-gates.md](04-acceptance-gates.md) G2 passes. After G2, replace the marker with the G2 date.
-5. **Firmware (optional).** State when it is needed: an app fails with missing system modules or fonts. State the source: Sony's system-software page linked from Vita3K's quickstart (F21). State the command: the emulator's `--firmware <file.pup>` option, run with the same isolation environment as `run`. State that the font package has no documented official URL and needs the user. The agent asks the user for firmware files. It does not search for them.
+5. **Firmware (optional).** State when it is needed: an app fails with missing system modules or fonts. State that the two `os0:kd/*.skprx` error lines appear in every firmware-free run and are harmless. State the source: Sony's system-software page linked from Vita3K's quickstart (F21). State the command: the emulator's `--firmware <file.pup>` option, run with the same isolation environment as `run`. State that the font package has no documented official URL and needs the user. The agent asks the user for firmware files. It does not search for them.
 6. **Updating and removing.** Replace the file under `emulator/` to update. Delete `VITA3K_AGENT_HOME` to remove everything.
 7. **Verification.** `doctor` must print `"ready": true`.
+
+The references restate gate results in their own words. They never link to or name a file under `.agents/plans/` (D14).
 
 Every command in `references/install.md` must have been executed during WP1, WP5, or G2. Mark any command that was not executed as `not run`, with the reason.
 
@@ -85,16 +85,24 @@ Sections:
 
    | Project type | Build output | Typical evidence |
    | --- | --- | --- |
-   | Rust with `cargo-vita` (bevypoc) | `target/armv7-sony-vita-newlibeabihf/release/<bin>.vpk` | `ux0:data/bevypoc/build.txt` contains the source SHA. `server.txt` is seeded with `--seed`. |
+   | Rust with `cargo-vita` (bevypoc) | `target/armv7-sony-vita-newlibeabihf/release/<bin>.vpk` | `ux0:data/bevypoc/build.txt` contains the source SHA. `server.txt` is seeded with `--seed`. Without it the log repeats `*** TTY: SpacetimeDB unavailable: ` and the screen shows `ERR`. Exercised in G1. |
    | Rust with `cargo-vita` (vitair) | same layout, `vitair-app.vpk` | `ux0:data/vitair/startup.log` gains lines of the form `<source SHA> <message>`. The file is append-only, so the expectation matches appended lines only. The on-screen `ux0:` listing needs the screenshot. |
    | Nim with VitaSDK script (clckr spike) | path set by the project's `scripts/build_vita.sh` | Breadcrumb file `ux0:data/clckr_vita_spike.txt`. The last line names the last step reached. |
    | Nim with network client (topdown) | same | Host `127.0.0.1` reaches a server on the same machine only inside the emulator. |
 
    Mark the vitair row and the Nim rows `not exercised` until a VPK of that project was run through the skill. The vitair row also states that vitair's README requires firmware in Vita3K.
-4. **Reading the log.** Line format (F18), level letters, `*** TTY:` lines when G1 confirmed them (A3), the duplicate filter, and the install lines (F12). Include the real boot marker lines that `G1.md` recorded.
+4. **Reading the log.** Line format (F18), level letters, the duplicate filter, and these facts from G1:
+   - app stdout and stderr appear as `*** TTY: <text>` lines, and one print call becomes several lines, so a regex must target one fragment (for bevypoc: the SHA line, not `bevypoc source commit: <sha>`);
+   - boot markers: `App session phase: Launching -> Running` and `Game started: <title> (<TITLE_ID>)`;
+   - every file access is logged, including `Missing file at "<host path>" (target path: ux0:...)`, which shows what the app tried to read;
+   - error-level lines occur in healthy runs: the two `os0:kd/*.skprx` lines without firmware, and one `Missing file at` line for every file that the app probes and does not find. Never use the mere presence of `|E|` lines as a failure signal;
+   - the Qt and Mesa lines without a timestamp are noise;
+   - `vita3k.log` is often short or empty, and `emulator-stdout.log` is the log to read.
 5. **Failure classes.** A table with one row per class, its signature in the result, and the next action:
    - `environment_error` codes from [02-runner-script.md](02-runner-script.md);
-   - verdict `fail` with reason `emulator_crashed`: the emulator ended with a non-zero status or a fatal signal after installing. Read the log tail and the exit code. The cause can be the app or the emulator;
+   - verdict `fail` with reason `emulator_crashed`: in the boot launch the emulator ended by itself with a non-zero status, for example 139 for a segmentation fault. Read the log tail and the exit code. The cause can be the app or the emulator;
+   - `interrupted`: the script was signalled. Rerun;
+   - `install_failed`: read the install log tail in the result. A `GLIBC_… not found` line means the Vita3K build is too new for the host;
    - install succeeded, no fresh files, error lines in the log: the app failed or stalled before writing its evidence;
    - install succeeded, log shows missing modules or unimplemented imports: emulator limitation or missing firmware (R4), not an app defect until proven on hardware;
    - expectation file exists but is not fresh, or the expected text is only in the old part of an appended file: stale evidence from an earlier run;

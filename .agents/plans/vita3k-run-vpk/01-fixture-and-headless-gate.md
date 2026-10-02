@@ -2,6 +2,22 @@
 
 Covers **WP1**. Terms, findings (F*), decisions (D*), and assumptions (A*) are defined in [00-overview.md](00-overview.md).
 
+Status: complete. The gate passed on 2026-10-02. The record is [G1.md](G1.md). This file is the gate definition as it was run. It is kept for reference and for a rerun on another Linux host.
+
+The steps below are the steps as written before the run. G1 superseded several of them. On a rerun, apply these corrections:
+
+| Step or check | Correction from G1.md |
+| --- | --- |
+| Step 1, item 1 | The `wasm32-unknown-unknown` target is not needed for `scripts/build-vpk.sh`. |
+| Step 2, item 2 | Download from a numbered release of `Vita3K/Vita3K-builds`. On glibc older than 2.43, use build 4111 (deviations 1, 2). |
+| Check 1 | Skip the offscreen attempt. Probe under Xvfb (deviation 3). |
+| Checks 4 and 5 | Use two launches: `<binary> -- <vpk>`, stop, then `<binary> -r <TITLE_ID>` (deviations 4, 5). The install line and `build.txt` come from different launches. |
+| Check 7 | No pseudo-terminal is needed. A plain redirect shows lines in real time. |
+| Check 8 | The converter is `xwd2png.py` in the G1 artifacts. It does not depend on WP2. |
+| Check 9 | `SIGTERM` does not stop a running app. Use `SIGTERM`, 2 seconds, `SIGKILL` (deviation 7). The grace period is 2 seconds, not "twice the measured time, minimum 5", because the measured time on `SIGTERM` is unbounded. |
+| Check 14 | Use `--console -- <vpk>`. |
+| `G1.md` content | The "pseudo-terminal" and "drop" outcomes did not occur. |
+
 ## Goal
 
 Prove, by hand, that Vita3K can install and boot a real VPK on this headless aarch64 Linux host with no human interaction. Record the exact working recipe. WP3 implements that recipe and nothing else.

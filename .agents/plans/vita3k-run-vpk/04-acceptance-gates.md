@@ -29,15 +29,15 @@ Run every step as the normal user.
    run <bevypoc.vpk> --expect-file-contains ux0:data/bevypoc/build.txt=<source SHA> --stop-when-satisfied
    ```
 
-   Expected: exit 0, verdict `pass`, `stages.installed` true, `fs_diff.created` lists the file, no emulator or Xvfb process remains. `stages.eboot_matches` is true when G1 observed identical bytes (A7). Otherwise it is false with warning `eboot_differs`.
-4. **Freshness (S2).** Run the same command again without `--clean`. Expected: verdict `pass`, and the file appears under `fs_diff.modified`, because bevypoc rewrites it on each launch. Then seed `ux0:data/bevypoc/server.txt` in one run, and in the next run, without `--seed`, pass `--expect-file ux0:data/bevypoc/server.txt`. Expected: verdict `fail`. The file exists from the earlier run and the app does not write it.
+   Expected: exit 0, verdict `pass`, `stages.installed` and `stages.eboot_matches` true (A7 held in G1), `fs_diff.created` lists the file, no emulator or Xvfb process remains. Record the complete `fs_diff` of this run in `A1-linux.md`. Every path in `created` or `modified` that bevypoc did not write is an emulator write: add its pattern to the script's `emulator_owned` list, with a test, and rerun this step. Expected after that: `created` and `modified` hold only `ux0/data/bevypoc/build.txt`.
+4. **Freshness (S2).** Run the same command again without `--clean`. Expected: verdict `pass`, and the file appears under `fs_diff.modified`, because bevypoc rewrites it on each launch. Then seed `ux0:data/bevypoc/server.txt` in one run, and in the next run, without `--seed`, pass `--expect-file ux0:data/bevypoc/server.txt`. Expected: verdict `fail`. The file exists from the earlier run and the app does not write it. Finish this step with one run that passes `--clean ux0:data/bevypoc`, so that `server.txt` is absent again. Steps 5–9 rely on the absent file: it produces the `SpacetimeDB unavailable` lines and the `ERR` frame.
 5. **Fail (S4).** Run with `--expect-file ux0:data/bevypoc/never-written.txt`. Expected: exit 1, verdict `fail`, the expectation entry is unsatisfied.
 6. **Inconclusive (S3).** Run with no expectation. Expected: exit 4, verdict `inconclusive`, `fs_diff` and `log_summary` populated.
-7. **Log channel.** When G1 confirmed A3, run with `--expect-log 'bevypoc source commit: <source SHA>'`. Expected: `pass`. When G1 refuted A3, record that app stderr is not available and confirm that `references/evidence.md` says so.
-8. **Reject.** Take a real line from the log of step 6 and run with `--reject-log` set to it. When G1 confirmed A3, use the app's own error line for the absent `server.txt`. When G1 refuted A3, use a Vita3K-originated line, for example the install line from F12. Expected: verdict `fail`.
+7. **Log channel.** Run with `--expect-log '\*\*\* TTY: <source SHA>'`. Expected: `pass`. G1 confirmed A3 and showed that the SHA is on its own TTY line. Then run with `--expect-log 'bevypoc source commit: <source SHA>'`. Expected: `fail`, because the message is split across lines. Confirm that `references/evidence.md` warns about this.
+8. **Reject.** Run with `--reject-log 'SpacetimeDB unavailable'`, the app's own error line for the absent `server.txt` (G1). Expected: verdict `fail`.
 
    Then run with that same `--reject-log`, the `build.txt` expectation, and `--stop-when-satisfied`. Record the verdict and whether warning `stopped_early` appears. This shows on the real fixture what an early stop observes.
-9. **Screenshot.** When the G1 screenshot decision is `keep`: confirm `paths.screenshot` exists and view it. Expected: the frame shows the app output. When the decision is `drop`: confirm the field is `null` and the documents do not promise a screenshot.
+9. **Screenshot.** Confirm `paths.screenshot` exists and view it. Expected: the game window at the top left shows `ERR`, as in G1.
 10. **Isolation.** Confirm `~/.config/Vita3K`, `~/.cache/Vita3K`, and `~/.local/share/Vita3K` do not exist, or are unchanged when they existed before WP1. Confirm no run returned `isolation_violated`.
 11. **Corrupt VPK.** Run with a zip file that lacks `sce_sys/param.sfo`. Expected: exit 2.
 
@@ -82,7 +82,9 @@ G2 must run on a Mac. No Mac is reachable from this Linux host (R6). The gate ow
 2. Run `doctor` with an empty instance. Expected: exit 3 with a problem entry that names the macOS install section.
 3. Follow the macOS section of `references/install.md` exactly, from an empty instance. Record each command. Run `doctor`. Expected: exit 0 and `ready: true`. This proves the macOS part of S5.
 4. Verify the portable layout (A6). After one `run`, confirm that `emulator/portable/config.yml`, `emulator/portable/vita3k.log`, and `emulator/portable/fs/ux0/` exist, and that `~/Library/Application Support/Vita3K` was not created or changed.
-5. Verify that the seeded config suppresses the welcome, update, and firmware dialogs on macOS. Expected: the app boots with no click.
+5. Verify that the seeded config suppresses the welcome, update, and firmware dialogs on macOS. Expected: the app boots with no click. Use a Vita3K build number equal to or newer than the Linux pin, and record it.
+
+   Check the three Linux behaviors from G1 on macOS and record each result: whether the VPK path needs the `--` separator, whether a positional VPK boots in the same launch, and whether `SIGTERM` stops Vita3K while an app runs. The script's two-launch sequence and `SIGTERM`-then-`SIGKILL` stop must work in every combination. Fix the script when one does not.
 6. Run WP5 steps 3, 5, 6, and 11 with a bevypoc VPK built on the Mac. Expected: the same verdicts and exit codes.
 7. Confirm `paths.screenshot` is `null` and the emulator window closes after the run. Record how the `--version` probe behaves on macOS: its duration, whether a window or Dock icon appears, and whether it exits by itself. When it does not exit within 20 seconds, the script's timeout must kill it and `doctor` must still return.
 8. Confirm the stop sequence leaves no `Vita3K` process.

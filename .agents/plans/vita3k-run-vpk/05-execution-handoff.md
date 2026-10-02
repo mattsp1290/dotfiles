@@ -1,11 +1,13 @@
 # 05 — Execution handoff
 
-Terms are defined in [00-overview.md](00-overview.md). No work package has been implemented.
+Terms are defined in [00-overview.md](00-overview.md). WP1 is complete (2026-10-02, gate G1 passed, record in [G1.md](G1.md)). No skill code exists. Start with WP2.
+
+Host state left by WP1: VitaSDK at `/usr/local/vitasdk`, Rust `nightly-2026-04-08`, `cargo-vita 0.2.2`, `libfuse2t64`, and the instance at `$HOME/.vita3k-agent` with Vita3K build 4111 and bevypoc installed. `$HOME/.vita3k-agent/g1-artifacts/` holds the G1 harness, a working XWD-to-PNG converter (`xwd2png.py`), a real 1280x800 dump (`runs/p2r/screen.xwd`), and real logs (`runs/*/stdout.log`). Use the converter and the logs as the starting point for `xwd_to_png` and for `tests/fixtures/vita3k-sample.log`. Replace `$HOME` in every path before committing a log excerpt.
 
 ## Before starting
 
 1. Confirm the repository: `pwd` and `git remote -v` must show the dotfiles repository.
-2. Create a feature branch from `main`, for example `feat/vita3k-run-vpk-skill`. Do not commit to `main`.
+2. Use the existing branch `feat/vita3k-run-vpk-skill`, which holds this plan. Do not commit to `main`.
 3. Leave `.agents/skills/select-next-milestone/scripts/__pycache__/` alone. It is unrelated untracked noise (F5).
 4. Read `AGENTS.md` and `.agents/README.md`.
 
@@ -13,7 +15,7 @@ Terms are defined in [00-overview.md](00-overview.md). No work package has been 
 
 | WP | Result | Detail | Prerequisites | Changes |
 | --- | --- | --- | --- | --- |
-| WP1 | Gate G1 decided, recipe recorded | [01](01-fixture-and-headless-gate.md) | Fixture VPK from the user, or user approval of the four host installs. `xwd_to_png` from WP2 for check 8. | `.agents/plans/vita3k-run-vpk/G1.md` (**new**) |
+| WP1 (done) | Gate G1 decided, recipe recorded | [01](01-fixture-and-headless-gate.md) | Met: the user approved the host installs. | `.agents/plans/vita3k-run-vpk/G1.md` (**new**) |
 | WP2 | Host-independent core with unit tests | [02](02-runner-script.md) | None | `scripts/vita3k_vpk.py`, `tests/test_core.py`, `tests/fixtures/xvfb-root.xwd`, `.gitignore` (all **new**) |
 | WP3 | `run` and `doctor` work with the stub and follow the G1 recipe | [02](02-runner-script.md) | WP2, G1 go, `G1.md` complete | `scripts/vita3k_vpk.py`, `tests/test_run.py`, `tests/stub_vita3k.py`, `tests/fixtures/vita3k-sample.log` (**new**) |
 | WP4 | Skill documents | [03](03-skill-documents.md) | WP3 | `SKILL.md`, `agents/openai.yaml`, `references/install.md`, `references/evidence.md`, `tests/test_docs.py` (all **new**) |
@@ -24,9 +26,7 @@ All skill paths are under `.agents/skills/vita3k-run-vpk/` (**new**).
 
 ## Ordering and parallelism
 
-- Start WP1 and WP2 together. WP1 is manual host work. WP2 is code. One dependency crosses them: G1 check 8 uses `xwd_to_png` from WP2. Finish that function and its fixture test before check 8.
-- The first action of WP1 is the user request for a fixture VPK or for approval of the four host installs. Send it before starting WP2, so the answer does not delay the gate.
-- WP3 must not start before G1 is decided. A no-go at G1 stops the plan and returns the decision to the user.
+- WP1 is done. WP2 has no open prerequisite.
 - WP3 and WP4 touch the same contract. Do them sequentially, in one agent.
 - WP5 and WP6 are independent of each other. WP6 needs a different host.
 - Do not run the skill tests while another agent writes files in the skill directory.
@@ -36,7 +36,7 @@ All skill paths are under `.agents/skills/vita3k-run-vpk/` (**new**).
 
 | WP | Command or procedure | Pass condition |
 | --- | --- | --- |
-| WP1 | Checks 1–14 in [01](01-fixture-and-headless-gate.md) | `G1.md` complete, decision go |
+| WP1 (done) | Checks 1–14 in [01](01-fixture-and-headless-gate.md) | `G1.md` complete, decision go. Met on 2026-10-02. |
 | WP2 | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s .agents/skills/vita3k-run-vpk/tests -p 'test_core.py'` | Exit 0 |
 | WP3 | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s .agents/skills/vita3k-run-vpk/tests` | Exit 0, no leftover process, no `__pycache__` in `git status` |
 | WP3 | `python3 -m py_compile .agents/skills/vita3k-run-vpk/scripts/vita3k_vpk.py` | Exit 0 |
@@ -92,6 +92,7 @@ Run each verification command separately and check its exit status. Do not chain
 - Startup breadcrumbs in consumer apps that show results only on screen (vitair). A change in those repositories. Not requested here.
 - Scripted controller or touch input.
 - Screenshots on macOS or on Linux with a host display.
-- A pinned Vita3K version. Not possible while upstream publishes only a rolling release (F10).
+- A newer Vita3K on this host (R9). Builds after 4111 need glibc 2.43. Options: upgrade the host to Ubuntu 26.04, run the emulator in a container, or build from source.
+- The NVIDIA renderer profiles and the extracted AppImage form. Not tried in G1.
 - Windows hosts.
 - A root `.gitignore` for `__pycache__` across all skills (F5).
