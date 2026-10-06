@@ -1,0 +1,28 @@
+# Raw emulator observations, scratch copy of vita3k-4111-ab71f829-macos-arm64.dmg, 2026-10-02T21:24:59Z
+# harness: launch.sh <name> <seconds> <args>: start in own session, wait, SIGTERM to the group, wait 5 s, SIGKILL
+d647be251adf383defacfa321baa6dd7e7715c4584aa87016a3319374f6ea432  emulator/vita3k-4111-ab71f829-macos-arm64.dmg
+## xattr of the curl-downloaded DMG
+com.apple.diskimages.recentcksum: i:2384
+com.apple.provenance: 
+## fresh copy of Vita3K.app from the DMG, before any xattr removal: quarantine attributes found:
+0
+attribute names present: com.apple.provenance 
+## A: positional VPK, no separator
+after 8.1s: returncode=None log_lines=202 vita3k.log_lines=0
+SIGTERM: returncode=None after 5.01s
+SIGKILL: returncode=-9
+installed app dir after A: 
+## B: -- VPK
+after 12.0s: returncode=None log_lines=208 vita3k.log_lines=0
+SIGTERM: returncode=None after 5.01s
+SIGKILL: returncode=-9
+installed files after B: ux0/app/BEVYPOC01/eboot.bin ux0/app/BEVYPOC01/sce_sys/param.sfo 
+Game started lines in B: 0
+## C: -r BEVYPOC01
+after 10.2s: returncode=None log_lines=475 vita3k.log_lines=47
+SIGTERM: returncode=None after 5.02s
+SIGKILL: returncode=-9
+build.txt after C: 81930e738b4b0973db47275d0a1a0e2e27df42a3
+Game started lines in C: 1
+ANSI escape lines in C: 0
+lines without timestamp: A 186/202, B 186/208, C 374/478

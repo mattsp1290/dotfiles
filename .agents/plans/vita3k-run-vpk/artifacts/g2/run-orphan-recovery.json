@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "verdict": "pass",
+  "reason": null,
+  "warnings": [
+    "orphan_cleaned",
+    "stopped_early"
+  ],
+  "host": {
+    "os": "darwin",
+    "arch": "arm64",
+    "display_mode": "host"
+  },
+  "emulator": {
+    "path": "$HOME/.vita3k-agent/emulator/Vita3K.app/Contents/MacOS/Vita3K",
+    "version": "Vita3K v0.2.1 4111-ab71f829",
+    "sha256": "31c1466986b227e21c7172b8d16f89dcc23025be7d46cae89fa810d318dea482"
+  },
+  "vpk": {
+    "path": "$SCRATCH/bevypoc/target/armv7-sony-vita-newlibeabihf/release/bevypoc.vpk",
+    "sha256": "262583cf5008914a3176752f6ae0de1efd0e165590ba229bfb5e212eb79d057f",
+    "title_id": "BEVYPOC01",
+    "eboot_sha256": "67e42cfaa8791a4aaef37fbc88b2ad32f0ced4fc879104e1a146e2354e976635"
+  },
+  "stages": {
+    "installed": true,
+    "install_logged": true,
+    "eboot_matches": true,
+    "install_exit_code": -9,
+    "emulator_exit_code": -9,
+    "emulator_signal": 9,
+    "seconds_running": 6.2
+  },
+  "expectations": [
+    {
+      "kind": "expect-file-contains",
+      "target": "ux0:data/bevypoc/build.txt=81930e738b4b0973db47275d0a1a0e2e27df42a3",
+      "satisfied": true,
+      "detail": "modified, text found in fresh content (whole file)"
+    }
+  ],
+  "fs_diff": {
+    "created": [],
+    "modified": [
+      {
+        "path": "ux0/data/bevypoc/build.txt",
+        "size": 41,
+        "sha256": "55a66f4cd8e82be57f635bb9146b1fe7a4e77d2c9f327cb6ef3c22351a3807af"
+      }
+    ],
+    "deleted": [],
+    "emulator_owned": [
+      {
+        "path": "ux0/user/time.xml",
+        "change": "modified"
+      }
+    ]
+  },
+  "log_summary": {
+    "source": "emulator-stdout.log",
+    "line_count": 470,
+    "levels": {
+      "T": 19,
+      "D": 8,
+      "I": 46,
+      "W": 4,
+      "E": 6,
+      "C": 0,
+      "?": 387
+    },
+    "errors": [
+      "[17:06:00.081] |E| [load_module]: Missing file at kd/bootimage.skprx (target path: os0:kd/bootimage.skprx)",
+      "[17:06:00.081] |E| [load_app_impl]: Failed to load preloaded module: os0:kd/bootimage.skprx. Ignoring this error.",
+      "[17:06:00.081] |E| [load_module]: Missing file at kd/sysmodule.skprx (target path: os0:kd/sysmodule.skprx)",
+      "[17:06:00.081] |E| [load_app_impl]: Failed to load preloaded module: os0:kd/sysmodule.skprx. Ignoring this error.",
+      "[17:06:00.165] |E| [stat_file]: Missing file at \"$HOME/.vita3k-agent/emulator/portable/fs/ux0/data/bevypoc/server.txt\" (target path: ux0:/data/bevypoc/server.txt)",
+      "[17:06:00.165] |E| [open_file]: Missing file at \"$HOME/.vita3k-agent/emulator/portable/fs/ux0/data/bevypoc/server.txt\" (target path: ux0:/data/bevypoc/server.txt)"
+    ],
+    "tty": [
+      "[17:06:00.141] |T| [write_file]: *** TTY: bevypoc source commit: ",
+      "[17:06:00.141] |T| [write_file]: *** TTY: 81930e738b4b0973db47275d0a1a0e2e27df42a3",
+      "[17:06:00.141] |T| [write_file]: *** TTY: ",
+      "[17:06:00.178] |T| [write_file]: *** TTY: SpacetimeDB unavailable: ",
+      "[17:06:00.178] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)",
+      "[17:06:00.178] |T| [write_file]: *** TTY: ",
+      "[17:06:03.197] |T| [write_file]: *** TTY: SpacetimeDB unavailable: ",
+      "[17:06:03.197] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)",
+      "[17:06:03.197] |T| [write_file]: *** TTY: ",
+      "[17:06:06.216] |T| [write_file]: *** TTY: SpacetimeDB unavailable: ",
+      "[17:06:06.216] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)",
+      "[17:06:06.216] |T| [write_file]: *** TTY: "
+    ],
+    "tail": [
+      "[17:06:00.081] |E| [load_module]: Missing file at kd/bootimage.skprx (target path: os0:kd/bootimage.skprx)",
+      "[17:06:00.081] |E| [load_app_impl]: Failed to load preloaded module: os0:kd/bootimage.skprx. Ignoring this error.",
+      "[17:06:00.081] |I| [load_module]: Loading module \"os0:kd/sysmodule.skprx\"",
+      "[17:06:00.081] |E| [load_module]: Missing file at kd/sysmodule.skprx (target path: os0:kd/sysmodule.skprx)",
+      "[17:06:00.081] |E| [load_app_impl]: Failed to load preloaded module: os0:kd/sysmodule.skprx. Ignoring this error.",
+      "[17:06:00.081] |D| [load_taihen_config]: taiHEN: no config.txt found",
+      "[17:06:00.105] |D| [set_phase]: App session phase: Launching -> Running",
+      "[17:06:00.105] |I| [boot_game_once]: Game started: Bevy DB Value (BEVYPOC01)",
+      "[17:06:00.138] |I| [export_sceIoOpen]: Opening file: tty0:",
+      "[17:06:00.138] |T| [open_file]: sceIoOpen: Opening terminal tty0:",
+      "[17:06:00.138] |I| [export_sceIoOpen]: Opening file: tty0:",
+      "[17:06:00.138] |T| [open_file]: sceIoOpen: Opening terminal tty0:",
+      "[17:06:00.138] |I| [export_sceIoOpen]: Opening file: tty0:",
+      "[17:06:00.138] |T| [open_file]: sceIoOpen: Opening terminal tty0:",
+      "[17:06:00.141] |T| [write_file]: *** TTY: bevypoc source commit: ",
+      "[17:06:00.141] |T| [write_file]: *** TTY: 81930e738b4b0973db47275d0a1a0e2e27df42a3",
+      "[17:06:00.141] |T| [write_file]: *** TTY: ",
+      "[17:06:00.144] |W| [io_error_impl]: create_dir (_sceIoMkdir) returned 0x80010011",
+      "[17:06:00.146] |I| [export_sceIoOpen]: Opening file: ux0:/data/bevypoc/build.txt",
+      "[17:06:00.146] |T| [open_file]: sceIoOpen: Opening file ux0:/data/bevypoc/build.txt (ux0:/data/bevypoc/build.txt), fd: 0x3",
+      "[17:06:00.146] |T| [write_file]: sceIoWrite: Writing to fd: 0x3, size: 41",
+      "[17:06:00.146] |T| [close_file]: sceIoClose: Closing file fd: 0x3",
+      "[17:06:00.154] |I| [on_ver_reply_finished]: DB is up to date (2026-10-02 14:38:42Z)",
+      "[17:06:00.165] |I| [export_sceSysmoduleLoadModule]: Loading module ID: SCE_SYSMODULE_NET",
+      "[17:06:00.165] |W| [operator()]: Stubbed sceNetCtlInit import called. (Stub)",
+      "[17:06:00.165] |I| [adhoc_thread]: Adhoc thread started",
+      "[17:06:00.165] |E| [stat_file]: Missing file at \"$HOME/.vita3k-agent/emulator/portable/fs/ux0/data/bevypoc/server.txt\" (target path: ux0:/data/bevypoc/server.txt)",
+      "[17:06:00.165] |W| [io_error_impl]: stat_file (_sceIoGetstat) returned 0x80010002",
+      "[17:06:00.165] |I| [export_sceIoOpen]: Opening file: ux0:/data/bevypoc/server.txt",
+      "[17:06:00.165] |E| [open_file]: Missing file at \"$HOME/.vita3k-agent/emulator/portable/fs/ux0/data/bevypoc/server.txt\" (target path: ux0:/data/bevypoc/server.txt)",
+      "[17:06:00.165] |W| [io_error_impl]: open_file (sceIoOpen) returned 0x80010002",
+      "[17:06:00.178] |T| [write_file]: *** TTY: SpacetimeDB unavailable: ",
+      "[17:06:00.178] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)",
+      "[17:06:00.178] |T| [write_file]: *** TTY: ",
+      "[17:06:03.197] |T| [write_file]: *** TTY: SpacetimeDB unavailable: ",
+      "[17:06:03.197] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)",
+      "[17:06:03.197] |T| [write_file]: *** TTY: ",
+      "[17:06:06.216] |T| [write_file]: *** TTY: SpacetimeDB unavailable: ",
+      "[17:06:06.216] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)",
+      "[17:06:06.216] |T| [write_file]: *** TTY: "
+    ]
+  },
+  "paths": {
+    "run_dir": "$HOME/.vita3k-agent/runs/20261002T210556Z-BEVYPOC01",
+    "vita_fs": "$HOME/.vita3k-agent/emulator/portable/fs",
+    "log_copy": "$HOME/.vita3k-agent/runs/20261002T210556Z-BEVYPOC01/vita3k.log",
+    "install_stdout": "$HOME/.vita3k-agent/runs/20261002T210556Z-BEVYPOC01/install-stdout.log",
+    "boot_stdout": "$HOME/.vita3k-agent/runs/20261002T210556Z-BEVYPOC01/emulator-stdout.log",
+    "screenshot": null
+  },
+  "started_at": "2026-10-02T21:05:54Z",
+  "finished_at": "2026-10-02T21:06:07Z"
+}

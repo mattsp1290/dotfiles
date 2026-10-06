@@ -1,0 +1,42 @@
+[19:24:42.225] |I| [init_config]: input-content-path: $HOME/git/bevypoc/target/armv7-sony-vita-newlibeabihf/release/bevypoc.vpk
+[19:24:42.225] |I| [init_config]: log-level: trace
+[19:24:42.259] |I| [main]: Vita3K v0.2.1 4111-ab71f829
+[19:24:42.259] |I| [main]: OS: Ubuntu 24.04.4 LTS
+[19:24:42.259] |I| [main]: CPU: <unknown> | 20 Threads | -0.001 GHz
+[19:24:42.259] |I| [main]: Available ram memory: 122566 MiB
+[19:24:42.259] |I| [init]: Base path: "/tmp/.mount_Vita3KkIInmJ/usr/share/Vita3K"
+[19:24:42.259] |I| [init]: Static assets path: "/tmp/.mount_Vita3KkIInmJ/usr/share/Vita3K"
+[19:24:42.259] |I| [init]: Shared path: "$HOME/.vita3k-agent/xdg/data/Vita3K"
+[19:24:42.259] |I| [init]: Log path: "$HOME/.vita3k-agent/xdg/cache/Vita3K"
+[19:24:42.259] |I| [init]: User config path: "$HOME/.vita3k-agent/xdg/config/Vita3K"
+[19:24:42.259] |I| [init]: User cache path: "$HOME/.vita3k-agent/xdg/cache/Vita3K"
+[19:24:42.259] |I| [init]: VitaFS path: "$HOME/.vita3k-agent/xdg/data/Vita3K/Vita3K"
+[19:24:42.260] |I| [export_library_init_taihen]: taiHEN: HLE module initialized
+[19:24:42.260] |I| [main]: Installing archive from CLI: $HOME/git/bevypoc/target/armv7-sony-vita-newlibeabihf/release/bevypoc.vpk
+[19:24:42.260] |I| [install_archive_content]: Extracting "$HOME/.vita3k-agent/xdg/data/Vita3K/Vita3K/ux0/app/BEVYPOC01/sce_sys/param.sfo"
+[19:24:42.260] |I| [install_archive_content]: Extracting "$HOME/.vita3k-agent/xdg/data/Vita3K/Vita3K/ux0/app/BEVYPOC01/eboot.bin"
+[19:24:42.264] |I| [install_archive_content]: Bevy DB Value (App) [BEVYPOC01] installed successfully!
+[19:24:42.264] |I| [main]: Content installed, will auto-boot: BEVYPOC01
+[19:24:42.264] |I| [load_cached_apps]: Apps cache source metadata differs from installed content; rebuilding.
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_app_selected(app::AppEntry)
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_game_closed()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_live_area_play()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_live_area_closed()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_firmware_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_pkg_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_zip_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_license_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_finished()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_pause_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_stop_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_ps_button()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_toolbar_refresh()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_toolbar_fullscreen()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_toolbar_start()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_app_selection_changed(const app::AppEntry*)
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_context_menu_requested(QPoint,std::vector<const app::AppEntry*>)
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+qt.multimedia.pipewire.devicemonitor: Ignoring dummy output: std::map(std::pair("client.id", "32"), std::pair("factory.id", "18"), std::pair("media.class", "Audio/Sink"), std::pair("node.description", "Dummy Output"), std::pair("node.name", "auto_null"), std::pair("object.serial", "33"))
+[19:24:42.818] |I| [apply_theme_entry]: Loaded stylesheet 'light' from :/themes/light/light.qss
+[19:24:43.033] |I| [on_ver_reply_finished]: DB is up to date (2026-10-02 14:38:42Z)
+The X11 connection broke (error 1). Did the X11 server die?

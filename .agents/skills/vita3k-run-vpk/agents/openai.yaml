@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vita3K Run VPK"
+  short_description: "Run a Vita VPK in Vita3K and inspect evidence"
+  default_prompt: "Use $vita3k-run-vpk to run the current project's VPK in Vita3K and report the verdict with its evidence."

@@ -1,0 +1,472 @@
+[17:04:36.417] |I| [init_config]: input-installed-path: BEVYPOC01
+[17:04:36.417] |I| [init_config]: log-level: trace
+[17:04:36.717] |I| [main]: Vita3K v0.2.1 4111-ab71f829
+[17:04:36.717] |I| [main]: OS: 25.6.0
+[17:04:36.717] |I| [main]: CPU: Apple M4 Max | 16 Threads | -0.001 GHz
+[17:04:36.717] |I| [main]: Available ram memory: 65536 MiB
+[17:04:36.717] |I| [init]: Base path: "$HOME/.vita3k-agent/emulator/Vita3K.app/Contents/Resources/"
+[17:04:36.717] |I| [init]: VitaFS path: "$HOME/.vita3k-agent/emulator/portable/fs"
+[17:04:36.718] |I| [export_library_init_taihen]: taiHEN: HLE module initialized
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_app_selected(app::AppEntry)
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_game_closed()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_live_area_play()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_live_area_closed()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_firmware_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_pkg_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_zip_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_license_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_install_finished()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_pause_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_stop_triggered()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_ps_button()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_toolbar_refresh()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_toolbar_fullscreen()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_toolbar_start()
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_app_selection_changed(const app::AppEntry*)
+qt.core.qmetaobject.connectslotsbyname: QMetaObject::connectSlotsByName: No matching signal for on_context_menu_requested(QPoint,std::vector<const app::AppEntry*>)
+[mvk-info] MoltenVK version 1.4.1, supporting Vulkan version 1.4.334.
+	The following 153 Vulkan extensions are supported:
+	VK_KHR_16bit_storage v1
+	VK_KHR_8bit_storage v1
+	VK_KHR_bind_memory2 v1
+	VK_KHR_buffer_device_address v1
+	VK_KHR_calibrated_timestamps v1
+	VK_KHR_copy_commands2 v1
+	VK_KHR_create_renderpass2 v1
+	VK_KHR_dedicated_allocation v3
+	VK_KHR_deferred_host_operations v4
+	VK_KHR_depth_stencil_resolve v1
+	VK_KHR_descriptor_update_template v1
+	VK_KHR_device_group v4
+	VK_KHR_device_group_creation v1
+	VK_KHR_driver_properties v1
+	VK_KHR_dynamic_rendering v1
+	VK_KHR_dynamic_rendering_local_read v1
+	VK_KHR_external_fence v1
+	VK_KHR_external_fence_capabilities v1
+	VK_KHR_external_memory v1
+	VK_KHR_external_memory_capabilities v1
+	VK_KHR_external_semaphore v1
+	VK_KHR_external_semaphore_capabilities v1
+	VK_KHR_format_feature_flags2 v2
+	VK_KHR_fragment_shader_barycentric v1
+	VK_KHR_get_memory_requirements2 v1
+	VK_KHR_get_physical_device_properties2 v2
+	VK_KHR_get_surface_capabilities2 v1
+	VK_KHR_global_priority v1
+	VK_KHR_image_format_list v1
+	VK_KHR_imageless_framebuffer v1
+	VK_KHR_incremental_present v2
+	VK_KHR_index_type_uint8 v1
+	VK_KHR_line_rasterization v1
+	VK_KHR_load_store_op_none v1
+	VK_KHR_maintenance1 v2
+	VK_KHR_maintenance2 v1
+	VK_KHR_maintenance3 v1
+	VK_KHR_maintenance4 v2
+	VK_KHR_maintenance5 v1
+	VK_KHR_maintenance6 v1
+	VK_KHR_maintenance7 v1
+	VK_KHR_maintenance8 v1
+	VK_KHR_maintenance9 v1
+	VK_KHR_map_memory2 v1
+	VK_KHR_multiview v1
+	VK_KHR_portability_subset v1
+	VK_KHR_present_id v1
+	VK_KHR_present_id2 v1
+	VK_KHR_present_wait v1
+	VK_KHR_present_wait2 v1
+	VK_KHR_push_descriptor v2
+	VK_KHR_relaxed_block_layout v1
+	VK_KHR_robustness2 v1
+	VK_KHR_sampler_mirror_clamp_to_edge v3
+	VK_KHR_sampler_ycbcr_conversion v14
+	VK_KHR_separate_depth_stencil_layouts v1
+	VK_KHR_shader_draw_parameters v1
+	VK_KHR_shader_expect_assume v1
+	VK_KHR_shader_float_controls v4
+	VK_KHR_shader_float_controls2 v1
+	VK_KHR_shader_float16_int8 v1
+	VK_KHR_shader_fma v1
+	VK_KHR_shader_integer_dot_product v1
+	VK_KHR_shader_maximal_reconvergence v1
+	VK_KHR_shader_non_semantic_info v1
+	VK_KHR_shader_quad_control v1
+	VK_KHR_shader_relaxed_extended_instruction v1
+	VK_KHR_shader_subgroup_extended_types v1
+	VK_KHR_shader_subgroup_rotate v2
+	VK_KHR_shader_subgroup_uniform_control_flow v1
+	VK_KHR_shader_terminate_invocation v1
+	VK_KHR_spirv_1_4 v1
+	VK_KHR_storage_buffer_storage_class v1
+	VK_KHR_surface v25
+	VK_KHR_surface_maintenance1 v1
+	VK_KHR_surface_protected_capabilities v1
+	VK_KHR_swapchain v70
+	VK_KHR_swapchain_maintenance1 v1
+	VK_KHR_swapchain_mutable_format v1
+	VK_KHR_synchronization2 v1
+	VK_KHR_timeline_semaphore v2
+	VK_KHR_uniform_buffer_standard_layout v1
+	VK_KHR_variable_pointers v1
+	VK_KHR_vertex_attribute_divisor v1
+	VK_KHR_vulkan_memory_model v3
+	VK_KHR_zero_initialize_workgroup_memory v1
+	VK_EXT_4444_formats v1
+	VK_EXT_buffer_device_address v2
+	VK_EXT_calibrated_timestamps v2
+	VK_EXT_debug_marker v4
+	VK_EXT_debug_report v10
+	VK_EXT_debug_utils v2
+	VK_EXT_depth_clip_control v1
+	VK_EXT_descriptor_indexing v2
+	VK_EXT_extended_dynamic_state v1
+	VK_EXT_extended_dynamic_state2 v1
+	VK_EXT_extended_dynamic_state3 v2
+	VK_EXT_external_memory_host v1
+	VK_EXT_external_memory_metal v1
+	VK_EXT_fragment_shader_interlock v1
+	VK_EXT_global_priority v2
+	VK_EXT_global_priority_query v1
+	VK_EXT_hdr_metadata v3
+	VK_EXT_headless_surface v1
+	VK_EXT_host_image_copy v1
+	VK_EXT_host_query_reset v1
+	VK_EXT_image_2d_view_of_3d v1
+	VK_EXT_image_robustness v1
+	VK_EXT_index_type_uint8 v1
+	VK_EXT_inline_uniform_block v1
+	VK_EXT_layer_settings v2
+	VK_EXT_legacy_dithering v2
+	VK_EXT_line_rasterization v1
+	VK_EXT_load_store_op_none v1
+	VK_EXT_memory_budget v1
+	VK_EXT_metal_objects v2
+	VK_EXT_metal_surface v1
+	VK_EXT_non_seamless_cube_map v1
+	VK_EXT_pipeline_creation_cache_control v3
+	VK_EXT_pipeline_creation_feedback v1
+	VK_EXT_pipeline_robustness v1
+	VK_EXT_post_depth_coverage v1
+	VK_EXT_primitive_topology_list_restart v1
+	VK_EXT_private_data v1
+	VK_EXT_provoking_vertex v1
+	VK_EXT_robustness2 v1
+	VK_EXT_sample_locations v1
+	VK_EXT_scalar_block_layout v1
+	VK_EXT_separate_stencil_usage v1
+	VK_EXT_shader_atomic_float v1
+	VK_EXT_shader_demote_to_helper_invocation v1
+	VK_EXT_shader_stencil_export v1
+	VK_EXT_shader_subgroup_ballot v1
+	VK_EXT_shader_subgroup_vote v1
+	VK_EXT_shader_viewport_index_layer v1
+	VK_EXT_subgroup_size_control v2
+	VK_EXT_surface_maintenance1 v1
+	VK_EXT_swapchain_colorspace v5
+	VK_EXT_swapchain_maintenance1 v1
+	VK_EXT_texel_buffer_alignment v1
+	VK_EXT_texture_compression_astc_hdr v1
+	VK_EXT_tooling_info v1
+	VK_EXT_vertex_attribute_divisor v3
+	VK_AMD_gpu_shader_half_float v2
+	VK_AMD_negative_viewport_height v1
+	VK_AMD_shader_image_load_store_lod v1
+	VK_AMD_shader_trinary_minmax v1
+	VK_GOOGLE_display_timing v1
+	VK_IMG_format_pvrtc v1
+	VK_INTEL_shader_integer_functions2 v1
+	VK_MVK_macos_surface v3
+	VK_MVK_moltenvk v37
+	VK_NV_fragment_shader_barycentric v1
+[mvk-info] GPU device:
+	model: Apple M4 Max
+	type: Integrated
+	vendorID: 0x106b
+	deviceID: 0x1a060209
+	pipelineCacheUUID: DB445FF2-1A06-0209-0000-000100000000
+	GPU memory available: 53084 MB
+	GPU memory used: 0 MB
+	Metal Shading Language 3.2
+	supports the following GPU Features:
+		GPU Family Metal 3
+		GPU Family Apple 9
+		GPU Family Mac 2
+		Read-Write Texture Tier 2
+[mvk-info] Created VkInstance for Vulkan version 1.0.334, as requested by app, with the following 1 Vulkan extensions enabled:
+	VK_KHR_get_physical_device_properties2 v2
+[mvk-info] Destroyed VkPhysicalDevice for GPU Apple M4 Max with 0 MB of GPU memory still allocated.
+[mvk-info] Destroying VkInstance for Vulkan version 1.0.334 with 1 Vulkan extensions enabled.
+qt.multimedia.ffmpeg: Using Qt multimedia with FFmpeg version 7.1.3 LGPL version 2.1 or later
+[17:04:36.920] |I| [apply_theme_entry]: Loaded stylesheet 'dark' from :/themes/dark/dark.qss
+[17:04:36.960] |D| [set_phase]: App session phase: Idle -> Launching
+[mvk-info] MoltenVK version 1.4.1, supporting Vulkan version 1.4.334.
+	The following 153 Vulkan extensions are supported:
+	VK_KHR_16bit_storage v1
+	VK_KHR_8bit_storage v1
+	VK_KHR_bind_memory2 v1
+	VK_KHR_buffer_device_address v1
+	VK_KHR_calibrated_timestamps v1
+	VK_KHR_copy_commands2 v1
+	VK_KHR_create_renderpass2 v1
+	VK_KHR_dedicated_allocation v3
+	VK_KHR_deferred_host_operations v4
+	VK_KHR_depth_stencil_resolve v1
+	VK_KHR_descriptor_update_template v1
+	VK_KHR_device_group v4
+	VK_KHR_device_group_creation v1
+	VK_KHR_driver_properties v1
+	VK_KHR_dynamic_rendering v1
+	VK_KHR_dynamic_rendering_local_read v1
+	VK_KHR_external_fence v1
+	VK_KHR_external_fence_capabilities v1
+	VK_KHR_external_memory v1
+	VK_KHR_external_memory_capabilities v1
+	VK_KHR_external_semaphore v1
+	VK_KHR_external_semaphore_capabilities v1
+	VK_KHR_format_feature_flags2 v2
+	VK_KHR_fragment_shader_barycentric v1
+	VK_KHR_get_memory_requirements2 v1
+	VK_KHR_get_physical_device_properties2 v2
+	VK_KHR_get_surface_capabilities2 v1
+	VK_KHR_global_priority v1
+	VK_KHR_image_format_list v1
+	VK_KHR_imageless_framebuffer v1
+	VK_KHR_incremental_present v2
+	VK_KHR_index_type_uint8 v1
+	VK_KHR_line_rasterization v1
+	VK_KHR_load_store_op_none v1
+	VK_KHR_maintenance1 v2
+	VK_KHR_maintenance2 v1
+	VK_KHR_maintenance3 v1
+	VK_KHR_maintenance4 v2
+	VK_KHR_maintenance5 v1
+	VK_KHR_maintenance6 v1
+	VK_KHR_maintenance7 v1
+	VK_KHR_maintenance8 v1
+	VK_KHR_maintenance9 v1
+	VK_KHR_map_memory2 v1
+	VK_KHR_multiview v1
+	VK_KHR_portability_subset v1
+	VK_KHR_present_id v1
+	VK_KHR_present_id2 v1
+	VK_KHR_present_wait v1
+	VK_KHR_present_wait2 v1
+	VK_KHR_push_descriptor v2
+	VK_KHR_relaxed_block_layout v1
+	VK_KHR_robustness2 v1
+	VK_KHR_sampler_mirror_clamp_to_edge v3
+	VK_KHR_sampler_ycbcr_conversion v14
+	VK_KHR_separate_depth_stencil_layouts v1
+	VK_KHR_shader_draw_parameters v1
+	VK_KHR_shader_expect_assume v1
+	VK_KHR_shader_float_controls v4
+	VK_KHR_shader_float_controls2 v1
+	VK_KHR_shader_float16_int8 v1
+	VK_KHR_shader_fma v1
+	VK_KHR_shader_integer_dot_product v1
+	VK_KHR_shader_maximal_reconvergence v1
+	VK_KHR_shader_non_semantic_info v1
+	VK_KHR_shader_quad_control v1
+	VK_KHR_shader_relaxed_extended_instruction v1
+	VK_KHR_shader_subgroup_extended_types v1
+	VK_KHR_shader_subgroup_rotate v2
+	VK_KHR_shader_subgroup_uniform_control_flow v1
+	VK_KHR_shader_terminate_invocation v1
+	VK_KHR_spirv_1_4 v1
+	VK_KHR_storage_buffer_storage_class v1
+	VK_KHR_surface v25
+	VK_KHR_surface_maintenance1 v1
+	VK_KHR_surface_protected_capabilities v1
+	VK_KHR_swapchain v70
+	VK_KHR_swapchain_maintenance1 v1
+	VK_KHR_swapchain_mutable_format v1
+	VK_KHR_synchronization2 v1
+	VK_KHR_timeline_semaphore v2
+	VK_KHR_uniform_buffer_standard_layout v1
+	VK_KHR_variable_pointers v1
+	VK_KHR_vertex_attribute_divisor v1
+	VK_KHR_vulkan_memory_model v3
+	VK_KHR_zero_initialize_workgroup_memory v1
+	VK_EXT_4444_formats v1
+	VK_EXT_buffer_device_address v2
+	VK_EXT_calibrated_timestamps v2
+	VK_EXT_debug_marker v4
+	VK_EXT_debug_report v10
+	VK_EXT_debug_utils v2
+	VK_EXT_depth_clip_control v1
+	VK_EXT_descriptor_indexing v2
+	VK_EXT_extended_dynamic_state v1
+	VK_EXT_extended_dynamic_state2 v1
+	VK_EXT_extended_dynamic_state3 v2
+	VK_EXT_external_memory_host v1
+	VK_EXT_external_memory_metal v1
+	VK_EXT_fragment_shader_interlock v1
+	VK_EXT_global_priority v2
+	VK_EXT_global_priority_query v1
+	VK_EXT_hdr_metadata v3
+	VK_EXT_headless_surface v1
+	VK_EXT_host_image_copy v1
+	VK_EXT_host_query_reset v1
+	VK_EXT_image_2d_view_of_3d v1
+	VK_EXT_image_robustness v1
+	VK_EXT_index_type_uint8 v1
+	VK_EXT_inline_uniform_block v1
+	VK_EXT_layer_settings v2
+	VK_EXT_legacy_dithering v2
+	VK_EXT_line_rasterization v1
+	VK_EXT_load_store_op_none v1
+	VK_EXT_memory_budget v1
+	VK_EXT_metal_objects v2
+	VK_EXT_metal_surface v1
+	VK_EXT_non_seamless_cube_map v1
+	VK_EXT_pipeline_creation_cache_control v3
+	VK_EXT_pipeline_creation_feedback v1
+	VK_EXT_pipeline_robustness v1
+	VK_EXT_post_depth_coverage v1
+	VK_EXT_primitive_topology_list_restart v1
+	VK_EXT_private_data v1
+	VK_EXT_provoking_vertex v1
+	VK_EXT_robustness2 v1
+	VK_EXT_sample_locations v1
+	VK_EXT_scalar_block_layout v1
+	VK_EXT_separate_stencil_usage v1
+	VK_EXT_shader_atomic_float v1
+	VK_EXT_shader_demote_to_helper_invocation v1
+	VK_EXT_shader_stencil_export v1
+	VK_EXT_shader_subgroup_ballot v1
+	VK_EXT_shader_subgroup_vote v1
+	VK_EXT_shader_viewport_index_layer v1
+	VK_EXT_subgroup_size_control v2
+	VK_EXT_surface_maintenance1 v1
+	VK_EXT_swapchain_colorspace v5
+	VK_EXT_swapchain_maintenance1 v1
+	VK_EXT_texel_buffer_alignment v1
+	VK_EXT_texture_compression_astc_hdr v1
+	VK_EXT_tooling_info v1
+	VK_EXT_vertex_attribute_divisor v3
+	VK_AMD_gpu_shader_half_float v2
+	VK_AMD_negative_viewport_height v1
+	VK_AMD_shader_image_load_store_lod v1
+	VK_AMD_shader_trinary_minmax v1
+	VK_GOOGLE_display_timing v1
+	VK_IMG_format_pvrtc v1
+	VK_INTEL_shader_integer_functions2 v1
+	VK_MVK_macos_surface v3
+	VK_MVK_moltenvk v37
+	VK_NV_fragment_shader_barycentric v1
+[mvk-info] GPU device:
+	model: Apple M4 Max
+	type: Integrated
+	vendorID: 0x106b
+	deviceID: 0x1a060209
+	pipelineCacheUUID: DB445FF2-1A06-0209-0000-000100000000
+	GPU memory available: 53084 MB
+	GPU memory used: 0 MB
+	Metal Shading Language 3.2
+	supports the following GPU Features:
+		GPU Family Metal 3
+		GPU Family Apple 9
+		GPU Family Mac 2
+		Read-Write Texture Tier 2
+[mvk-info] Created VkInstance for Vulkan version 1.0.334, as requested by app, with the following 6 Vulkan extensions enabled:
+	VK_KHR_device_group_creation v1
+	VK_KHR_external_memory_capabilities v1
+	VK_KHR_get_physical_device_properties2 v2
+	VK_KHR_surface v25
+	VK_EXT_layer_settings v2
+	VK_EXT_metal_surface v1
+[17:04:36.967] |I| [create]: Vulkan device: Apple M4 Max
+[17:04:36.967] |I| [create]: Driver version: 0.2.2209
+[mvk-info] Vulkan semaphores using MTLEvent.
+[mvk-info] Descriptor sets binding resources using Metal3 argument buffers.
+[mvk-info] Created VkDevice to run on GPU Apple M4 Max with the following 15 Vulkan extensions enabled:
+	VK_KHR_buffer_device_address v1
+	VK_KHR_dedicated_allocation v3
+	VK_KHR_device_group v4
+	VK_KHR_external_memory v1
+	VK_KHR_get_memory_requirements2 v1
+	VK_KHR_image_format_list v1
+	VK_KHR_maintenance1 v2
+	VK_KHR_portability_subset v1
+	VK_KHR_shader_float16_int8 v1
+	VK_KHR_storage_buffer_storage_class v1
+	VK_KHR_swapchain v70
+	VK_KHR_uniform_buffer_standard_layout v1
+	VK_EXT_external_memory_host v1
+	VK_EXT_fragment_shader_interlock v1
+	VK_EXT_global_priority v2
+[17:04:37.271] |I| [setup]: Your device support high deep stencil quality
+[17:04:37.271] |I| [setup]: Present mode: Fifo
+[mvk-info] Created 3 swapchain images with size (1920, 1088) and contents scale 2.0 in layer Qt content layer (0xc7a024030) on screen Built-in Retina Display.
+[mvk-warn] VK_ERROR_FEATURE_NOT_PRESENT: Metal does not support disabling primitive restart.
+[17:04:37.315] |I| [init_overlay_font_dirs]: Overlay font firmware dir: $HOME/.vita3k-agent/emulator/portable/fs/sa0/data/font/pvf/
+[17:04:37.315] |I| [init_overlay_font_dirs]: Overlay font system dirs: 3 entries
+[17:04:37.315] |D| [init_overlay_font_dirs]:   system font dir: $HOME/Library/Fonts/
+[17:04:37.315] |D| [init_overlay_font_dirs]:   system font dir: /Library/Fonts/
+[17:04:37.315] |D| [init_overlay_font_dirs]:   system font dir: /System/Cryptexes/App/System/Library/Fonts/
+[17:04:37.317] |I| [late_init]: The Vulkan renderer is using texture viewport for better performance
+[17:04:37.317] |I| [late_init]: Using the following memory mapping method: Disabled
+[17:04:37.317] |I| [set_async_compilation]: Enabling asynchronous pipeline compilation with 6 threads
+[17:04:37.349] |I| [load_app_impl]: CPU Optimisation state: true
+[17:04:37.349] |I| [load_app_impl]: ngs state: true
+[17:04:37.349] |I| [load_app_impl]: Resolution multiplier: 1
+[17:04:37.349] |I| [load_app_impl]: modules mode: Automatic
+[17:04:37.349] |I| [load_app_impl]: Title: Bevy DB Value
+[17:04:37.349] |I| [load_app_impl]: Serial: BEVYPOC01
+[17:04:37.349] |I| [load_app_impl]: Version: 0.00
+[17:04:37.349] |I| [load_app_impl]: Category: gd
+[17:04:37.349] |I| [load_module]: Loading module "app0:eboot.bin"
+[17:04:37.349] |T| [load_self]: ELF Header: e_type: 0xFE04, e_machine: 0x28, e_version: 0x1, e_entry: 0x6D594, e_phoff: 0x34, e_shoff: 0x0, e_flags: 0x5000000, e_ehsize: 0x34, e_phentsize: 0x20, e_phnum: 0x3, e_shentsize: 0x0, e_shnum: 0x0, e_shstrndx: 0x0
+[17:04:37.349] |I| [load_self]: Loaded module segment 0 @ [0x81000000 - 0x8106DBDC / 0x81000000] (size: 0x0006DBDC) of module app0:eboot.bin
+[17:04:37.349] |I| [load_self]: Loaded module segment 1 @ [0x81070000 - 0x810B6844 / 0x81070000] (size: 0x00046844) of module app0:eboot.bin
+[17:04:37.349] |I| [load_self]: Linking SELF app0:eboot.bin...
+[17:04:37.350] |I| [load_self]: eboot.bin module NID: 0x48C709C6
+[17:04:37.350] |D| [load_var_exports]: 	NID 0x6C2224BA (NID_MODULE_INFO) at 0x8106D594
+[17:04:37.350] |D| [load_var_exports]: 	NID 0x70FBA1E7 (SCE_PROC_PARAMS) at 0x8106D5F0
+[17:04:37.350] |I| [operator()]: Module bevypoc.elf (at "app0:eboot.bin") loaded
+[17:04:37.350] |I| [load_app_impl]: Main executable bevypoc.elf (eboot.bin) loaded
+[17:04:37.350] |I| [get_patches]: Found 0 patches for titleid BEVYPOC01
+[17:04:37.350] |I| [load_module]: Loading module "os0:kd/bootimage.skprx"
+[17:04:37.350] |E| [load_module]: Missing file at kd/bootimage.skprx (target path: os0:kd/bootimage.skprx)
+[17:04:37.350] |E| [load_app_impl]: Failed to load preloaded module: os0:kd/bootimage.skprx. Ignoring this error.
+[17:04:37.350] |I| [load_module]: Loading module "os0:kd/sysmodule.skprx"
+[17:04:37.350] |E| [load_module]: Missing file at kd/sysmodule.skprx (target path: os0:kd/sysmodule.skprx)
+[17:04:37.350] |E| [load_app_impl]: Failed to load preloaded module: os0:kd/sysmodule.skprx. Ignoring this error.
+[17:04:37.350] |D| [load_taihen_config]: taiHEN: no config.txt found
+[17:04:37.372] |D| [set_phase]: App session phase: Launching -> Running
+[17:04:37.373] |I| [boot_game_once]: Game started: Bevy DB Value (BEVYPOC01)
+[17:04:37.407] |I| [export_sceIoOpen]: Opening file: tty0:
+[17:04:37.407] |T| [open_file]: sceIoOpen: Opening terminal tty0:
+[17:04:37.407] |I| [export_sceIoOpen]: Opening file: tty0:
+[17:04:37.407] |T| [open_file]: sceIoOpen: Opening terminal tty0:
+[17:04:37.407] |I| [export_sceIoOpen]: Opening file: tty0:
+[17:04:37.407] |T| [open_file]: sceIoOpen: Opening terminal tty0:
+[17:04:37.409] |T| [write_file]: *** TTY: bevypoc source commit: 
+[17:04:37.409] |T| [write_file]: *** TTY: 81930e738b4b0973db47275d0a1a0e2e27df42a3
+[17:04:37.409] |T| [write_file]: *** TTY: 
+[17:04:37.412] |T| [create_dir]: _sceIoMkdir: Creating new dir ux0:/data/bevypoc (ux0:/data/bevypoc)
+[17:04:37.413] |E| [stat_file]: Missing file at "$HOME/.vita3k-agent/emulator/portable/fs/ux0/data/bevypoc/build.txt" (target path: ux0:/data/bevypoc/build.txt)
+[17:04:37.413] |W| [io_error_impl]: stat_file (_sceIoGetstat) returned 0x80010002
+[17:04:37.413] |I| [export_sceIoOpen]: Opening file: ux0:/data/bevypoc/build.txt
+[17:04:37.413] |T| [open_file]: sceIoOpen: Opening file ux0:/data/bevypoc/build.txt (ux0:/data/bevypoc/build.txt), fd: 0x3
+[17:04:37.413] |T| [write_file]: sceIoWrite: Writing to fd: 0x3, size: 41
+[17:04:37.413] |T| [close_file]: sceIoClose: Closing file fd: 0x3
+[17:04:37.423] |I| [on_ver_reply_finished]: DB is up to date (2026-10-02 14:38:42Z)
+[17:04:37.433] |I| [export_sceSysmoduleLoadModule]: Loading module ID: SCE_SYSMODULE_NET
+[17:04:37.433] |I| [adhoc_thread]: Adhoc thread started
+[17:04:37.434] |W| [operator()]: Stubbed sceNetCtlInit import called. (Stub)
+[17:04:37.434] |E| [stat_file]: Missing file at "$HOME/.vita3k-agent/emulator/portable/fs/ux0/data/bevypoc/server.txt" (target path: ux0:/data/bevypoc/server.txt)
+[17:04:37.434] |W| [io_error_impl]: stat_file (_sceIoGetstat) returned 0x80010002
+[17:04:37.434] |I| [export_sceIoOpen]: Opening file: ux0:/data/bevypoc/server.txt
+[17:04:37.434] |E| [open_file]: Missing file at "$HOME/.vita3k-agent/emulator/portable/fs/ux0/data/bevypoc/server.txt" (target path: ux0:/data/bevypoc/server.txt)
+[17:04:37.434] |W| [io_error_impl]: open_file (sceIoOpen) returned 0x80010002
+[17:04:37.436] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[17:04:37.436] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[17:04:37.436] |T| [write_file]: *** TTY: 
+[17:04:40.448] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[17:04:40.448] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[17:04:40.448] |T| [write_file]: *** TTY: 
+[17:04:43.464] |T| [write_file]: *** TTY: SpacetimeDB unavailable: 
+[17:04:43.464] |T| [write_file]: *** TTY: config: No such file or directory (os error 2)
+[17:04:43.464] |T| [write_file]: *** TTY: 

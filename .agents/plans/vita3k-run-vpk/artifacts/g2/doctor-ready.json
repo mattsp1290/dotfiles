@@ -1,0 +1,39 @@
+{
+  "ready": true,
+  "host": {
+    "os": "darwin",
+    "arch": "arm64",
+    "display_mode": "host"
+  },
+  "instance_root": "$HOME/.vita3k-agent",
+  "emulator": {
+    "path": "$HOME/.vita3k-agent/emulator/Vita3K.app/Contents/MacOS/Vita3K",
+    "version": "Vita3K v0.2.1 4111-ab71f829",
+    "sha256": "31c1466986b227e21c7172b8d16f89dcc23025be7d46cae89fa810d318dea482"
+  },
+  "paths": {
+    "config_file": "$HOME/.vita3k-agent/emulator/portable/config.yml",
+    "log_file": "$HOME/.vita3k-agent/emulator/portable/vita3k.log",
+    "vita_fs": "$HOME/.vita3k-agent/emulator/portable/fs",
+    "runs_dir": "$HOME/.vita3k-agent/runs",
+    "lock_file": "$HOME/.vita3k-agent/run.lock",
+    "state_file": "$HOME/.vita3k-agent/run-state.json",
+    "version_cache": "$HOME/.vita3k-agent/emulator-version.json"
+  },
+  "firmware": {
+    "main": false,
+    "font": false
+  },
+  "headless": {
+    "needed": false,
+    "xvfb": false,
+    "xwd": false
+  },
+  "problems": [
+    {
+      "code": "firmware_missing",
+      "detail": "optional: no firmware in the instance. Most homebrew boots without it.",
+      "fix": "references/install.md, section \"Firmware (optional)\""
+    }
+  ]
+}
