@@ -1,0 +1,1126 @@
+{
+  "repository": "https://github.com/cursor/plugins",
+  "revision": "e7fb9647db242b96206978d56e8aff4a68718088",
+  "subdirectory": "pstack",
+  "git_tree": "90127ceeb9778cddf67f685d4f3c0356625fa153",
+  "version": "0.15.31",
+  "license": "MIT",
+  "imported_files": 199,
+  "core_skills": [
+    "architect",
+    "arena",
+    "automate-me",
+    "benchmark-checklist",
+    "blast-radius",
+    "bro",
+    "correct",
+    "create-formal-verification-skill",
+    "create-verification-skill",
+    "figure-it-out",
+    "how",
+    "in-your-own-words",
+    "interrogate",
+    "ketchup",
+    "maintain-formal-verification-skill",
+    "maintain-verification-skill",
+    "make-bot-ui",
+    "no-comments",
+    "poteto-help",
+    "poteto-mode",
+    "principle-attack-the-premise",
+    "principle-boundary-discipline",
+    "principle-build-the-lever",
+    "principle-encode-lessons-in-structure",
+    "principle-exhaust-the-design-space",
+    "principle-experience-first",
+    "principle-explain-the-number",
+    "principle-fix-root-causes",
+    "principle-foundational-thinking",
+    "principle-guard-the-context-window",
+    "principle-laziness-protocol",
+    "principle-make-operations-idempotent",
+    "principle-migrate-callers-then-delete-legacy-apis",
+    "principle-minimize-reader-load",
+    "principle-model-the-domain",
+    "principle-never-block-on-the-human",
+    "principle-outcome-oriented-execution",
+    "principle-prove-it-works",
+    "principle-redesign-from-first-principles",
+    "principle-separate-before-serializing-shared-state",
+    "principle-sequence-verifiable-units",
+    "principle-subtract-before-you-add",
+    "principle-test-behavior-not-implementation",
+    "principle-type-system-discipline",
+    "recall",
+    "reflect",
+    "setup-pstack",
+    "sharpen",
+    "show-me-your-work",
+    "statechart",
+    "swarm",
+    "tdd",
+    "teach",
+    "technical-writing",
+    "typescript-best-practices",
+    "unslop",
+    "why"
+  ],
+  "dormant_automation_skills": 3,
+  "files": {
+    ".cursor-plugin/plugin.json": {
+      "sha256": "4d57470ac69b0afa824cd1e760b4601815f48b1f46f7efcd27267fed8be62d6d",
+      "mode": "100644",
+      "git_blob": "afc96436b7e7eb3e82fed4089b8654d596b4c844"
+    },
+    ".gitignore": {
+      "sha256": "8ffe9de56bd30c1a95cd945262d6e3ac355ada4111551dde41f67851b9f1fc55",
+      "mode": "100644",
+      "git_blob": "aafcb345668bd80cbb256b066898d4df8988da0e"
+    },
+    "LICENSE": {
+      "sha256": "bc957ca6bee02792566a1a028d105e02e247c6e77cf057061674273da77b200e",
+      "mode": "100644",
+      "git_blob": "6b5400237fdf6545be0b8fae370d6f2fcff8fb25"
+    },
+    "README.md": {
+      "sha256": "095b3c4d9e4ceb11e01293d9bde7b0346a7a1262ad1f12b3394d3a0d1bef689b",
+      "mode": "100644",
+      "git_blob": "7a8939e2b849eba3cd9ae33f756099589e34b229"
+    },
+    "agents/comment-sicko.md": {
+      "sha256": "3e239e40b7b4b9beb2cf7f3ccc57f2388eb8b69bd1ba8ae888ef87ef6e0e2116",
+      "mode": "100644",
+      "git_blob": "209e3704dfa75022060c936bd3f3362fa3bbe254"
+    },
+    "agents/poteto-agent.md": {
+      "sha256": "979f18abd000d185a0b4c41a2a4111c0910596a7f5c81cbb571885bc721b2bf7",
+      "mode": "100644",
+      "git_blob": "e1d2df2e8c3c4954b87ee1b29655c898bc7ee699"
+    },
+    "assets/logo.png": {
+      "sha256": "672f6791589ef758b0ced2c4c477913fa2758623c438e265639a0d539ce90695",
+      "mode": "100644",
+      "git_blob": "3754e87cb0e1362f17428bc84c661166ee145156"
+    },
+    "automations/benny/FOR_AGENTS.md": {
+      "sha256": "a125e317dec1b8731fdc71f404c669f1127a73af932f7a7b8b8744a5542328a7",
+      "mode": "100644",
+      "git_blob": "e732156e9b88b463e4a40c0f51596bca4aedcdb4"
+    },
+    "automations/benny/README.md": {
+      "sha256": "ca3c42cbb7f0bf7068f7407eb355815e6c234d5c2786942f3cbe751a3690024b",
+      "mode": "100644",
+      "git_blob": "76804c8c566aae1a70734725416ae2f251a7ae30"
+    },
+    "automations/benny/skills/reproduce-and-fix-issues/SKILL.md": {
+      "sha256": "1363cc07343fe86aab42853b1bd4563288cbcbdf12f1c265b3b3b1afa25c09cb",
+      "mode": "100644",
+      "git_blob": "effa5f0a38d2cfe7d948a71ff51827e2e2017257"
+    },
+    "automations/benny/skills/reproduce-and-fix-issues/references/control-adapter.md": {
+      "sha256": "58b0615d2fca895f9a20df83266e280042b0d585b5f2fd324e2094a682fd846b",
+      "mode": "100644",
+      "git_blob": "3399491eddbc458f3a7ceb6fd62b8f89266b07ef"
+    },
+    "automations/benny/skills/reproduce-and-fix-issues/references/feature-map.example.md": {
+      "sha256": "1e5c7c8522daec3e43fcc2e73ceb97289ded65b552949ce65a11cc8eb3d2b6ee",
+      "mode": "100644",
+      "git_blob": "620ddedba3c13d603974b1d78754e36946dacf81"
+    },
+    "automations/benny/skills/reproduce-and-fix-issues/references/verify-existing-fix.md": {
+      "sha256": "c90eae00abcdec71a58fa8d60f2c495b082a526ad50b8e8e494837609129bf29",
+      "mode": "100644",
+      "git_blob": "e3cda3c06a48432fd932b32318ade4e6178ef4ed"
+    },
+    "automations/benny/skills/setup-benny/SKILL.md": {
+      "sha256": "5a3cbe63360c9f6373b6cb6c79a1eaf7e0eba181bfaa1577e2e6431af3407282",
+      "mode": "100644",
+      "git_blob": "b05c26f4d4a39c16559f5ef2bbdd380adc923fda"
+    },
+    "automations/benny/skills/triage-issue-reports/SKILL.md": {
+      "sha256": "216a758b8711e64d19a55e6032c496527daac6364d010611040f3c04ef1a448f",
+      "mode": "100644",
+      "git_blob": "d691672d00fb8f8f07fc17290d00ae49d1fd119b"
+    },
+    "automations/benny/skills/triage-issue-reports/references/routing.example.md": {
+      "sha256": "e5e53013692568cf69da8e8b302fff929fe2fbc9aec1a4651fd7997e2c7a4025",
+      "mode": "100644",
+      "git_blob": "d71aea768c7d9452270ca4f11091a47e5750038c"
+    },
+    "automations/benny/templates/configuration.example.yaml": {
+      "sha256": "13e24b4ce9b9a0913916e85fe3b080b88d45f8e55dccfe8ae38e0751a997b6f5",
+      "mode": "100644",
+      "git_blob": "8616f5fcced0ac57964467dd537a6ba80560a271"
+    },
+    "automations/benny/templates/reproduce-automation-prompt.md": {
+      "sha256": "71ec574f1844e379394ae4ef14c48d7df10afbaa319d395c788d7f856f0e6899",
+      "mode": "100644",
+      "git_blob": "5c66c922d69f7323d0c78461480baaf45d7b1284"
+    },
+    "automations/benny/templates/triage-automation-prompt.md": {
+      "sha256": "e0bba594547834f013ec805915610eb597e7929efe3ffbe85ae00339ee16d474",
+      "mode": "100644",
+      "git_blob": "939e5e15c09f57d17cee00c9ed58b3679a268e0f"
+    },
+    "docs/guide/01-setup.md": {
+      "sha256": "384655bdecc713122ca69a485723c58462002a1d512415e94e48597d0dce2fa5",
+      "mode": "100644",
+      "git_blob": "2c2ef341357ea7c39c8b831ee8c8669b17e85475"
+    },
+    "docs/guide/02-poteto-mode.md": {
+      "sha256": "d168829def6c410b1afd87d1a6eb297df385f89faa9b31260684074e9e4eb52a",
+      "mode": "100644",
+      "git_blob": "89c594b3eb4fe53ef4a6b12a93e29dfde0bd337a"
+    },
+    "docs/guide/03-understand.md": {
+      "sha256": "1ac97cbad51c15c18b3aade8634d81c8bbe50d2b3135c75c113ddb2a6dcb7af0",
+      "mode": "100644",
+      "git_blob": "e26661f913e2ba31a0f043df3ede772461fd6a96"
+    },
+    "docs/guide/04-design.md": {
+      "sha256": "cff616278303b533e617c5c4408af6d28895edbb8687d6ce99bb5dd1f6644a6c",
+      "mode": "100644",
+      "git_blob": "65862086a58780b258fdb490dcafedd75b9cce18"
+    },
+    "docs/guide/05-build-and-clean.md": {
+      "sha256": "1284e80595ae4f214dfa7c5c5f7758ff90a47b3273aa7b8142e51e574f5c5290",
+      "mode": "100644",
+      "git_blob": "dbadc3d41294ab2cc3cde04f96b861dd294e496e"
+    },
+    "docs/guide/06-verify-and-ship.md": {
+      "sha256": "9276f7a20f72c115536e0a12f08aa2e9699fcd7498c217d9a02a7149c7d3a4a8",
+      "mode": "100644",
+      "git_blob": "c432012d22cb1e8ba43e40163e119880518a68d3"
+    },
+    "docs/guide/07-overnight.md": {
+      "sha256": "b767a5dc5d7257efdb5cc8cfac92acfbb18fe8e023a3438339f4b45ce4a9264a",
+      "mode": "100644",
+      "git_blob": "dd4230d8cc242638095f648f5f3e7b5bd46f61a9"
+    },
+    "docs/guide/08-principles.md": {
+      "sha256": "0b26b85292f0c09768abe727c9e92987dbf81f5b439a4871034c2fd1c4cb1723",
+      "mode": "100644",
+      "git_blob": "d2921500bb44643ac3f841fa03e19e0b3a240c8b"
+    },
+    "docs/guide/09-make-it-yours.md": {
+      "sha256": "50642f7f894988f7c263700f46478e7aed7eb94a257683350d91a9a0d70dc141",
+      "mode": "100644",
+      "git_blob": "8d1c4b4f951bbb203ff1288e02ce91e8b6832a43"
+    },
+    "docs/guide/10-recipes-and-pitfalls.md": {
+      "sha256": "006d8282db567aeae57398d5de1f3a802af2e3ac1a1f564198c384183fca3f92",
+      "mode": "100644",
+      "git_blob": "4569129baf6acee770f11f57b94629d82a41c6bd"
+    },
+    "docs/guide/README.md": {
+      "sha256": "5c888d034d38f380789fad57c2c6fa7307ace803a0622cdde9e57fa2afe182de",
+      "mode": "100644",
+      "git_blob": "17422b9921f1179b2a2b7137805267225ab271c2"
+    },
+    "docs/guide/images/design.jpg": {
+      "sha256": "b8ed07427f6a0c37dd8ba97961fc0eb5071efeee6c4a230648bdb7547f6f2a8f",
+      "mode": "100644",
+      "git_blob": "f86909437f8b5a83da3cba7bc35a018c9d4887c8"
+    },
+    "docs/guide/images/overnight.jpg": {
+      "sha256": "4b4405e4df8925c5b3abbe702f681af0f3b1f5f32271b599f95717f578f1a0c8",
+      "mode": "100644",
+      "git_blob": "d64e1c63066c9f088da909160f5e136049e9a512"
+    },
+    "docs/guide/images/recipes.jpg": {
+      "sha256": "9fa2d51b476635712737795ddef81806efaa0086bb3bfa9f9f45695d9ab0f8e8",
+      "mode": "100644",
+      "git_blob": "69fe992fdb9fb8e7baacc144ea140f9c93b262fb"
+    },
+    "docs/guide/images/router.jpg": {
+      "sha256": "525843055a4efd2b10acc50a8652fd02b0834ea733a8a2f895c1eb89036017da",
+      "mode": "100644",
+      "git_blob": "c8fba6a266505caf406d5185d7a4cc6e34be98a4"
+    },
+    "docs/guide/images/understanding.jpg": {
+      "sha256": "b60587e9a9bbe2550e93be9819cf0cd4acf77d90fac769a0c43d82bd8e34e279",
+      "mode": "100644",
+      "git_blob": "bb1b1ac15dd11da9ad047d203049a1a24abb2b46"
+    },
+    "docs/guide/images/verification.jpg": {
+      "sha256": "2a76b52007a1cd2866ba67fd47d7d9ef3e1118bb5a09c4665eee8c3f161bd09a",
+      "mode": "100644",
+      "git_blob": "a252ae0b5e14cb6fcef2e3b806bbd66316242446"
+    },
+    "docs/harness/claude-code.md": {
+      "sha256": "c79e2283d3a83c6be3dd1cac33f9c074067c95e610ae6e0a16d9fdee84058927",
+      "mode": "100644",
+      "git_blob": "bf154e6464a6cca96a9627bbe10a628092e8c09e"
+    },
+    "plugin.json": {
+      "sha256": "d6a99d57fd84e4975b72e8c4e82024319755df96393ce9366c6124f19d860d65",
+      "mode": "100644",
+      "git_blob": "201c43d604c0df65257e2bd7e617a3fd126e5b11"
+    },
+    "skills/architect/SKILL.md": {
+      "sha256": "31f8e97a52bfa5432edd61f68ade2a8632ef0bacbc2d2a6802d7a0e6821944ac",
+      "mode": "100644",
+      "git_blob": "88e23ca105b89e67f4085d0e676c40d4b170a623"
+    },
+    "skills/architect/references/design-red-flags.md": {
+      "sha256": "d0e639e4cc588ec865f930d3a4111faad60987ae36925917e319d7ceca7c69ce",
+      "mode": "100644",
+      "git_blob": "f8503c9595b289c607ff5088f82b21197edf94ec"
+    },
+    "skills/architect/references/rationale-template.md": {
+      "sha256": "0cedfccdc7b47fc881febd5a8293eecbc542c20f8df825639904a8102d2eb5d3",
+      "mode": "100644",
+      "git_blob": "a10f77f59510c532cd909faaf3bfeee5ffbfd588"
+    },
+    "skills/architect/references/runner-prompt.md": {
+      "sha256": "21dd5314aab778c5007228027a4591d97693fbec6ab86524037772b63f40948e",
+      "mode": "100644",
+      "git_blob": "b1ad21aef22e80d718c361787190b599eb359d6c"
+    },
+    "skills/arena/SKILL.md": {
+      "sha256": "ed72f6c132b1ce3974d949581d0adc5dade424fe20793ac3b4c4fae22ecb9354",
+      "mode": "100644",
+      "git_blob": "b198b9e425c6b3e6ff01ca789b97ca5b4abb7ce2"
+    },
+    "skills/automate-me/SKILL.md": {
+      "sha256": "30b35f3628c4fd8c11af0ada06d14cdc3b28901810caca2480f627d4d21acfbe",
+      "mode": "100644",
+      "git_blob": "50971b894688b1e1923458996b89f2a9961feeb3"
+    },
+    "skills/benchmark-checklist/SKILL.md": {
+      "sha256": "ba109e96c8f6c1c391baccf19e5d11e14370df7b3f2605e1572cd565a6c0fca0",
+      "mode": "100644",
+      "git_blob": "e901d1fdbc9ffce53e94d6514be7d9a22e771a1a"
+    },
+    "skills/blast-radius/SKILL.md": {
+      "sha256": "2e10745b97f5862323dcda3b29ca60d56b5c3c98e37020085d26b48efbe0a436",
+      "mode": "100644",
+      "git_blob": "b296cce0d746260a53c16e3671cb05bacfe82daf"
+    },
+    "skills/bro/SKILL.md": {
+      "sha256": "aa329d0ceeeecb6822a7174ad76bb07a7826a3c52ceb6a588dec4138815084bb",
+      "mode": "100644",
+      "git_blob": "b1701b778639c08bfc306291d70170c525c66a68"
+    },
+    "skills/correct/SKILL.md": {
+      "sha256": "e347045d00c967a0b831ef883cc6ac79d21329aa10b5968637df95de7febf0ba",
+      "mode": "100644",
+      "git_blob": "c45e06f48a0982ae19f92c6e83a8cd05988097a3"
+    },
+    "skills/create-formal-verification-skill/SKILL.md": {
+      "sha256": "5e489d938620883502c27c9c2f32143ae7aa8c0543088dad996b2c815d2acc52",
+      "mode": "100644",
+      "git_blob": "37d73f9044b6bcc0132a0e703f70d13be5ded7c3"
+    },
+    "skills/create-verification-skill/SKILL.md": {
+      "sha256": "d353973547bf8ad8977eca645f4cd4feaed0d32f4b43d1448f906b0a76c4d694",
+      "mode": "100644",
+      "git_blob": "140d033a001e8d27acd14b06004506c43053b199"
+    },
+    "skills/create-verification-skill/references/feature-map-example/README.md": {
+      "sha256": "cb7bd782cf89968a4ba3d58a5151db837430db92d19a6f52a906973b77b516ba",
+      "mode": "100644",
+      "git_blob": "fb64570cfab3bbe672fe80925651933ebd57aa33"
+    },
+    "skills/create-verification-skill/references/feature-map-example/create-note.md": {
+      "sha256": "644a44c74f35d38c2feb7cd05a0121fdebbb623e8dc376c185b565a581d1ccf7",
+      "mode": "100644",
+      "git_blob": "21357566b69223a503d6780a04fb90ce540eae22"
+    },
+    "skills/create-verification-skill/references/feature-map-example/search.md": {
+      "sha256": "6e87b9e7f2791a7776ba1bb83f371cd285c306c67f19d245cc4dd6ca3015c823",
+      "mode": "100644",
+      "git_blob": "1f8e57d3aaf19cf27a9464d55fa72e46bcbc8b0f"
+    },
+    "skills/figure-it-out/SKILL.md": {
+      "sha256": "bdb23cdbd82a1e6af094b495691c832a6f7f3ab9706ba9edbeb664ef51a726e1",
+      "mode": "100644",
+      "git_blob": "0d04c2e69b75b22ff1a9a1d8ab339580a5fbbfed"
+    },
+    "skills/how/SKILL.md": {
+      "sha256": "08a00079bb15b4258874ac3ff62d4ca7e94350ffedb521d0fd296dc9dd21904e",
+      "mode": "100644",
+      "git_blob": "67edc340d4d8a9c7ab0b9e08c663e0e63b8d9125"
+    },
+    "skills/how/references/explainer-prompt.md": {
+      "sha256": "ddb89cebefc24e2b54517a331aedfe045b6971e101f45c71b8cef4cccff45bff",
+      "mode": "100644",
+      "git_blob": "3a36fb6736c5b74ac2774350841e332a019dec94"
+    },
+    "skills/how/references/explorer-prompt.md": {
+      "sha256": "6300128385ee940fd42ecb84b0e623435440a2dc283eae54ee4a52ba56947ba1",
+      "mode": "100644",
+      "git_blob": "724bacfc7df759865c0c29705bfee641e4c1aeca"
+    },
+    "skills/in-your-own-words/SKILL.md": {
+      "sha256": "fa8ba74e27d7be371dc270ec78bbf816411477d0dfab185356c861ac8dd413ad",
+      "mode": "100644",
+      "git_blob": "4b2a476a9017863032c8dba9d12f0a2026943292"
+    },
+    "skills/interrogate/SKILL.md": {
+      "sha256": "a16dfe179005abc22a4651b82f25b0c8ab953284276efe4e6dc341958fb63647",
+      "mode": "100644",
+      "git_blob": "94946d22d8bf896bfcc2c54d363df5af3d17b4ca"
+    },
+    "skills/interrogate/references/code-quality-review.md": {
+      "sha256": "79162fda183eafd40d51661fbb5e151c7ba250f89e506ba17f5bd135dcbd50a8",
+      "mode": "100644",
+      "git_blob": "16581250d81044c7e80fe234c4970a3f7b7fc98a"
+    },
+    "skills/interrogate/references/lead-judgment.md": {
+      "sha256": "355f5195a76bc75a655125292369f2a8231a2b61fabe5188d8f1386060922b87",
+      "mode": "100644",
+      "git_blob": "3b41346c9c3f5c35453d34f1c77374b7e9346aa9"
+    },
+    "skills/interrogate/references/reviewer-prompt.md": {
+      "sha256": "f6005cc2b535006fca97a96c5bfda49df57312eedf1ffd8d1aaaf3eb33817c25",
+      "mode": "100644",
+      "git_blob": "ef7bff3d77c35a0af2a9947187ccee15465657f4"
+    },
+    "skills/interrogate/references/rubric.md": {
+      "sha256": "0f9c6bdb0b96e26dbde5f6407f417e0c02f54080e7a1268d8994f3c3ec6c5ac0",
+      "mode": "100644",
+      "git_blob": "8dab195ab840554bfe5e74e9b5ca0d9edbe9b496"
+    },
+    "skills/ketchup/SKILL.md": {
+      "sha256": "f2923ffd14f6fc778f75a47aaed1f317fb5fd00b5701ca769d6446c74106dead",
+      "mode": "100644",
+      "git_blob": "9eef27f92f8029137a7bfa7378305b075df9dc4f"
+    },
+    "skills/maintain-formal-verification-skill/SKILL.md": {
+      "sha256": "0c96f54293542d3818b68754562b338073958781a9684454611dca37592e2d2c",
+      "mode": "100644",
+      "git_blob": "5d2f7f2228a3b771ca5b03124fc265ddfc53c5fc"
+    },
+    "skills/maintain-verification-skill/SKILL.md": {
+      "sha256": "515c0eaa054b3f6be1b1fb06f2c2f173c80fddb58bbcac57576f89c479bc68e8",
+      "mode": "100644",
+      "git_blob": "a2680b91fead45a0b4963d8c367a854956bea59d"
+    },
+    "skills/make-bot-ui/SKILL.md": {
+      "sha256": "ad19d0bc6764287ec08c2521701974e7dac941f72e4d0fe81a24f4614494586f",
+      "mode": "100644",
+      "git_blob": "446342ca35a46af771271e0cd901354a61997589"
+    },
+    "skills/no-comments/SKILL.md": {
+      "sha256": "078ecfe224eafbb017f6476870612838bf6dbe38c0b697e12f0c887d0313f17e",
+      "mode": "100644",
+      "git_blob": "a07ce9dfc657bdf1b2bdf3f7619225e7faac091b"
+    },
+    "skills/poteto-help/SKILL.md": {
+      "sha256": "7022e2cd0d65d5964151444c4efa82a34792a6644210a0ba60d7d6cfa69c72b8",
+      "mode": "100644",
+      "git_blob": "bf430fcd520e94748f1e1dbf93f6799e803d747a"
+    },
+    "skills/poteto-help/references/prompting.md": {
+      "sha256": "463f450c44a60afd001a2f69fdf8a5dea174351f339369b12ec3c41515e564d3",
+      "mode": "100644",
+      "git_blob": "6b72b2e6081fdb78a3261bd77cf7334596d1ee20"
+    },
+    "skills/poteto-help/references/recipes.md": {
+      "sha256": "f2d573014f72f7c798b1998b45f4360a8a83e7b8026c4ed9074e56c5a9d49338",
+      "mode": "100644",
+      "git_blob": "048e0750451aa801a4cf7ed59fa9ed4624c0f1ec"
+    },
+    "skills/poteto-mode/SKILL.md": {
+      "sha256": "2755f102e7a6d0496b429d1031a22fb353e1f3d523543367caeaae5c4ed6f544",
+      "mode": "100644",
+      "git_blob": "21993f546032ca37671d5f1caf39c9a82ab4fa9d"
+    },
+    "skills/poteto-mode/playbooks/authoring-a-skill.md": {
+      "sha256": "f6a13a445c360b48d6cd72780ac01955f45b82826476efe0e67c7559329407aa",
+      "mode": "100644",
+      "git_blob": "8c5a55a44f5e95bba92f652da0ac87e941c49538"
+    },
+    "skills/poteto-mode/playbooks/autonomous-run.md": {
+      "sha256": "6ac974fd2b09748add56493e89f578a35a6a9289e1026515878d81ef3cf129d1",
+      "mode": "100644",
+      "git_blob": "e6b88703cf327a76bcdd424429345ac0efeca67e"
+    },
+    "skills/poteto-mode/playbooks/autopilot-full.md": {
+      "sha256": "acf4f4a58c11045f9d3e8807d907a877e61ca6432b079f1087d7d30fc931566f",
+      "mode": "100644",
+      "git_blob": "068882379d9bdc2298052e7762d67ac795715baf"
+    },
+    "skills/poteto-mode/playbooks/autopilot-stack.md": {
+      "sha256": "c6bcb18b2ce605e77a2a2225854590a4b9a687911f79331746d91a4fe9a52e60",
+      "mode": "100644",
+      "git_blob": "d7bdc289e045e8bc7da97b4ddfccc8d6c9ed0800"
+    },
+    "skills/poteto-mode/playbooks/babysit.md": {
+      "sha256": "e261c1ff5581e0f8fc6c686f34de4b535f87473e77beabea7dd8323021214610",
+      "mode": "100644",
+      "git_blob": "51549ab2da11e5905342bbb3aadb93685c8ac348"
+    },
+    "skills/poteto-mode/playbooks/bug-fix.md": {
+      "sha256": "66e26542dad131cfd7df80ac0cdf81ed4d85e7b5e3f0eb65b933888760c4831f",
+      "mode": "100644",
+      "git_blob": "b5de0bfa63add6ed38a38a8bd668cf36ac009c61"
+    },
+    "skills/poteto-mode/playbooks/eval.md": {
+      "sha256": "a93d449a908236afa6645179651844094b1547dbab4e484cffcdda630e4b90bf",
+      "mode": "100644",
+      "git_blob": "768a894e275b1e9b198e83ceb6b46964e3f9d6db"
+    },
+    "skills/poteto-mode/playbooks/feature.md": {
+      "sha256": "af8ce700b99953741cb547e34308fde0cf6b98ce67e1652c800d0deedf53aba1",
+      "mode": "100644",
+      "git_blob": "eb1040cb2631f3eeacd8f9f6469d7e97277f24ef"
+    },
+    "skills/poteto-mode/playbooks/hillclimb.md": {
+      "sha256": "942c1565b75ad02a2cb6230dd7c1ebd87e19f59a00319ebac2b6616007bf018f",
+      "mode": "100644",
+      "git_blob": "e9cf267908a9737236b3a8a8a5a99fe9066f7554"
+    },
+    "skills/poteto-mode/playbooks/investigation.md": {
+      "sha256": "dc66bcf6af3a074fc7f67aa5e12b93ef571a4fb4d8e17f2f1af5ae5359f42e46",
+      "mode": "100644",
+      "git_blob": "cd119f04f23e0b7acb3f8cc5ba13ce4ab7aa6c7d"
+    },
+    "skills/poteto-mode/playbooks/multi-phase-plan.md": {
+      "sha256": "5f239457bfdec3345c92caa06c59bf0257c662b89353f25a1c02ea942dcd00b1",
+      "mode": "100644",
+      "git_blob": "27e99947bd20575e2ff503dbfba985a4f0fa298e"
+    },
+    "skills/poteto-mode/playbooks/opening-a-pr.md": {
+      "sha256": "a5aef646de8b651306c2d10974623650e4a013a245aec1c00525bbe0e31bfa76",
+      "mode": "100644",
+      "git_blob": "d729a7a06c5b67e406b081e1777114bc03b66f4a"
+    },
+    "skills/poteto-mode/playbooks/orchestrate.md": {
+      "sha256": "08dce6c9e7be1d13bc6944ab9b51665f935c531437f5e088bc53d2a62099ef05",
+      "mode": "100644",
+      "git_blob": "4ccb24d76c5e190125cecc99d4a9b5c9eb2932d9"
+    },
+    "skills/poteto-mode/playbooks/pause-safely.md": {
+      "sha256": "77968cfe5f4a71a8cd33e0ae8ffcdbd88dd693a212c240457773e6c40c96c21d",
+      "mode": "100644",
+      "git_blob": "9d1c5f8303976fff40de099f7f28185909430c11"
+    },
+    "skills/poteto-mode/playbooks/perf-issue.md": {
+      "sha256": "c12aa2f82de7651a11676a3d5fea168f539b7f0faaa3a501d279255dd2a469c8",
+      "mode": "100644",
+      "git_blob": "46dcc9963366992016dfb1d59ccaae977930f982"
+    },
+    "skills/poteto-mode/playbooks/prototype.md": {
+      "sha256": "7aa1f52c691c3d46d5afc527b23f90977fce869ce33573c73c81a4c7f0cde962",
+      "mode": "100644",
+      "git_blob": "18bedc7e9249d180f9198d5b4b13e3817d41d281"
+    },
+    "skills/poteto-mode/playbooks/refactoring.md": {
+      "sha256": "0f5dd38113379ea8cf61e2182eca0a7478eea9a869eb40c2dddab3335aeca197",
+      "mode": "100644",
+      "git_blob": "c04b07eeb8b8fa651d080729363466ab73d2fe40"
+    },
+    "skills/poteto-mode/playbooks/runtime-forensics.md": {
+      "sha256": "3463372b578c28f27c236f2627f09b5c5b1e85e86db7399fb984f3892fb450f5",
+      "mode": "100644",
+      "git_blob": "6bf64240d1a890df290b98c632ad374d20ca9fd4"
+    },
+    "skills/poteto-mode/playbooks/session-pickup.md": {
+      "sha256": "d194f2a7ef392c1598ef3f0e3b561370ca25c2c7a78308007af4aa46ada8ee12",
+      "mode": "100644",
+      "git_blob": "876b1433828ccc7c874123cdf300240abb285dd9"
+    },
+    "skills/poteto-mode/playbooks/shipping.md": {
+      "sha256": "bf56339bdf7e0223bcff5abf4e8599e3f5b547b3fcc3b4ce9475e6e7dda14a9f",
+      "mode": "100644",
+      "git_blob": "0a0c3cfde8948e3aa8ee80c6f3f9ce7e3e64fcba"
+    },
+    "skills/poteto-mode/playbooks/trace-forensics.md": {
+      "sha256": "ef0bbf79856a4ae1a8993d54c1a1da159cb97623941b652c0069cf75a017e0f5",
+      "mode": "100644",
+      "git_blob": "bf1b003786503623d91ca173fc97a6e54eee3acf"
+    },
+    "skills/poteto-mode/playbooks/visual-parity.md": {
+      "sha256": "950ca51999a6454c98eee6bcbc3d1bbe501a4e3a5d5439b6f6ddc378991b256c",
+      "mode": "100644",
+      "git_blob": "248830ec74a593fc22143a842026388f92f1b9f4"
+    },
+    "skills/poteto-mode/playbooks/worktree-cleanup.md": {
+      "sha256": "be04ae0afe19d4a4da5bcc4e94455f68dbebd1cda6eb0f456ca0d358ecf76c00",
+      "mode": "100644",
+      "git_blob": "45e1af693cc40d0271249a0e98f15bfc815af615"
+    },
+    "skills/poteto-mode/references/bugbot-triage.md": {
+      "sha256": "b2d146c770d8d3593e1ef3d77b668039b8e1f78093ea1a86f1d45d7f99614309",
+      "mode": "100644",
+      "git_blob": "b2fc7d35712783707607cf2f39752885c8d5105c"
+    },
+    "skills/poteto-mode/scripts/bootstrap.ts": {
+      "sha256": "ccd2ed08fd9da9d0d942e5f2491cfc74bb92d8a08fa51755e0da1ac8de287361",
+      "mode": "100644",
+      "git_blob": "d9c63e2007449a80000abe75ecaf7f2a0bd5826b"
+    },
+    "skills/poteto-mode/scripts/bun.lock": {
+      "sha256": "667d9cf7222e9aae3fa42a4be383e657784216e9df115da02227fbc5ac7bbe46",
+      "mode": "100644",
+      "git_blob": "65f0c662f300a0f72b319ca93ea18f56219c2581"
+    },
+    "skills/poteto-mode/scripts/check-plan.mjs": {
+      "sha256": "e58c3d871b09d477be00628d69dd23ffa6c2e3a1728f5b867a841baa8e90278b",
+      "mode": "100755",
+      "git_blob": "c8626766cee4cc4a2736fe438a1aea5c1f1b28ce"
+    },
+    "skills/poteto-mode/scripts/check-plan.test.ts": {
+      "sha256": "c80f3ea043b81f219b92c4c8a3af6bdd4f8d32ea596ec15b5b9e0252645f2ae8",
+      "mode": "100644",
+      "git_blob": "fd966c2b5fb6e99c12070c553906765c7bd900d8"
+    },
+    "skills/poteto-mode/scripts/orch/orch.test.ts": {
+      "sha256": "5e80b416bdcd68e4067690ce857345852fd2e0db3dcf3e25607999cd55b963d2",
+      "mode": "100644",
+      "git_blob": "2ef435d7d6f464a396d23158d4bcaae08f19c94d"
+    },
+    "skills/poteto-mode/scripts/orch/orch.ts": {
+      "sha256": "47c92c57e8276616d8de94665a126bd832e748036afa8d0ffdbacb7946decb5c",
+      "mode": "100755",
+      "git_blob": "14cb5139a91745a58780a81d8a1b40ef67d9504d"
+    },
+    "skills/poteto-mode/scripts/orch/store.ts": {
+      "sha256": "558cfda533e1ebe7c8d7842604f07e0be7618759cf129b4c2397a8e29516ecea",
+      "mode": "100644",
+      "git_blob": "417368918d2a6e2589c0221ade5c65535ffe05f1"
+    },
+    "skills/poteto-mode/scripts/package.json": {
+      "sha256": "fd511a0c01f522e0c781ddd8eccea0e91697a0856c6e6a3261de78a6a0287c72",
+      "mode": "100644",
+      "git_blob": "d8abe49ad0eafd10d302e8c6a9a0a95c5e6fb0ef"
+    },
+    "skills/poteto-mode/scripts/watch-pr/cli.test.ts": {
+      "sha256": "a35592b4c6da96caf8d47987e9cd503fab6c7774ab87d11a43f24b4b5df2a9d1",
+      "mode": "100644",
+      "git_blob": "0656b413e6c180858ca42981105944c45caf9dca"
+    },
+    "skills/poteto-mode/scripts/watch-pr/cli.ts": {
+      "sha256": "89c08863089181a232be782c4b2ed90a1552f44aeecb0dcb7aac2c623620e680",
+      "mode": "100644",
+      "git_blob": "ec8a2f27c5ac24866b699e6395e7d1f32e595068"
+    },
+    "skills/poteto-mode/scripts/watch-pr/fakes.test-helper.ts": {
+      "sha256": "cf0c5ee61b4a73444c1b775cfb6c81a40d312e055dd21a1f5eae6276e54de13f",
+      "mode": "100644",
+      "git_blob": "84ccf596b01e03e7fb77e73ea82ec3b1738026ad"
+    },
+    "skills/poteto-mode/scripts/watch-pr/github.test.ts": {
+      "sha256": "70c9f03d8738228763846f2abdd8c7de7be68dba3035041482386a69cbf5639b",
+      "mode": "100644",
+      "git_blob": "54722a940aeeff3d8c8cdea5fe7e796296bb44c4"
+    },
+    "skills/poteto-mode/scripts/watch-pr/github.ts": {
+      "sha256": "a605b8531468dbe4c07b93663c0993a9c11dc7e9179adde970f5c740396451d9",
+      "mode": "100644",
+      "git_blob": "4828b0299672a4696e6844132c1caedb7ebbbd8b"
+    },
+    "skills/poteto-mode/scripts/watch-pr/policy.test.ts": {
+      "sha256": "146acabcfee9b6fa3342358eb0a9504aa65fd081bbc15b10adf9c1c5485067d2",
+      "mode": "100644",
+      "git_blob": "6dae16da71800fb06eb37a7e3b296a8d27275b08"
+    },
+    "skills/poteto-mode/scripts/watch-pr/policy.ts": {
+      "sha256": "f2a3e31223d05edc05e5473cc3f8f3cb9bd20c202c30c6abe7f21f0f7aee8fbb",
+      "mode": "100644",
+      "git_blob": "cabadb9bf96f4d8c4c0426d77d0cbdab80fbe3e5"
+    },
+    "skills/poteto-mode/scripts/watch-pr/render.ts": {
+      "sha256": "2b709e86628d5b8fdb61f860e60ababc342b0626c67576305442cf548283a604",
+      "mode": "100644",
+      "git_blob": "0e935839357335f24ab1bbc193d761495646ea99"
+    },
+    "skills/poteto-mode/scripts/watch-pr/tsconfig.json": {
+      "sha256": "1ecccc72320b086c63ce3f73c959896fd747363e63553b3b1136296ea4069e45",
+      "mode": "100644",
+      "git_blob": "477af90b05cbd24fcf974fd73cf331d5ac7379cc"
+    },
+    "skills/poteto-mode/scripts/watch-pr/types.compile.ts": {
+      "sha256": "621af4c9a664fbf699a9737efccdc248abb416df8819c9dc5f824beae2b9b1d6",
+      "mode": "100644",
+      "git_blob": "1b53279c7f3e5da55703ed17d6ad0616254c5751"
+    },
+    "skills/poteto-mode/scripts/watch-pr/types.ts": {
+      "sha256": "0cac435294dc85ce1ba755e8e67f6c5ab163dfa252f2722d6e3a2d68c58fec59",
+      "mode": "100644",
+      "git_blob": "6c94e0a687f8e48f91acffd21f725320dd66e659"
+    },
+    "skills/poteto-mode/scripts/watch-pr/watch-pr": {
+      "sha256": "d955603be6cc0e8b8ffcec722f635192b2261410b1f2929abea94480e47eb5d4",
+      "mode": "100755",
+      "git_blob": "99807d577c3b006cfe6ee9e149cf2914bfd4afd6"
+    },
+    "skills/poteto-mode/scripts/worktree-audit.sh": {
+      "sha256": "e0a94e5e5b1ff60638916e440600e15851f7b79bc1a1d1f602fde05d465e2ec0",
+      "mode": "100755",
+      "git_blob": "743c4e9250ba95000f90db10ef6ba47d8a106461"
+    },
+    "skills/principle-attack-the-premise/SKILL.md": {
+      "sha256": "6a932884daad4aa189e9b5d1665226bbc75621d4d2a398fd4003bebd382f4599",
+      "mode": "100644",
+      "git_blob": "e9a6d499606992edd9963b80f8f8f57feaccb221"
+    },
+    "skills/principle-boundary-discipline/SKILL.md": {
+      "sha256": "62ac2862c2caa22dd14531f51c9c6bb445ceb198ca98a687e25b4d47c1f10a28",
+      "mode": "100644",
+      "git_blob": "dfe9a6fb0e5acd6ae43a41437ee0951adfe839cb"
+    },
+    "skills/principle-build-the-lever/SKILL.md": {
+      "sha256": "3434b0ad0c640c6f1d7960be7a8986c3bcdc14e26060360dec29903df60074ff",
+      "mode": "100644",
+      "git_blob": "cbf003850489d95fea78e64198fd972c35b1aad3"
+    },
+    "skills/principle-encode-lessons-in-structure/SKILL.md": {
+      "sha256": "228963799189f481827d6f28065f278bc2008ffa37030b1234cbd5814d36b9e9",
+      "mode": "100644",
+      "git_blob": "4a96f77fe70e36cb030f9c5efa142f66877bf58a"
+    },
+    "skills/principle-exhaust-the-design-space/SKILL.md": {
+      "sha256": "2de83d99f93f60ec6313455b0bc9aa9f0bfb93dd59f414f403691322db00d4db",
+      "mode": "100644",
+      "git_blob": "395a0839126bb231430a9c9da02ebab5422557d5"
+    },
+    "skills/principle-experience-first/SKILL.md": {
+      "sha256": "58903529d733b1c1a7c9ccf127d45ef3c7d0d9f0b81164a4dc6b80efe6f2912b",
+      "mode": "100644",
+      "git_blob": "5ea51741302cf3af4cc0b90ec70815bd3208dbf2"
+    },
+    "skills/principle-explain-the-number/SKILL.md": {
+      "sha256": "cd5a25f9e7cf023627ccb470dc5faa97542f29b4319496a32b839a8e1e988047",
+      "mode": "100644",
+      "git_blob": "1e180c14aefe49a3b2a515320398e08c3ebeb57d"
+    },
+    "skills/principle-fix-root-causes/SKILL.md": {
+      "sha256": "8df3c8c3fe57eb0055a5c8efab8ab144557fdf301da70b1cdc77a3a3ef3f3052",
+      "mode": "100644",
+      "git_blob": "14fc189fa1ec3fb1614b0a3c75557f92943d8f13"
+    },
+    "skills/principle-foundational-thinking/SKILL.md": {
+      "sha256": "864b827e8199d946ce58beca0f89c4ed4099ed6e426fb698a3aaa45de2a9eea2",
+      "mode": "100644",
+      "git_blob": "19cc6c0eaa6fcbc2863fb73d1d25ca196c6a46e0"
+    },
+    "skills/principle-guard-the-context-window/SKILL.md": {
+      "sha256": "af0b9dd70b43628ce4a59a4d332e9d9ad055084e460f430e7a757495c627e81a",
+      "mode": "100644",
+      "git_blob": "0a1d3cfcf4539fe048887174000fecbf2fa40e81"
+    },
+    "skills/principle-laziness-protocol/SKILL.md": {
+      "sha256": "1be6e7a435f26a75a76eb848b9c3d611b9977d0f5822361753244da25ca3ca45",
+      "mode": "100644",
+      "git_blob": "016c3c7c8dfffd995c1a02135a62248e6625879b"
+    },
+    "skills/principle-make-operations-idempotent/SKILL.md": {
+      "sha256": "7aa9327cf1f1aa057e95d47a0a78bd88a8f9d556b608866fee939d455a53a019",
+      "mode": "100644",
+      "git_blob": "c93f323d694a4d310515ea27165a093d399bc55e"
+    },
+    "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md": {
+      "sha256": "580ad9bb1a0994ecb924321ba49efc38a2f85c64e22c76fb133f57a78272a2e6",
+      "mode": "100644",
+      "git_blob": "57ddd7b27d06ba4ee9e2d3811880476a18b88df6"
+    },
+    "skills/principle-minimize-reader-load/SKILL.md": {
+      "sha256": "1ea2b7fef2391cae5844c4efdbd59031f775e8a52d06b7495d707229a200dcca",
+      "mode": "100644",
+      "git_blob": "628999088c5d05c1c546b3a3ca89da553cd3f3b2"
+    },
+    "skills/principle-model-the-domain/SKILL.md": {
+      "sha256": "52c0d85e0c3827c41c18299b642657d7b47eaf77b7b31609e42e0df42b84c75f",
+      "mode": "100644",
+      "git_blob": "09b7c739955facf03f08f66e1e329745d2f8880e"
+    },
+    "skills/principle-never-block-on-the-human/SKILL.md": {
+      "sha256": "05030a7a083c337676f793881b4e93cd218e8f1dd676529f56e6ac1d3efb8d1f",
+      "mode": "100644",
+      "git_blob": "4f59bdc69f79d536b30b0014a563ed3be05b8b62"
+    },
+    "skills/principle-outcome-oriented-execution/SKILL.md": {
+      "sha256": "10eb91633aa570355ba4bb37088fcade2b22e498df7a58edc749e65bc5a78e2d",
+      "mode": "100644",
+      "git_blob": "c49be0bc74783f0dee013101365ae09b2abb48a2"
+    },
+    "skills/principle-prove-it-works/SKILL.md": {
+      "sha256": "ec79a15025bac8d33d62011c54f3b612733fd2a024e623b531b3637aa75070e2",
+      "mode": "100644",
+      "git_blob": "5dc14a3b06f9d579e5c17cd8a7242f432ddb3125"
+    },
+    "skills/principle-redesign-from-first-principles/SKILL.md": {
+      "sha256": "170e0a658783e43fee8ec5a8c2422a4abb8f69cef621dd1819a95910b8207034",
+      "mode": "100644",
+      "git_blob": "5ca5246cbb0fa08884ce17b0d22c117ae1ad67b8"
+    },
+    "skills/principle-separate-before-serializing-shared-state/SKILL.md": {
+      "sha256": "05294b40448e927c5da1c7b6f5c6b9fed3744637e3833d2d948b9154a9dd00bb",
+      "mode": "100644",
+      "git_blob": "ff93b4a2032c08e2232992a9a24f2891ee14e58f"
+    },
+    "skills/principle-sequence-verifiable-units/SKILL.md": {
+      "sha256": "2ccbbacc56ace5afdfb8670cef19d7bd009fb2a0033b9a741cbdf2b6baf72187",
+      "mode": "100644",
+      "git_blob": "986371260ebccd9a5a6818c9561e88c1d270d0ee"
+    },
+    "skills/principle-subtract-before-you-add/SKILL.md": {
+      "sha256": "8c93bb9d1a7f38e2ef37655d93f0e790fa59903105af3d500cc8a663ebe45f3f",
+      "mode": "100644",
+      "git_blob": "b8740ba6f06922d8e7ef3b23f9fb16e0fc4a876f"
+    },
+    "skills/principle-test-behavior-not-implementation/SKILL.md": {
+      "sha256": "f7223698623b6a26fea49c751e466b38e6691b1f32ce841d3983e7ffbe2b74a6",
+      "mode": "100644",
+      "git_blob": "78c9389bfe707d6d56485ade32c59150958228f9"
+    },
+    "skills/principle-type-system-discipline/SKILL.md": {
+      "sha256": "5cdaf79785e3c12b2592b9469ee8c272143eb86ab7a18d8382197cea5fd30106",
+      "mode": "100644",
+      "git_blob": "9fa08b0b17d536ce751fffa90134be8fb03699c7"
+    },
+    "skills/recall/SKILL.md": {
+      "sha256": "b0ceb996259c3404532f61e4b010df4e3d80d7ddbed85b3c302895723eb62a89",
+      "mode": "100644",
+      "git_blob": "cd8cc20790d90579e632626fe6db2b1fff593eea"
+    },
+    "skills/reflect/SKILL.md": {
+      "sha256": "1f5a8c246cdee8251f8667d85bd5d97f6c2801f505843c26ddbd6c621632519b",
+      "mode": "100644",
+      "git_blob": "998ae6530fe294791c3a1daa635b36e2947fcca2"
+    },
+    "skills/reflect/references/divergent-reviewer.md": {
+      "sha256": "f6030d88e20e906ef5e2d9ba44cb013ce610c49c2fe2ef74c377d32e0dc9e939",
+      "mode": "100644",
+      "git_blob": "1e070a2a3754f4dc0ddbaec4450a56179b81c92f"
+    },
+    "skills/reflect/references/judgment-reviewer.md": {
+      "sha256": "38f917619fbf346062d643e0ad6b12fc952d58678dfcbbf42ffcf6d8b9c08307",
+      "mode": "100644",
+      "git_blob": "61d15d76fff852eb573b551bc1317d79ed5a2e5f"
+    },
+    "skills/reflect/references/synthesizer.md": {
+      "sha256": "6af816963de74d1a1aef4070273c1ff533d2072732e488e159ddc0b299fec3cd",
+      "mode": "100644",
+      "git_blob": "1a090d86134987719ddb418023020c2ef58a6dae"
+    },
+    "skills/reflect/references/tooling-reviewer.md": {
+      "sha256": "f81b8697e7366fbbc18feba52c6e3253a101f751091364ebc4396a1d9b5753b4",
+      "mode": "100644",
+      "git_blob": "a839db4318798c51539c319cb90387ce02557225"
+    },
+    "skills/setup-pstack/SKILL.md": {
+      "sha256": "b45512f6ca5e96e81681984683b7472bfe892581da3a89a73cca4159438f29ed",
+      "mode": "100644",
+      "git_blob": "cb61b8d3ee5d2a1b8fa403d8b99ed8d2e18f77df"
+    },
+    "skills/sharpen/SKILL.md": {
+      "sha256": "563dfc460c605d311e650726288e2f1cbd61eab817db178d6e7e29643e07e7a2",
+      "mode": "100644",
+      "git_blob": "5b4a7b104e709f8cded1726541be42431c334164"
+    },
+    "skills/show-me-your-work/SKILL.md": {
+      "sha256": "920a8217cbb62f92a2222fb81fc9eab17ecd554a0277e444a95a927195139bd1",
+      "mode": "100644",
+      "git_blob": "ada1bba1e51356de0e0d4da1d13ba5a56ba9c7cb"
+    },
+    "skills/show-me-your-work/references/decision-log-template.tsv": {
+      "sha256": "6779378006a2f5225e8c06deb84f1d913fb532041ebbb6e50d94600bfe3f4b76",
+      "mode": "100644",
+      "git_blob": "db220376ecb8c582a6a4f6575a8f26469603a38d"
+    },
+    "skills/show-me-your-work/scripts/log.sh": {
+      "sha256": "a65a4bc5fb7cdeadbdb7b7ff1ca4682f4d9c42420942b2977cd17b46c4ac338e",
+      "mode": "100755",
+      "git_blob": "052e53b7e1090579eaec1d3d59f7a1cd2f2e452a"
+    },
+    "skills/statechart/SKILL.md": {
+      "sha256": "b1c544782b1527ba09e63311e4faa4c277c86aa33b0506590f8082b7b4bea505",
+      "mode": "100644",
+      "git_blob": "66670ebd1856621ef5307bb73eed09e60133212b"
+    },
+    "skills/statechart/scripts/bug-states.mjs": {
+      "sha256": "8c138f76542997f4fc8aa00ccb42f5b3510a4bcb475e04e422cf06c77ae6bbf4",
+      "mode": "100644",
+      "git_blob": "3c8e9f21f6046393903a5b496e65c5e93bf4727a"
+    },
+    "skills/statechart/scripts/chart-edges.mjs": {
+      "sha256": "bb1896c1e0eb6b2bfe0f1e5ef71b194a3096c4a6db1879514bcfc3818d3d644a",
+      "mode": "100644",
+      "git_blob": "0f0db11dc51dbf10ab20715820861a682893789f"
+    },
+    "skills/statechart/scripts/chart-parts.mjs": {
+      "sha256": "567b4700cba97881ec129cc9b2ed6cdbe9e1f041819ea37957dd3def5261b754",
+      "mode": "100644",
+      "git_blob": "eaa391d4e634b096d3625337f288627afb2e3427"
+    },
+    "skills/statechart/scripts/chart-to-tla.mjs": {
+      "sha256": "e26b0decb4762ee4c05cc96f4ba1454bd87ab6ae49f0f4bde74a29a4b493117d",
+      "mode": "100644",
+      "git_blob": "911c58698d7abf8c459134f0112a47750d317c1c"
+    },
+    "skills/statechart/scripts/compare-charts.mjs": {
+      "sha256": "1fa3c1aad875d38d6d1702fcbbcdb7592bc9a3dbe871cdbd4f9ddeda1bc859fc",
+      "mode": "100644",
+      "git_blob": "730698be4e1dfadb4866ff5f61e6cba2b37fe6ce"
+    },
+    "skills/statechart/scripts/lib.mjs": {
+      "sha256": "ae8ebe18e09419a63b23465f9a53c9117e04de12a7bc945b1f75ce66a367cc5b",
+      "mode": "100644",
+      "git_blob": "238f1745e561aa5668cd09ec7a694836bf6b7156"
+    },
+    "skills/statechart/scripts/map-view.mjs": {
+      "sha256": "d9ca92ba29a9d5e4143c64826c24b34cc41d5cac28aeee6a25db485e5b2c7d4f",
+      "mode": "100644",
+      "git_blob": "e7e844b6d1fd6534408e94ac7f96fd7384ca5650"
+    },
+    "skills/statechart/scripts/property-loop.mjs": {
+      "sha256": "437b66fa85d45bddc8f743fc96af3f3a358f6c3d4da5d55e23dd04c4468f00e7",
+      "mode": "100644",
+      "git_blob": "47bf0372f89f27251e8639445ef1716dd243ea94"
+    },
+    "skills/statechart/scripts/read-check.mjs": {
+      "sha256": "f4124d09512b62c056ca81fcde91d9dd1a4d07a99de950ec945df83f044772a9",
+      "mode": "100644",
+      "git_blob": "18c52b6d1447583c0d3b4e0dbd01c0ffc701e47b"
+    },
+    "skills/statechart/scripts/regions-chart.mjs": {
+      "sha256": "c234623411a2d5368737c8ef4f4012ec92f902340d8fdd527d08d015a448bde9",
+      "mode": "100644",
+      "git_blob": "95d746021468883e6a4adab5d82dc34d4f2c4082"
+    },
+    "skills/statechart/scripts/render.mjs": {
+      "sha256": "b813236db10ce50a4d04efa68953eabbee0cdc30e3fa96c03b8a2e1f477f3e57",
+      "mode": "100644",
+      "git_blob": "4c90c58531d8f99ccb28fa659df1e85e868e0c9c"
+    },
+    "skills/statechart/scripts/rule-book.mjs": {
+      "sha256": "d26a8da74d105b5807ef8333172470660853e61069cc2573817ab7811755dde2",
+      "mode": "100644",
+      "git_blob": "3ea545228f7908394f903734b40157a23565e6b4"
+    },
+    "skills/statechart/scripts/second-replay.mjs": {
+      "sha256": "033325ff5440a81a11aebdd485de4e2fd2f703db9f9b84c4fe24bc274d9df285",
+      "mode": "100644",
+      "git_blob": "1dba571c2c23d4648f0f15ffcf9359558e8de1be"
+    },
+    "skills/statechart/scripts/snapshot.mjs": {
+      "sha256": "9ae5040255945474f45d09a150cf4659acdff780e18d62f8a084bcb5c79543eb",
+      "mode": "100644",
+      "git_blob": "ebaf35573fb2208d9f3f29aca81669602d25171c"
+    },
+    "skills/statechart/scripts/spec-text.mjs": {
+      "sha256": "494f56d5577a09f9e93057fb6bfe5e3e74df53644e9992f4452ed7008f6f5aab",
+      "mode": "100644",
+      "git_blob": "ddfc8d10c9b22dd6bae3a4e4d950384bd0033574"
+    },
+    "skills/statechart/scripts/statechart-help.mjs": {
+      "sha256": "ab38345c41028ad76d2866b03b3f5aa2c8303c3223c87dc9979effbeec79e46b",
+      "mode": "100644",
+      "git_blob": "1a900fc51f985a0e9b774bfc0fc6e0c4e484ff04"
+    },
+    "skills/statechart/scripts/statechart.mjs": {
+      "sha256": "c24a83dda26aec03a3a0e5a961ece983a8283f6c4c66334fd229c2d2e8d7bb36",
+      "mode": "100644",
+      "git_blob": "555f10b8c83d98e7e5de07224b99cc339ba75935"
+    },
+    "skills/statechart/scripts/test/band.mmd": {
+      "sha256": "9ae80a75bce87c8126095b6d9de3669cc69ae65d850acd6d4328ea9b8538d5ed",
+      "mode": "100644",
+      "git_blob": "83af5860141f7d6ed4d0f323d1b3eef4303954ee"
+    },
+    "skills/statechart/scripts/test/regions.mmd": {
+      "sha256": "53d12de8df0e4269c2fbee7399285ead307952c98bb8f8e2eefeba4492e42e25",
+      "mode": "100644",
+      "git_blob": "d241e24ff73c292e5fc62a81fd7ff17c189a5354"
+    },
+    "skills/statechart/scripts/test/statechart.test.mjs": {
+      "sha256": "65b090975ad970f38e7ed06ff3212802705948ce682f0ee90a616a95f874f800",
+      "mode": "100644",
+      "git_blob": "543fe8d67e3c7f5da3d54b678a48b05c8f7de820"
+    },
+    "skills/statechart/scripts/test/sync.mmd": {
+      "sha256": "cb1f5387058a0f79d6187eb217690588a2e2d384637b4d53cbc4bb050c570757",
+      "mode": "100644",
+      "git_blob": "c780c2e4336925b66e79c2bd107c045c69e54355"
+    },
+    "skills/statechart/scripts/test/upload.mmd": {
+      "sha256": "bbc1fa70e26cbcbcc7cde5d8fb7eda26df34b6d973053bf13c40b18527ff0e76",
+      "mode": "100644",
+      "git_blob": "dcfafa73793e4475427a6897466debd40c4e3f8f"
+    },
+    "skills/statechart/scripts/tlc-to-chart-args.mjs": {
+      "sha256": "6cfff1104d7024ecb079ac4c6fa539279e2b537824e01a1c8eb3c7f8e9320ffd",
+      "mode": "100644",
+      "git_blob": "a2e0a3124641af13770fd7e4dc3e76c17f1ce347"
+    },
+    "skills/statechart/scripts/tlc-to-chart.mjs": {
+      "sha256": "2fc9c866ed1217cd5f107ec059eb9df2d32268c1f582929321a0a4cdbb26b15a",
+      "mode": "100644",
+      "git_blob": "7aefe44be6e60425fd061d04379adb256b06f75d"
+    },
+    "skills/statechart/scripts/tlc-tools.mjs": {
+      "sha256": "50fba780bb36edeb20804964f2e93f8c5fa85b6fe1e0e1e8d32e4b933eb69e84",
+      "mode": "100644",
+      "git_blob": "09d46de4a62173348de802643944bd54a1298e71"
+    },
+    "skills/statechart/scripts/ways-in.mjs": {
+      "sha256": "4728ad85dbd12d192c6bfb5c4374ef3f63ce8d61e03aa120f159dfc607b2af06",
+      "mode": "100644",
+      "git_blob": "e94658c804f62065b7bf4c7e0ae8c6854d1f0d69"
+    },
+    "skills/swarm/SKILL.md": {
+      "sha256": "031657cb81e490f9aed5c75d6ff2a4fda35ccafbaf72be604e59481cc4080cdc",
+      "mode": "100644",
+      "git_blob": "b0b1eb83363853843ccf1524917b83d0c16d2cd8"
+    },
+    "skills/tdd/SKILL.md": {
+      "sha256": "eeb868e2dfebee528d730a67d7b17498fac4bb85dec2e38bc5c5176aca4d5d2f",
+      "mode": "100644",
+      "git_blob": "ca6f24c963001d9d518db2936dfe3d12f29b4e94"
+    },
+    "skills/teach/SKILL.md": {
+      "sha256": "bd286e5a6290673be2cd28aef7af2ec7f1fb138e6bce156ea657368c7e7fc8a4",
+      "mode": "100644",
+      "git_blob": "25369f3f554ed6b5826340ae3eee688fac0bda80"
+    },
+    "skills/technical-writing/SKILL.md": {
+      "sha256": "61fe9c424a798ebf36ad94941f87be049cb8827bdf86d21474a0dde37b513c43",
+      "mode": "100644",
+      "git_blob": "3e6d26109376cd66439c87ed48b4033df8d78a3a"
+    },
+    "skills/typescript-best-practices/SKILL.md": {
+      "sha256": "ec1dac086d3708e5940d45d250c30a37dd953b4e3cb2ca0692f5851d7a039e27",
+      "mode": "100644",
+      "git_blob": "e1e5aa7c97ed39c425d60d933a96424a3f14539e"
+    },
+    "skills/typescript-best-practices/references/patterns.md": {
+      "sha256": "12e70c9419a8b3f5d6a1ab80e272c1f00a43ac0b3bbf72d68199033570e5de77",
+      "mode": "100644",
+      "git_blob": "f8dd99b63ecb469a090b8fa0a7e235d3239cb9ec"
+    },
+    "skills/unslop/SKILL.md": {
+      "sha256": "ccab208e315ce05e2fab8eeee2f7879f1289b5c6844840b2d307adf31c79144f",
+      "mode": "100644",
+      "git_blob": "97f5b6412148fa5b2a2fe478836fe8923ffa5cbb"
+    },
+    "skills/why/SKILL.md": {
+      "sha256": "144d42e7712723d763e607bc0a969e5f1cdf83ec7228519d87677cc534571bed",
+      "mode": "100644",
+      "git_blob": "b5fe93f8b78f58b06e0bf245a6b5b8faae4300e8"
+    },
+    "skills/why/references/epistemics.md": {
+      "sha256": "d54a2361b2d5973bc3fe2edf62f446d87935974d4b40d47f23b9529f956ca758",
+      "mode": "100644",
+      "git_blob": "b18abf41dfa245ee55e94f1b3a80c0b750eb10cf"
+    },
+    "skills/why/references/investigator-prompt.md": {
+      "sha256": "c44afba186f899094f3694e6c9d6de5d14ff7c4ce28b787a9f50fc789c9a7fc3",
+      "mode": "100644",
+      "git_blob": "e1c2bbf52197ff600ba6e4552439e630687b7ae2"
+    },
+    "skills/why/references/source-playbook.md": {
+      "sha256": "9ae9dcb9d09111c9facc68510331c5aba4aed9b1b057314ff1fc0e166ad3993a",
+      "mode": "100644",
+      "git_blob": "aa3d877cd539763ff05e266ae0a02dd811441e2b"
+    },
+    "skills/why/references/sources/code-archaeology.md": {
+      "sha256": "a4a3970e9db448054aed676f3f7feeee667b4b69f0bd57c8fd72b751be687cc7",
+      "mode": "100644",
+      "git_blob": "e3555f809da0a5654ceefe7d2c20080397c03506"
+    },
+    "skills/why/references/sources/databricks.md": {
+      "sha256": "236ede7aab6454662a992db088a5393537a5233a4c26719c93188f9e174488f6",
+      "mode": "100644",
+      "git_blob": "2770763ff5d0d1ad004abcc9a0138c9537ad1978"
+    },
+    "skills/why/references/sources/datadog.md": {
+      "sha256": "b139faac5dc11b8f26c8255dce6033c1a6ac143b038d3dd103f2034c5dbec9cd",
+      "mode": "100644",
+      "git_blob": "536466ddd8ae6543836abb84bdf1efd8e43089ba"
+    },
+    "skills/why/references/sources/incident-postmortem.md": {
+      "sha256": "bf2661f1a81c37700884a45b77d6289be0c802b065febced31990e6564510839",
+      "mode": "100644",
+      "git_blob": "e7397e7ef374bee3b7f0018ac8e5ddd4322bab12"
+    },
+    "skills/why/references/sources/linear.md": {
+      "sha256": "01304e7f1badfcfb78babbb0edcadeb3cc8dd3f713793420cdff24ba190f907c",
+      "mode": "100644",
+      "git_blob": "899c643c078f322afe6ae0ef78a007f8ffd356c1"
+    },
+    "skills/why/references/sources/notion.md": {
+      "sha256": "3bcfa695c49dfad4ac036d5d7181c12585f55ac04f1936198d16ab75a2788997",
+      "mode": "100644",
+      "git_blob": "d16230a4105fd1dacf870da0950a38faeb9381e6"
+    },
+    "skills/why/references/sources/sentry.md": {
+      "sha256": "2d4f83048eac1df530b399e2aed75dd7c9c18577b7665420aaeb96d0ceb0b702",
+      "mode": "100644",
+      "git_blob": "8200fd9f3abbb7fca76d0079663502b33524bd09"
+    },
+    "skills/why/references/sources/slack.md": {
+      "sha256": "3bc6309f5c7b26ace3b919dbd7f7b048861dd2020f910fe24f656cc74b3b661c",
+      "mode": "100644",
+      "git_blob": "cadd5618a349adc5eb1dce6fddde38e7221e00fd"
+    },
+    "skills/why/references/synthesizer-prompt.md": {
+      "sha256": "11c62671aa7b7a6e3d36929ffe2b59bf95e6ca664eee4d93e6ee527dd3390ddb",
+      "mode": "100644",
+      "git_blob": "287a350c925c28b44f0e0dc687bb09a843e11100"
+    }
+  },
+  "discovery_aliases": {
+    "architect": "skills/architect",
+    "arena": "skills/arena",
+    "automate-me": "skills/automate-me",
+    "benchmark-checklist": "skills/benchmark-checklist",
+    "blast-radius": "skills/blast-radius",
+    "bro": "skills/bro",
+    "correct": "skills/correct",
+    "create-formal-verification-skill": "skills/create-formal-verification-skill",
+    "create-verification-skill": "skills/create-verification-skill",
+    "figure-it-out": "skills/figure-it-out",
+    "how": "skills/how",
+    "in-your-own-words": "skills/in-your-own-words",
+    "interrogate": "skills/interrogate",
+    "ketchup": "skills/ketchup",
+    "maintain-formal-verification-skill": "skills/maintain-formal-verification-skill",
+    "maintain-verification-skill": "skills/maintain-verification-skill",
+    "make-bot-ui": "skills/make-bot-ui",
+    "no-comments": "skills/no-comments",
+    "poteto-help": "skills/poteto-help",
+    "poteto-mode": "skills/poteto-mode",
+    "principle-attack-the-premise": "skills/principle-attack-the-premise",
+    "principle-boundary-discipline": "skills/principle-boundary-discipline",
+    "principle-build-the-lever": "skills/principle-build-the-lever",
+    "principle-encode-lessons-in-structure": "skills/principle-encode-lessons-in-structure",
+    "principle-exhaust-the-design-space": "skills/principle-exhaust-the-design-space",
+    "principle-experience-first": "skills/principle-experience-first",
+    "principle-explain-the-number": "skills/principle-explain-the-number",
+    "principle-fix-root-causes": "skills/principle-fix-root-causes",
+    "principle-foundational-thinking": "skills/principle-foundational-thinking",
+    "principle-guard-the-context-window": "skills/principle-guard-the-context-window",
+    "principle-laziness-protocol": "skills/principle-laziness-protocol",
+    "principle-make-operations-idempotent": "skills/principle-make-operations-idempotent",
+    "principle-migrate-callers-then-delete-legacy-apis": "skills/principle-migrate-callers-then-delete-legacy-apis",
+    "principle-minimize-reader-load": "skills/principle-minimize-reader-load",
+    "principle-model-the-domain": "skills/principle-model-the-domain",
+    "principle-never-block-on-the-human": "skills/principle-never-block-on-the-human",
+    "principle-outcome-oriented-execution": "skills/principle-outcome-oriented-execution",
+    "principle-prove-it-works": "skills/principle-prove-it-works",
+    "principle-redesign-from-first-principles": "skills/principle-redesign-from-first-principles",
+    "principle-separate-before-serializing-shared-state": "skills/principle-separate-before-serializing-shared-state",
+    "principle-sequence-verifiable-units": "skills/principle-sequence-verifiable-units",
+    "principle-subtract-before-you-add": "skills/principle-subtract-before-you-add",
+    "principle-test-behavior-not-implementation": "skills/principle-test-behavior-not-implementation",
+    "principle-type-system-discipline": "skills/principle-type-system-discipline",
+    "recall": "skills/recall",
+    "reflect": "skills/reflect",
+    "setup-pstack": "skills/setup-pstack",
+    "sharpen": "skills/sharpen",
+    "show-me-your-work": "skills/show-me-your-work",
+    "statechart": "skills/statechart",
+    "swarm": "skills/swarm",
+    "tdd": "skills/tdd",
+    "teach": "skills/teach",
+    "technical-writing": "skills/technical-writing",
+    "typescript-best-practices": "skills/typescript-best-practices",
+    "unslop": "skills/unslop",
+    "why": "skills/why"
+  },
+  "codex_skill_namespace": "pstack:"
+}

@@ -191,6 +191,6 @@ git config --global core.editor "vim"
 
 # Install and link AI coding agent tools
 . "$HOME/git/dotfiles/scripts/setup-agent-tools.sh"
-setup_agent_tools
+setup_agent_tools || exit 1
 
 echo "Done! Log out and back in for shell and group changes to take effect."
