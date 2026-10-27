@@ -8,6 +8,10 @@ root="$tmp/source/.agents"
 mkdir -p "$root/commands" "$root/hooks" "$root/skills" "$root/rules" "$tmp/external"
 root=$(cd "$root" && pwd -P)
 touch "$root/rules/beans.md" "$root/skills/example"
+mkdir -p "$root/pstack/skills/poteto-mode/playbooks"
+printf '%s\n' 'vanilla mode' > "$root/pstack/skills/poteto-mode/SKILL.md"
+printf '%s\n' 'orchestrate' > "$root/pstack/skills/poteto-mode/playbooks/orchestrate.md"
+ln -s ../pstack/skills/poteto-mode "$root/skills/poteto-mode"
 HOME="$tmp/home" DOTFILES_AGENT_ROOT="$root"; export HOME DOTFILES_AGENT_ROOT
 . ./scripts/setup-agent-tools.sh
 install_claude_code() { :; }
@@ -23,6 +27,12 @@ ln -s "$tmp/external/keep" "$HOME/.claude/skills/external"
 ln -s "$tmp/external/keep" "$HOME/.codex/skills/external"
 setup_agent_tools
 setup_agent_tools
+assert_link "$HOME/.agents/pstack" "$root/pstack"
+for tool in .agents .claude .codex; do
+  assert_link "$HOME/$tool/skills/poteto-mode" "$root/skills/poteto-mode"
+  [ "$(cat "$HOME/$tool/skills/poteto-mode/SKILL.md")" = 'vanilla mode' ] || fail "$tool-mode"
+  [ "$(cat "$HOME/$tool/skills/poteto-mode/playbooks/orchestrate.md")" = orchestrate ] || fail "$tool-playbook"
+done
 assert_link "$HOME/.claude/rules/beans.md" "$root/rules/beans.md"
 assert_link "$HOME/.codex/rules/beans.md" "$root/rules/beans.md"
 [ ! -e "$HOME/.claude/rules/beads.md" ] && [ ! -L "$HOME/.claude/rules/beads.md" ] || fail stale-claude
@@ -44,3 +54,44 @@ touch "$HOME/.codex/rules"
 if setup_agent_tools 2>"$tmp/directory.err"; then fail directory-collision-accepted; fi
 grep -q 'must be a real directory' "$tmp/directory.err" || fail directory-warning
 [ -L "$HOME/.claude/rules" ] && [ -f "$HOME/.codex/rules" ] || fail directory-mutated
+
+# Repair a stale pstack link, but preserve real files and directories.
+rm "$HOME/.agents/pstack"
+ln -s "$tmp/missing/pstack" "$HOME/.agents/pstack"
+link_shared_agent_config
+assert_link "$HOME/.agents/pstack" "$root/pstack"
+rm "$HOME/.agents/pstack"
+printf '%s\n' local > "$HOME/.agents/pstack"
+if link_shared_agent_config 2>"$tmp/pstack-file.err"; then fail pstack-file-accepted; fi
+[ "$(cat "$HOME/.agents/pstack")" = local ] || fail pstack-file-mutated
+rm "$HOME/.agents/pstack"
+mkdir "$HOME/.agents/pstack"
+printf '%s\n' local > "$HOME/.agents/pstack/keep"
+if link_shared_agent_config 2>"$tmp/pstack-dir.err"; then fail pstack-directory-accepted; fi
+[ "$(cat "$HOME/.agents/pstack/keep")" = local ] || fail pstack-directory-mutated
+
+# A root link into this checkout must not turn source directories into self-links.
+HOME="$tmp/self-home"
+mkdir -p "$HOME"
+ln -s "$root" "$HOME/.agents"
+setup_agent_tools
+setup_agent_tools
+assert_link "$HOME/.agents" "$root"
+[ ! -L "$root/pstack" ] && [ ! -L "$root/skills" ] || fail source-directory-mutated
+assert_link "$root/skills/poteto-mode" ../pstack/skills/poteto-mode
+[ "$(cat "$root/pstack/skills/poteto-mode/SKILL.md")" = 'vanilla mode' ] || fail source-mode-mutated
+
+# Refuse a root link into another checkout before writing through it.
+HOME="$tmp/foreign-home"
+work_root="$tmp/work/.agents"
+mkdir -p "$HOME" "$work_root/skills" "$work_root/pstack"
+printf '%s\n' work > "$work_root/skills/keep"
+printf '%s\n' work > "$work_root/pstack/keep"
+ln -s "$work_root" "$HOME/.agents"
+work_before=$(find "$work_root" -print)
+if setup_agent_tools 2>"$tmp/foreign.err"; then fail foreign-root-accepted; fi
+grep -q 'instead of' "$tmp/foreign.err" || fail foreign-root-warning
+assert_link "$HOME/.agents" "$work_root"
+[ "$(find "$work_root" -print)" = "$work_before" ] || fail foreign-tree-mutated
+[ "$(cat "$work_root/skills/keep")" = work ] || fail foreign-skill-mutated
+[ "$(cat "$work_root/pstack/keep")" = work ] || fail foreign-pstack-mutated

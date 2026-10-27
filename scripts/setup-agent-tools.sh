@@ -29,6 +29,10 @@ link_children() {
   [ -d "$source_dir" ] || return 0
   source_dir=$(cd -P "$source_dir" && pwd) || return 1
 
+  if [ -d "$target_dir" ] && [ "$(cd -P "$target_dir" && pwd)" = "$source_dir" ]; then
+    return 0
+  fi
+
   if [ -e "$target_dir" ] || [ -L "$target_dir" ]; then
     if [ -L "$target_dir" ] || [ ! -d "$target_dir" ]; then
       echo "Skipping $target_dir because it must be a real directory." >&2
@@ -100,6 +104,26 @@ link_children() {
   return "$result"
 }
 
+link_directory() {
+  source_path="$1"
+  target_path="$2"
+
+  [ -d "$source_path" ] || return 0
+  source_path=$(cd -P "$source_path" && pwd) || return 1
+
+  if [ -d "$target_path" ] && [ "$(cd -P "$target_path" && pwd)" = "$source_path" ]; then
+    return 0
+  fi
+
+  if [ -e "$target_path" ] && [ ! -L "$target_path" ]; then
+    echo "Skipping $target_path because it already exists and is not a symlink." >&2
+    return 1
+  fi
+
+  mkdir -p "$(dirname "$target_path")" || return 1
+  ln -snf "$source_path" "$target_path"
+}
+
 link_file() {
   source_path="$1"
   target_path="$2"
@@ -127,8 +151,18 @@ link_claude_agent_config() {
 
 link_shared_agent_config() {
   agent_root="${DOTFILES_AGENT_ROOT:-$HOME/git/dotfiles/.agents}"
+  agent_root=$(cd -P "$agent_root" && pwd) || return 1
 
-  mkdir -p "$HOME/.agents"
+  if [ -L "$HOME/.agents" ]; then
+    shared_root=$(cd -P "$HOME/.agents" && pwd) || return 1
+    if [ "$shared_root" != "$agent_root" ]; then
+      echo "Skipping $HOME/.agents because it points to $shared_root instead of $agent_root." >&2
+      return 1
+    fi
+  fi
+
+  mkdir -p "$HOME/.agents" || return 1
+  link_directory "$agent_root/pstack" "$HOME/.agents/pstack" || return 1
   link_children "$agent_root/skills" "$HOME/.agents/skills" || return 1
 }
 

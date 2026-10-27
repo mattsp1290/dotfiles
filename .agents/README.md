@@ -8,12 +8,14 @@
 - `hooks/` - reusable hook scripts.
 - `rules/` - durable behavior rules and conventions.
 - `skills/` - skill directories with `SKILL.md` instructions and related assets.
+- `pstack/` - the complete vanilla pstack plugin, with core skills linked from `skills/`.
 
 ## Install Targets
 
 `scripts/setup-agent-tools.sh` links this tree into tool-specific homes:
 
 - Shared agent discovery: `~/.agents/skills`
+- Complete pstack source: `~/.agents/pstack`
 - Claude Code: `~/.claude/{commands,hooks,rules,skills}`
 - Codex: `~/.codex/{hooks.json,prompts,rules,skills}`. Shared
   `.agents/commands/*.md` files are linked into `~/.codex/prompts` so they can
@@ -28,3 +30,6 @@ Claude keeps `settings.local.json` separate because it contains local permission
 - Prefer repo-local output paths such as `reviews/` over `.claude/*`.
 - Avoid tool-specific names unless the skill has an explicit Claude or Codex adapter section.
 - Document any required external CLI in the skill description or prerequisites.
+
+The imported `pstack/` tree retains upstream tool names and model assumptions.
+Keep local setup glue outside that tree. See [Set up pstack](pstack.local.md) for installation and compatibility details.
