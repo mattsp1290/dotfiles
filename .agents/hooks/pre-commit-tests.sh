@@ -13,16 +13,39 @@ INPUT=$(cat)
 # Extract the Bash command being run.
 CMD=$(printf '%s' "$INPUT" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null)
 
-# Only gate actual git commits — let every other Bash call through untouched.
-case "$CMD" in
-  *"git commit"*) ;;
-  *) exit 0 ;;
-esac
-
 # Honor an explicit bypass.
 case "$CMD" in
   *"--no-verify"*) exit 0 ;;
 esac
+
+# Find the repository the commit targets, not the hook process's directory:
+# a commit in another worktree (`git -C <dir> commit`, `cd <dir> && git commit`)
+# would otherwise be gated on the session's primary checkout. Prints nothing
+# when the command contains no git commit, which lets it straight through.
+TARGET_DIR=$(printf '%s' "$INPUT" | python3 -c '
+import json, os, shlex, sys
+data = json.load(sys.stdin)
+cwd = data.get("cwd") or os.getcwd()
+lexer = shlex.shlex(data.get("tool_input", {}).get("command", ""), posix=True, punctuation_chars=True)
+tokens = []
+try:
+    for tok in lexer:
+        tokens.append(tok)
+except ValueError:
+    pass  # e.g. a heredoc message with an apostrophe; the tokens before it still count
+for i, tok in enumerate(tokens):
+    if tok == "cd" and i + 1 < len(tokens):
+        cwd = os.path.join(cwd, os.path.expanduser(tokens[i + 1]))
+    elif tok == "git" and tokens[i + 1:i + 2] == ["commit"]:
+        print(cwd)
+        break
+    elif tok == "git" and tokens[i + 1:i + 2] == ["-C"] and tokens[i + 3:i + 4] == ["commit"]:
+        print(os.path.join(cwd, os.path.expanduser(tokens[i + 2])))
+        break
+' 2>/dev/null)
+[ -n "$TARGET_DIR" ] || exit 0
+cd "$TARGET_DIR" 2>/dev/null || exit 0
+TOPLEVEL=$(git rev-parse --show-toplevel 2>/dev/null) && cd "$TOPLEVEL"
 
 # Detect project type and run tests. Order favors the languages used most.
 run_tests() {
@@ -31,6 +54,13 @@ run_tests() {
   elif [ -f "Cargo.toml" ]; then
     cargo test --workspace 2>&1
   elif [ -f "package.json" ]; then
+    # Use the Node version the project pins when nvm has it installed.
+    for PIN_FILE in .node-version .nvmrc; do
+      [ -f "$PIN_FILE" ] || continue
+      PINNED_NODE="$HOME/.nvm/versions/node/v$(tr -d '[:space:]v' < "$PIN_FILE")/bin"
+      [ -x "$PINNED_NODE/node" ] && PATH="$PINNED_NODE:$PATH"
+      break
+    done
     if [ -f "pnpm-lock.yaml" ]; then
       pnpm test 2>&1
     elif [ -f "yarn.lock" ]; then
